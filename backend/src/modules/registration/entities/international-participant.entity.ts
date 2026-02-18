@@ -1,5 +1,5 @@
 import { Participant } from './participant.entity';
-import { VisaApplication } from '../../../visa/entities/visa-application.entity';
+import { VisaApplication } from '../../visa/entities/visa-application.entity';
 
 export class InternationalParticipant extends Participant {
   dateOfBirth!: Date;
