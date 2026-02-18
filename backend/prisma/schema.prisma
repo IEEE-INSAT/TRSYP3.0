@@ -1,0 +1,42 @@
+// Prisma schema for TRSYP 3.0
+// Uses PostgreSQL via Supabase
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================================================
+// Each domain module owns its own models.
+// Models are organized by module boundary.
+// No cross-module entity references — use domain events for inter-module comms.
+// ============================================================================
+
+// --- Auth Module ---
+// Define auth-related models here
+
+// --- Registration Module ---
+// Define registration-related models here
+
+// --- Payment Module ---
+// Define payment-related models here
+
+// --- Rooming Module ---
+// Define rooming-related models here
+
+// --- Visa Module ---
+// Define visa-related models here
+
+// --- Notification Module ---
+// Define notification-related models here
+
+// --- Email Module ---
+// Define email-related models here
+
+// --- Admin Module ---
+// Define admin-related models here
