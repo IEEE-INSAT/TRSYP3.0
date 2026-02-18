@@ -1,0 +1,6 @@
+export enum VisaStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  LETTER_SENT = 'LETTER_SENT',
+}
