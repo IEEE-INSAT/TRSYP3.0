@@ -1,7 +1,7 @@
 import { Participant } from './participant.entity';
 import { VisaApplication } from '../../visa/entities/visa-application.entity';
 
-export class InternationalParticipant extends Participant {
+export class InternationalInfo {
   dateOfBirth!: Date;
   countryOfResidence!: string;
   cityOfResidence!: string;
@@ -10,6 +10,9 @@ export class InternationalParticipant extends Participant {
   expectedDepartureDate!: Date;
   requiresVisaLetter!: boolean;
 
-  // InternationalParticipant "1" -- "0..1" VisaApplication
+  // Participant "1" -- "0..1" InternationalInfo
+  participant!: Participant;
+
+  // InternationalInfo "1" -- "0..1" VisaApplication
   visaApplication?: VisaApplication;
 }

@@ -1,4 +1,5 @@
 import { Participant } from '../../registration/entities/participant.entity';
+import { Invitation } from './invitation.entity';
 
 export class Room {
   roomId!: string;
@@ -10,4 +11,7 @@ export class Room {
 
   // Room "1" -- "0..*" Participant : Residents
   residents!: Participant[];
+
+  // Room "1" -- "0..*" Invitation
+  invitations!: Invitation[];
 }

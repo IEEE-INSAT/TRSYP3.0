@@ -1,4 +1,5 @@
 import { PaymentMethod } from '../domain/payment.types';
+import { Admin } from '../../auth/entities/admin.entity';
 
 export class Payment {
   id!: string;
@@ -7,4 +8,7 @@ export class Payment {
   confirmed!: boolean;
   proof!: Buffer;
   method!: PaymentMethod;
+
+  // Payment "0..*" -- "1" Admin : validatedBy
+  validatedBy!: Admin;
 }
