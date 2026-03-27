@@ -18,7 +18,35 @@ datasource db {
 // ============================================================================
 
 // --- Auth Module ---
-// Define auth-related models here
+model User {
+  id    String @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  lastName  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+enum Position {
+  CHAIR
+  VICE_CHAIR
+  // add more as needed
+}
+
+model Admin {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  lastName  String
+  position  Position
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("admins")
+}
 
 // --- Registration Module ---
 // Define registration-related models here
