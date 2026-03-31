@@ -1,30 +1,38 @@
 import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
-import { Strategy,ExtractJwt} from "passport-jwt";
+import { Strategy, ExtractJwt } from "passport-jwt";
 import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "src/prisma/prisma.service";
+import { passportJwtSecret } from "jwks-rsa";
 
 @Injectable()
-export class SupabaseJwtStrategy extends PassportStrategy(Strategy,'supabase-jwt'){
+export class SupabaseJwtStrategy extends PassportStrategy(Strategy, 'supabase-jwt') {
     constructor(
-        private readonly configService:ConfigService,
-        private readonly prisma:PrismaService,
-    ){
-        const jwtSecret = configService.get<string>('SUPABASE_JWT_SECRET');
-        if (!jwtSecret) {
-            throw new Error('SUPABASE_JWT_SECRET is not defined in environment variables');
+        private readonly configService: ConfigService,
+        private readonly prisma: PrismaService,
+    ) {
+        const supabaseUrl = configService.get<string>('SUPABASE_URL');
+        if (!supabaseUrl) {
+            throw new Error('SUPABASE_URL is not defined in environment variables');
         }
         super({
-            jwtFromRequest:ExtractJwt.fromAuthHeaderAsBearerToken(),
-            ignoreExpiration:false,
-            secretOrKey:jwtSecret,
+            jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+            ignoreExpiration: false,
+            secretOrKeyProvider: passportJwtSecret({
+                cache: true,
+                rateLimit: true,
+                jwksRequestsPerMinute: 5,
+                jwksUri: `${supabaseUrl}/auth/v1/.well-known/jwks.json`,
+            }),
+            algorithms: ['ES256'],
         });
     }
-    async validate(payload:any){
-        const user=await this.prisma.user.findUnique({
-            where:{supabaseId:payload.sub},
+
+    async validate(payload: any) {
+        const user = await this.prisma.user.findUnique({
+            where: { supabaseId: payload.sub },
         });
-        if(!user){
+        if (!user) {
             throw new UnauthorizedException('User not found');
         }
         return user;
