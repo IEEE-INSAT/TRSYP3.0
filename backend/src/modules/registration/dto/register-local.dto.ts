@@ -7,6 +7,7 @@ import {
   IsString,
   Matches,
 } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ParticipantType, SB, COUNTRY } from '@prisma/client';
 
 /**
@@ -36,50 +37,62 @@ export type RegisterLocalInput = z.infer<typeof RegisterLocalSchema>;
  * Used with class-validator for NestJS validation pipe
  */
 export class RegisterLocalDto {
-  /**
-   * IEEE member ID (optional, only for IEEE members)
-   */
+  @ApiPropertyOptional({
+    description: 'IEEE member ID (only for IEEE members)',
+    example: 12345678,
+    minimum: 1,
+  })
   @IsOptional()
   @IsInt({ message: 'IEEE ID must be an integer' })
   @IsPositive({ message: 'IEEE ID must be positive' })
   ieeeId?: number;
 
-  /**
-   * Phone number in E.164 format
-   */
+  @ApiProperty({
+    description: 'Phone number in E.164 format',
+    example: '+21612345678',
+    pattern: '^\\+?[1-9]\\d{1,14}$',
+  })
   @IsString()
   @Matches(/^\+?[1-9]\d{1,14}$/, {
     message: 'Phone must be in E.164 format (e.g., +21612345678)',
   })
   phone!: string;
 
-  /**
-   * Participant gender
-   */
+  @ApiProperty({
+    description: 'Participant gender',
+    enum: ['male', 'female'],
+    example: 'male',
+  })
   @IsString()
   @Matches(/^(male|female)$/, {
     message: "Gender must be 'male' or 'female'",
   })
   gender!: string;
 
-  /**
-   * Type of participant (NonIEEE, Student, YoungProfessional)
-   */
+  @ApiProperty({
+    description: 'Type of participant',
+    enum: ParticipantType,
+    example: 'Student',
+  })
   @IsEnum(ParticipantType, {
     message: 'Invalid participant type',
   })
   participantType!: ParticipantType;
 
-  /**
-   * Student branch (optional)
-   */
+  @ApiPropertyOptional({
+    description: 'Student branch (for students only)',
+    enum: SB,
+    example: 'INSAT',
+  })
   @IsOptional()
   @IsEnum(SB, { message: 'Invalid student branch' })
   sb?: SB;
 
-  /**
-   * Country of origin
-   */
+  @ApiProperty({
+    description: 'Country of origin',
+    enum: COUNTRY,
+    example: 'Tunisia',
+  })
   @IsEnum(COUNTRY, { message: 'Invalid country' })
   country!: COUNTRY;
 }

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { Type } from 'class-transformer';
 import { IsObject, ValidateNested } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 import { RegisterLocalDto, RegisterLocalSchema } from './register-local.dto';
 import {
   InternationalInfoDto,
@@ -22,9 +23,10 @@ export type RegisterInternationalInput = z.infer<typeof RegisterInternationalSch
  * Extends local registration DTO with international info
  */
 export class RegisterInternationalDto extends RegisterLocalDto {
-  /**
-   * Nested international participant information
-   */
+  @ApiProperty({
+    description: 'International participant information',
+    type: () => InternationalInfoDto,
+  })
   @IsObject({ message: 'International info must be an object' })
   @ValidateNested()
   @Type(() => InternationalInfoDto)
