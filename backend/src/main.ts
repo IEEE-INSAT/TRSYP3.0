@@ -31,12 +31,11 @@ async function bootstrap() {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
-        name: 'JWT',
-        description: 'Enter JWT token',
-        in: 'header',
+        description: 'Enter: dev-token (user) or admin-token (admin)',
       },
       'JWT-auth',
     )
+    .addSecurityRequirements('JWT-auth')
     .addTag('Registration', 'Participant registration and profile management')
     .addTag('Visa', 'Visa application management')
     .addTag('Admin', 'Administrative operations')

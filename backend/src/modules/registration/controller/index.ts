@@ -49,7 +49,7 @@ import { JwtPayload } from '../../../common/guards/jwt-auth.guard';
  * Registration controller for participant management
  */
 @ApiTags('Registration')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @Controller('registration')
 @UseGuards(JwtAuthGuard)
 export class RegistrationController {

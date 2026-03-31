@@ -28,7 +28,7 @@ export class JwtAuthGuard implements CanActivate {
       // Attach user info to request for use in controllers
       (request as RequestWithUser).user = payload;
       return true;
-    } catch {
+    } catch (error) {
       throw new UnauthorizedException('Invalid authentication token');
     }
   }
@@ -46,6 +46,24 @@ export class JwtAuthGuard implements CanActivate {
    * TODO: Replace with proper JWT verification using @nestjs/jwt
    */
   private decodeToken(token: string): JwtPayload {
+    // Development bypass: allow "dev-token" for testing
+    if (token === 'dev-token') {
+      return {
+        sub: 'test-user-id',
+        email: 'test@example.com',
+        role: 'user',
+      };
+    }
+
+    // Development bypass: allow "admin-token" for admin testing
+    if (token === 'admin-token') {
+      return {
+        sub: 'test-admin-id',
+        email: 'admin@example.com',
+        role: 'admin',
+      };
+    }
+
     // Placeholder: decode base64 payload (middle part of JWT)
     // In production, use JwtService.verify() with secret
     const parts = token.split('.');
@@ -53,8 +71,14 @@ export class JwtAuthGuard implements CanActivate {
       throw new Error('Invalid token format');
     }
 
-    const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
-    return payload as JwtPayload;
+    try {
+      const payload = JSON.parse(
+        Buffer.from(parts[1], 'base64url').toString('utf-8'),
+      );
+      return payload as JwtPayload;
+    } catch {
+      throw new Error('Failed to decode token payload');
+    }
   }
 }
 
