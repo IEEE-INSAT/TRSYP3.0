@@ -7,9 +7,12 @@ import { SyncUserDto } from "../dto/sync-user.dto";
 @Controller('auth')
 export class AuthController{
     constructor(private readonly authService:AuthService){}
+
     @Post('sync-user')
-    async syncUser(@Body() dto:SyncUserDto, @Res() res:Response){
-        const user=await this.authService.syncUser(dto);
+    @UseGuards(SupabaseAuthGuard)
+    async syncUser(@Body() dto:SyncUserDto, @Res() res:Response,@Req() req:Request){
+        const supabaseId=(req.user as any).sub;
+        const user=await this.authService.syncUser(supabaseId,dto);
         return res.status(HttpStatus.OK).json(user);
     }
 

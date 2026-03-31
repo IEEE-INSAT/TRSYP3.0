@@ -6,9 +6,9 @@ import { SyncUserDto } from "../dto/sync-user.dto";
 export class AuthService{
   constructor(private readonly prisma:PrismaService){}
 
-  async syncUser(dto:SyncUserDto){
+  async syncUser(supabaseId:string,dto:SyncUserDto){
     const user=await this.prisma.user.upsert({
-      where:{supabaseId:dto.supabaseId as string},
+      where:{supabaseId:supabaseId as string},
       update:{
         email:dto.email as string,
         name:dto.name as string,
@@ -16,7 +16,7 @@ export class AuthService{
         provider:dto.provider ?? "email",
       },
       create:{
-        supabaseId:dto.supabaseId as string,
+        supabaseId:supabaseId as string,
         email:dto.email as string,
         name:dto.name as string,
         lastName:dto.lastName as string,

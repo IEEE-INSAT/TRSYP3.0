@@ -29,12 +29,7 @@ export class SupabaseJwtStrategy extends PassportStrategy(Strategy, 'supabase-jw
     }
 
     async validate(payload: any) {
-        const user = await this.prisma.user.findUnique({
-            where: { supabaseId: payload.sub },
-        });
-        if (!user) {
-            throw new UnauthorizedException('User not found');
-        }
-        return user;
+        
+        return payload;
     }
 }

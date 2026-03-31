@@ -3,8 +3,6 @@ import { StringSchema } from "joi";
 
 export class SyncUserDto{
 
-    @IsString()
-    supabaseId:string | undefined;
 
     @IsEmail()
     email:string | undefined;
