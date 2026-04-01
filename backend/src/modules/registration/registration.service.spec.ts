@@ -1,0 +1,444 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { ConflictException, ForbiddenException, BadRequestException, NotFoundException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { RegistrationService } from './service';
+import { PrismaService } from '../../prisma/prisma.service';
+import { RegisterLocalDto } from './dto/register-local.dto';
+import { RegisterInternationalDto } from './dto/register-international.dto';
+import { RequestVisaDto } from './dto/request-visa.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ParticipantType, SB, COUNTRY, VisaStatus } from '@prisma/client';
+
+describe('RegistrationService', () => {
+  let service: RegistrationService;
+  let mockPrismaService: any;
+  let mockEventEmitter: any;
+
+  const mockParticipant = {
+    id: 'participant-1',
+    accountId: 'account-1',
+    ieeeId: null,
+    phone: '+21612345678',
+    gender: 'male',
+    paid: false,
+    isInternational: false,
+    banned: false,
+    participantType: ParticipantType.Student,
+    sb: SB.INSAT,
+    country: COUNTRY.Tunisia,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  const mockInternationalParticipant = {
+    ...mockParticipant,
+    id: 'participant-2',
+    accountId: 'account-2',
+    isInternational: true,
+    internationalInfo: {
+      id: 'intl-1',
+      participantId: 'participant-2',
+      dateOfBirth: new Date('1995-06-15'),
+      countryOfResidence: 'Algeria',
+      cityOfResidence: 'Algiers',
+      affiliation: 'University of Algiers',
+      expectedArrivalDate: new Date('2026-07-15'),
+      expectedDepartureDate: new Date('2026-07-20'),
+      requiresVisaLetter: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  };
+
+  const mockVisaApplication = {
+    id: 'visa-1',
+    internationalInfoId: 'intl-1',
+    passportNumber: 'AB1234567',
+    passportIssuanceCountry: 'Algeria',
+    issuingOffice: 'Algiers Central',
+    passportIssuanceDate: new Date('2020-01-15'),
+    passportExpiryDate: new Date('2030-01-15'),
+    embassyAddress: '18 Avenue de la République, Tunis 1000, Tunisia',
+    residenceAddress: '123 Rue Didouche Mourad, Algiers 16000, Algeria',
+    status: VisaStatus.Pending,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  beforeEach(async () => {
+    mockPrismaService = {
+      participant: {
+        create: jest.fn(),
+        findUnique: jest.fn(),
+        findMany: jest.fn(),
+        update: jest.fn(),
+        delete: jest.fn(),
+        count: jest.fn(),
+      },
+      internationalInfo: {
+        create: jest.fn(),
+        findUnique: jest.fn(),
+        update: jest.fn(),
+      },
+      visaApplication: {
+        create: jest.fn(),
+        findUnique: jest.fn(),
+        update: jest.fn(),
+      },
+      $transaction: jest.fn((cb) => cb(mockPrismaService)),
+    };
+
+    mockEventEmitter = {
+      emit: jest.fn(),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        RegistrationService,
+        {
+          provide: PrismaService,
+          useValue: mockPrismaService,
+        },
+        {
+          provide: EventEmitter2,
+          useValue: mockEventEmitter,
+        },
+      ],
+    }).compile();
+
+    service = module.get<RegistrationService>(RegistrationService);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('register', () => {
+    it('should register a local participant successfully', async () => {
+      const dto: RegisterLocalDto = {
+        phone: '+21612345678',
+        gender: 'male',
+        participantType: ParticipantType.Student,
+        sb: SB.INSAT,
+        country: COUNTRY.Tunisia,
+      };
+
+      mockPrismaService.participant.findUnique.mockResolvedValue(null);
+      mockPrismaService.participant.create.mockResolvedValue(mockParticipant);
+
+      const result = await service.register('account-1', dto);
+
+      expect(result).toEqual(mockParticipant);
+      expect(mockPrismaService.participant.create).toHaveBeenCalled();
+      expect(mockEventEmitter.emit).toHaveBeenCalledWith('participant.registered', expect.any(Object));
+    });
+
+    it('should register an international participant with InternationalInfo', async () => {
+      const dto: RegisterInternationalDto = {
+        phone: '+21612345678',
+        gender: 'male',
+        participantType: ParticipantType.Student,
+        sb: SB.INSAT,
+        country: COUNTRY.Tunisia,
+        internationalInfo: {
+          dateOfBirth: '1995-06-15',
+          countryOfResidence: 'Algeria',
+          cityOfResidence: 'Algiers',
+          affiliation: 'University of Algiers',
+          expectedArrivalDate: '2026-07-15',
+          expectedDepartureDate: '2026-07-20',
+          requiresVisaLetter: true,
+        },
+      };
+
+      mockPrismaService.participant.findUnique.mockResolvedValue(null);
+      mockPrismaService.participant.create.mockResolvedValue(mockInternationalParticipant);
+
+      const result = await service.register('account-2', dto);
+
+      expect(result).toEqual(mockInternationalParticipant);
+      expect(mockPrismaService.$transaction).toHaveBeenCalled();
+      expect(mockEventEmitter.emit).toHaveBeenCalledWith('participant.registered', expect.any(Object));
+    });
+
+    it('should throw ConflictException if participant already exists', async () => {
+      const dto: RegisterLocalDto = {
+        phone: '+21612345678',
+        gender: 'male',
+        participantType: ParticipantType.Student,
+        sb: SB.INSAT,
+        country: COUNTRY.Tunisia,
+      };
+
+      mockPrismaService.participant.findUnique.mockResolvedValue(mockParticipant);
+
+      await expect(service.register('account-1', dto)).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('updateProfile', () => {
+    it('should throw ForbiddenException if participant is already paid', async () => {
+      const paidParticipant = { ...mockParticipant, paid: true };
+      const dto: UpdateProfileDto = { phone: '+21612345678' };
+
+      mockPrismaService.participant.findUnique.mockResolvedValue(paidParticipant);
+
+      await expect(service.updateProfile('participant-1', dto)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw ConflictException if visa is not in Pending status', async () => {
+      const approvedVisa = { ...mockVisaApplication, status: VisaStatus.Approved };
+      const intlParticipant = {
+        ...mockInternationalParticipant,
+        internationalInfo: {
+          ...mockInternationalParticipant.internationalInfo,
+          visaApplication: approvedVisa,
+        },
+      };
+      const dto: UpdateProfileDto = {
+        internationalInfo: {
+          countryOfResidence: 'France',
+        },
+      };
+
+      mockPrismaService.participant.findUnique.mockResolvedValue(intlParticipant);
+
+      await expect(service.updateProfile('participant-2', dto)).rejects.toThrow(ConflictException);
+    });
+
+    it('should update profile successfully for unpaid participant', async () => {
+      const updated = { ...mockParticipant, phone: '+21687654321' };
+      const dto: UpdateProfileDto = { phone: '+21687654321' };
+
+      mockPrismaService.participant.findUnique.mockResolvedValue(mockParticipant);
+      mockPrismaService.participant.update.mockResolvedValue(updated);
+
+      const result = await service.updateProfile('participant-1', dto);
+
+      expect(result).toEqual(updated);
+      expect(mockPrismaService.participant.update).toHaveBeenCalled();
+    });
+  });
+
+  describe('requestVisaLetter', () => {
+    it('should throw BadRequestException if participant is not international', async () => {
+      const dto: RequestVisaDto = {
+        passportNumber: 'AB1234567',
+        passportIssuanceCountry: 'Algeria',
+        issuingOffice: 'Algiers',
+        passportIssuanceDate: '2020-01-15',
+        passportExpiryDate: '2030-01-15',
+        embassyAddress: '18 Avenue de la République, Tunis 1000, Tunisia',
+        residenceAddress: '123 Rue Didouche Mourad, Algiers 16000, Algeria',
+      };
+
+      mockPrismaService.participant.findUnique.mockResolvedValue(mockParticipant);
+
+      await expect(service.requestVisaLetter('participant-1', dto)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw ConflictException if VisaApplication already exists', async () => {
+      const intlWithVisa = {
+        ...mockInternationalParticipant,
+        internationalInfo: {
+          ...mockInternationalParticipant.internationalInfo,
+          visaApplication: mockVisaApplication,
+        },
+      };
+      const dto: RequestVisaDto = {
+        passportNumber: 'AB1234567',
+        passportIssuanceCountry: 'Algeria',
+        issuingOffice: 'Algiers',
+        passportIssuanceDate: '2020-01-15',
+        passportExpiryDate: '2030-01-15',
+        embassyAddress: '18 Avenue de la République, Tunis 1000, Tunisia',
+        residenceAddress: '123 Rue Didouche Mourad, Algiers 16000, Algeria',
+      };
+
+      mockPrismaService.participant.findUnique.mockResolvedValue(intlWithVisa);
+
+      await expect(service.requestVisaLetter('participant-2', dto)).rejects.toThrow(
+        ConflictException,
+      );
+    });
+
+    it('should create VisaApplication for international participant', async () => {
+      const dto: RequestVisaDto = {
+        passportNumber: 'AB1234567',
+        passportIssuanceCountry: 'Algeria',
+        issuingOffice: 'Algiers',
+        passportIssuanceDate: '2020-01-15',
+        passportExpiryDate: '2030-01-15',
+        embassyAddress: '18 Avenue de la République, Tunis 1000, Tunisia',
+        residenceAddress: '123 Rue Didouche Mourad, Algiers 16000, Algeria',
+      };
+
+      mockPrismaService.participant.findUnique.mockResolvedValue(mockInternationalParticipant);
+      mockPrismaService.visaApplication.create.mockResolvedValue(mockVisaApplication);
+
+      const result = await service.requestVisaLetter('participant-2', dto);
+
+      expect(result).toEqual(mockVisaApplication);
+      expect(mockPrismaService.visaApplication.create).toHaveBeenCalled();
+      expect(mockEventEmitter.emit).toHaveBeenCalledWith('visa.requested', expect.any(Object));
+    });
+  });
+
+  describe('Error handling', () => {
+    it('should rethrow non-Prisma errors', async () => {
+      const unknownError = new Error('Unknown database error');
+      mockPrismaService.participant.findUnique.mockResolvedValue(null);
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        throw unknownError;
+      });
+
+      await expect(service.deleteParticipant('participant-1')).rejects.toThrow(unknownError);
+    });
+  });
+
+  describe('Query methods', () => {
+    it('should find participant by userId', async () => {
+      mockPrismaService.participant.findUnique.mockResolvedValue(mockParticipant);
+
+      const result = await service.findByUserId('account-1');
+
+      expect(result).toEqual(mockParticipant);
+      expect(mockPrismaService.participant.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId: 'account-1' },
+        }),
+      );
+    });
+
+    it('should find participant by id', async () => {
+      mockPrismaService.participant.findUnique.mockResolvedValue(mockParticipant);
+
+      const result = await service.findById('participant-1');
+
+      expect(result).toEqual(mockParticipant);
+      expect(mockPrismaService.participant.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'participant-1' },
+        }),
+      );
+    });
+
+    it('should list participants with pagination', async () => {
+      const participants = [mockParticipant];
+      mockPrismaService.participant.findMany.mockResolvedValue(participants);
+
+      const result = await service.listParticipants({ skip: 0, take: 10 });
+
+      expect(result).toEqual(participants);
+      expect(mockPrismaService.participant.findMany).toHaveBeenCalledWith({
+        where: {},
+        skip: 0,
+        take: 10,
+        include: { internationalInfo: true },
+        orderBy: { createdAt: 'desc' },
+      });
+    });
+
+    it('should count participants', async () => {
+      mockPrismaService.participant.count.mockResolvedValue(42);
+
+      const result = await service.countParticipants();
+
+      expect(result).toBe(42);
+      expect(mockPrismaService.participant.count).toHaveBeenCalled();
+    });
+  });
+
+  describe('Admin methods', () => {
+    it('should ban a participant', async () => {
+      const bannedParticipant = { ...mockParticipant, banned: true };
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        const mockTx = {
+          participant: {
+            findUnique: jest.fn().mockResolvedValue(mockParticipant),
+            update: jest.fn().mockResolvedValue(bannedParticipant),
+          },
+        };
+        return cb(mockTx);
+      });
+
+      const result = await service.banParticipant('participant-1', 'Violation');
+
+      expect(result.banned).toBe(true);
+      expect(mockEventEmitter.emit).toHaveBeenCalledWith('participant.banned', expect.any(Object));
+    });
+
+    it('should unban a participant', async () => {
+      const bannedParticipant = { ...mockParticipant, banned: true };
+      const unbannedParticipant = { ...bannedParticipant, banned: false };
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        const mockTx = {
+          participant: {
+            findUnique: jest.fn().mockResolvedValue(bannedParticipant),
+            update: jest.fn().mockResolvedValue(unbannedParticipant),
+          },
+        };
+        return cb(mockTx);
+      });
+
+      const result = await service.unbanParticipant('participant-1');
+
+      expect(result.banned).toBe(false);
+      expect(mockEventEmitter.emit).toHaveBeenCalledWith('participant.unbanned', expect.any(Object));
+    });
+
+    it('should approve visa application', async () => {
+      // Mock: visa found, internationalInfo relationship
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        const mockTx = {
+          visaApplication: {
+            findUnique: jest
+              .fn()
+              .mockResolvedValue({
+                ...mockVisaApplication,
+                internationalInfo: { participantId: 'participant-2' },
+              }),
+            update: jest.fn().mockResolvedValue({
+              ...mockVisaApplication,
+              status: VisaStatus.Approved,
+            }),
+          },
+        };
+        return cb(mockTx);
+      });
+
+      const result = await service.approveVisaApplication('visa-1');
+
+      expect(result.status).toBe(VisaStatus.Approved);
+      expect(mockEventEmitter.emit).toHaveBeenCalled();
+    });
+
+    it('should reject visa application', async () => {
+      // Mock: visa found, internationalInfo relationship
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        const mockTx = {
+          visaApplication: {
+            findUnique: jest
+              .fn()
+              .mockResolvedValue({
+                ...mockVisaApplication,
+                internationalInfo: { participantId: 'participant-2' },
+              }),
+            update: jest.fn().mockResolvedValue({
+              ...mockVisaApplication,
+              status: VisaStatus.Rejected,
+            }),
+          },
+        };
+        return cb(mockTx);
+      });
+
+      const result = await service.rejectVisaApplication('visa-1');
+
+      expect(result.status).toBe(VisaStatus.Rejected);
+      expect(mockEventEmitter.emit).toHaveBeenCalled();
+    });
+  });
+});
