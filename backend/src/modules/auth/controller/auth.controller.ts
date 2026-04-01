@@ -1,4 +1,4 @@
-import {Controller,Post,Body,UseGuards,Req,Res,HttpStatus, Get} from "@nestjs/common";
+import {Controller,Post,Body,UseGuards,Req,Res,HttpStatus, Get, UnauthorizedException} from "@nestjs/common";
 import {AuthService} from "../service/auth.service";
 import {SupabaseAuthGuard} from "../guards/supabase-auth.guard";
 import {Response,Request} from "express";
@@ -12,6 +12,9 @@ export class AuthController{
     @UseGuards(SupabaseAuthGuard)
     async syncUser(@Body() dto:SyncUserDto, @Res() res:Response,@Req() req:Request){
         const supabaseId=(req.user as any).sub;
+        if(!supabaseId){
+            throw new UnauthorizedException('User not found');
+        }
         const user=await this.authService.syncUser(supabaseId,dto);
         return res.status(HttpStatus.OK).json(user);
     }
@@ -19,7 +22,7 @@ export class AuthController{
     @Get('me')
     @UseGuards(SupabaseAuthGuard)
     async getMe(@Req() req:Request, @Res() res:Response){
-        const user=await this.authService.findbySupabaseId((req.user as any).supabaseId);
+        const user=await this.authService.findbySupabaseId((req.user as any).sub);
         return res.status(HttpStatus.OK).json(user);
     }
 }
