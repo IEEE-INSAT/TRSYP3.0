@@ -18,10 +18,178 @@ datasource db {
 // ============================================================================
 
 // --- Auth Module ---
-// Define auth-related models here
+model Account {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  lastName  String   @map("last_name")
+  role      String   @default("user")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user  User?
+  admin Admin?
+
+  @@map("accounts")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  accountId String   @unique @map("account_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  account     Account      @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  participant Participant?
+
+  @@map("users")
+}
+
+model Admin {
+  id        String   @id @default(uuid())
+  accountId String   @unique @map("account_id")
+  position  POSITION
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@map("admins")
+}
 
 // --- Registration Module ---
-// Define registration-related models here
+model Participant {
+  id              String          @id @default(uuid())
+  userId          String          @unique @map("user_id")
+  ieeeId          Int?            @map("ieee_id")
+  phone           String
+  gender          String
+  paid            Boolean         @default(false)
+  isInternational Boolean         @default(false) @map("is_international")
+  banned          Boolean         @default(false)
+  participantType ParticipantType @map("participant_type")
+  sb              SB?
+  country         COUNTRY
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  // Relations
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  internationalInfo InternationalInfo? @relation("ParticipantInternationalInfo")
+
+  @@map("participants")
+}
+
+model InternationalInfo {
+  id                    String   @id @default(uuid())
+  participantId         String   @unique @map("participant_id")
+  dateOfBirth           DateTime @map("date_of_birth")
+  countryOfResidence    String   @map("country_of_residence")
+  cityOfResidence       String   @map("city_of_residence")
+  affiliation           String
+  expectedArrivalDate   DateTime @map("expected_arrival_date")
+  expectedDepartureDate DateTime @map("expected_departure_date")
+  requiresVisaLetter    Boolean  @default(false) @map("requires_visa_letter")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  participant     Participant      @relation("ParticipantInternationalInfo", fields: [participantId], references: [id], onDelete: Cascade)
+  visaApplication VisaApplication? @relation("InternationalInfoVisaApplication")
+
+  @@map("international_info")
+}
+
+model VisaApplication {
+  id                      String     @id @default(uuid())
+  internationalInfoId     String     @unique @map("international_info_id")
+  passportNumber          String     @map("passport_number")
+  passportIssuanceCountry String     @map("passport_issuance_country")
+  issuingOffice           String     @map("issuing_office")
+  passportIssuanceDate    DateTime   @map("passport_issuance_date")
+  passportExpiryDate      DateTime   @map("passport_expiry_date")
+  embassyAddress          String     @map("embassy_address")
+  residenceAddress        String     @map("residence_address")
+  status                  VisaStatus @default(Pending)
+  createdAt               DateTime   @default(now()) @map("created_at")
+  updatedAt               DateTime   @updatedAt @map("updated_at")
+
+  // Relations
+  internationalInfo InternationalInfo @relation("InternationalInfoVisaApplication", fields: [internationalInfoId], references: [id], onDelete: Cascade)
+
+  @@map("visa_applications")
+}
+
+// Enums
+enum ParticipantType {
+  NonIEEE
+  Student
+  YoungProfessional
+}
+
+enum SB {
+  INSAT
+  ESPRIT
+  SUPCOM
+  ENIT
+  ENETCOM
+  ENIS
+  Other
+}
+
+enum COUNTRY {
+  Tunisia
+  Algeria
+  Morocco
+  Libya
+  Egypt
+  USA
+  UK
+  Canada
+  Germany
+  France
+  Italy
+  Spain
+  UAE
+  SaudiArabia
+  Jordan
+  Lebanon
+  Palestine
+  Syria
+  Iraq
+  Sudan
+  Turkey
+  India
+  Pakistan
+  Bangladesh
+  China
+  Japan
+  SouthKorea
+  Australia
+  Brazil
+  Argentina
+  Mexico
+  Other
+}
+
+enum VisaStatus {
+  Pending
+  Approved
+  Rejected
+  LetterSent
+}
+
+enum POSITION {
+  Chair
+  ViceChair
+  Secretary
+  Treasurer
+  Other
+}
 
 // --- Payment Module ---
 // Define payment-related models here
