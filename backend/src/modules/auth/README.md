@@ -51,3 +51,4 @@ For this module to successfully function, the following must be defined in your 
 ## Usage in Other Modules
 
 You can import the `AuthModule` in any core modules where routing protection is necessary. Because `AuthService` is exported, other services inside the application can directly utilize the local database synchronization and lookup functionality using `AuthService`.
+
