@@ -4,6 +4,7 @@ import { SupabaseAuthGuard } from "../guards/supabase-auth.guard";
 import { Response, Request } from "express";
 import { SyncUserDto } from "../dto/sync-user.dto";
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from "@nestjs/swagger";
+import { ResetPasswordDto } from "../dto/Reset-password.dto";
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -34,5 +35,11 @@ export class AuthController {
     async getMe(@Req() req: Request, @Res() res: Response) {
         const user = await this.authService.findbySupabaseId((req.user as any).sub);
         return res.status(HttpStatus.OK).json(user);
+    }
+
+    @Post('reset-password')
+    async Password_reset(@Body() dto:ResetPasswordDto, @Res() res:Response){
+        const user = await this.authService.resetPassword(dto.email);
+        
     }
 }

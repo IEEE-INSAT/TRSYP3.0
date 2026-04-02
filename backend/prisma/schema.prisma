@@ -40,12 +40,13 @@ enum Position {
 model Admin {
   id        String   @id @default(uuid())
   email     String   @unique
-  password  String
+  password  String?
   name      String
   lastName  String
   position  Position
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  supabaseId String @unique
 
   @@map("admins")
 }

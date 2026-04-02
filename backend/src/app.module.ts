@@ -8,6 +8,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as Joi from 'joi';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
+import { AdminModule } from './modules/admin/admin.module';
+
 @Module({
     imports:[ConfigModule.forRoot({
         isGlobal:true,
@@ -32,7 +34,7 @@ import { JwtModule } from '@nestjs/jwt';
                 signOptions: { expiresIn: configService.get<string>('JWT_EXPIRES_IN') as any },
             }),
         }),
-        PrismaModule,AuthModule],
+        PrismaModule, AuthModule, AdminModule],
     providers:[AppService],
 })
 export class AppModule {}
