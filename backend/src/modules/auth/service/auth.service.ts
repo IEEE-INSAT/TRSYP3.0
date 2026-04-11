@@ -1,14 +1,23 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { SyncUserDto } from "../dto/sync-user.dto";
-import {createClient,SupabaseClient} from "@supabase/supabase-js"
+import { createClient, SupabaseClient } from "@supabase/supabase-js"
 import { ConfigService } from "@nestjs/config";
 @Injectable()
 export class AuthService{
-  private supabase!: SupabaseClient;
+  private supabase: SupabaseClient;
   constructor(private readonly prisma:PrismaService,
               private readonly configService: ConfigService
-  ){}
+  ){
+    const supabaseUrl = this.configService.get<string>('SUPABASE_URL');
+    const supabaseKey = this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY');
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Supabase credentials not found in environment variables');
+    }
+    this.supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: { autoRefreshToken: false, persistSession: false }
+    });
+  }
 
   async syncUser(supabaseId:string,dto:SyncUserDto){
     const user=await this.prisma.user.upsert({
@@ -35,12 +44,6 @@ export class AuthService{
     });
   }
   async resetPassword(email:string){
-    const supabaseUrl = this.configService.get<string>('SUPABASE_URL');
-    const supabaseKey = this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY');
-     if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Supabase credentials not found in environment variables');
-    }
-    this.supabase = createClient(supabaseUrl, supabaseKey);
     const user=await this.prisma.user.findUnique({
       where:{email},
     });

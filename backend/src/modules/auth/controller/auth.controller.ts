@@ -38,8 +38,10 @@ export class AuthController {
     }
 
     @Post('reset-password')
+    @ApiOperation({ summary: 'Request a password reset email' })
+    @ApiResponse({ status: 200, description: 'Password reset email sent.' })
     async Password_reset(@Body() dto:ResetPasswordDto, @Res() res:Response){
-        const user = await this.authService.resetPassword(dto.email);
-        
+        const result = await this.authService.resetPassword(dto.email);
+        return res.status(HttpStatus.OK).json(result);
     }
 }

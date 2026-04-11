@@ -55,9 +55,15 @@ export class AdminService{
             where: { supabaseId }
         });
     }
-    async deleteAccount(id: string) {
+    async deleteAccount(supabaseId: string) {
+        // Delete from Supabase Auth first
+        const { error } = await this.supabaseAdmin.auth.admin.deleteUser(supabaseId);
+        if (error) {
+            throw new Error(`Failed to delete user from Supabase: ${error.message}`);
+        }
+        // Then delete from Prisma
         const deletedUser = await this.prisma.user.delete({
-            where: { supabaseId: id },
+            where: { supabaseId },
         });
         return { message: 'Account deleted successfully', user: deletedUser };
     }
