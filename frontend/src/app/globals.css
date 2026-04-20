@@ -2,58 +2,164 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --radius: 0.5rem;
-  }
-
-  .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-  }
+:root {
+  --cyan: #00e5c8;
+  --pink: #ff2d8a;
+  --dark: #050505;
 }
 
 @layer base {
-  * {
-    @apply border-border;
+  html {
+    scroll-behavior: smooth;
   }
+
   body {
-    @apply bg-background text-foreground;
+    background-color: #050505;
+    font-family: var(--font-rajdhani), sans-serif;
   }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-orbitron), monospace;
+  }
+}
+
+@layer components {
+  .btn-cyan {
+    @apply bg-[#00e5c8] text-black font-bold px-6 py-3 text-sm tracking-widest uppercase transition-all duration-200 hover:bg-white hover:shadow-[0_0_20px_#00e5c8] active:scale-95;
+    font-family: var(--font-orbitron), monospace;
+  }
+
+  .btn-outline {
+    @apply border border-white text-white font-bold px-6 py-3 text-sm tracking-widest uppercase transition-all duration-200 hover:border-[#00e5c8] hover:text-[#00e5c8] hover:shadow-[0_0_15px_rgba(0,229,200,0.3)] active:scale-95;
+    font-family: var(--font-orbitron), monospace;
+  }
+
+  .nav-link {
+    @apply inline-block text-xs tracking-widest uppercase text-gray-300 hover:text-[#00e5c8] active:scale-95 active:text-white transition-all duration-200;
+    font-family: var(--font-orbitron), monospace;
+  }
+
+  .diamond {
+    @apply inline-block w-2 h-2 bg-[#00e5c8] rotate-45;
+  }
+
+  .diamond-pink {
+    @apply inline-block w-2 h-2 bg-[#ff2d8a] rotate-45;
+  }
+
+  .section-tag {
+    @apply flex items-center gap-2 mb-1;
+  }
+
+  .glow-cyan {
+    text-shadow: 0 0 20px #00e5c8, 0 0 40px #00e5c8;
+  }
+
+  .card-dark {
+    @apply bg-[#0d1f1e] border border-[#00e5c8]/30 p-8 transition-all duration-300 hover:border-[#00e5c8] hover:shadow-[0_0_30px_rgba(0,229,200,0.15)];
+  }
+}
+
+@layer utilities {
+  .text-cyan {
+    color: #00e5c8;
+  }
+
+  .text-pink {
+    color: #ff2d8a;
+  }
+
+  .border-cyan {
+    border-color: #00e5c8;
+  }
+
+  .bg-cyan {
+    background-color: #00e5c8;
+  }
+}
+
+/* Hero fade-in animation — uses animation-fill-mode: both to avoid
+   the old flash-of-invisible-content bug. GPU-accelerated via will-change. */
+.hero-fade-in {
+  animation: heroFadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--delay, 0s);
+  will-change: opacity, transform;
+}
+
+@keyframes heroFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Generic fade-up for other sections (kept for compatibility) */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes countdownGlow {
+  0%, 100% { text-shadow: 0 0 10px #00e5c8, 0 0 20px #00e5c8; }
+  50% { text-shadow: 0 0 20px #00e5c8, 0 0 40px #00e5c8, 0 0 60px #00e5c8; }
+}
+
+@keyframes rotateDiamond {
+  from { transform: rotate(45deg); }
+  to { transform: rotate(405deg); }
+}
+
+/* Scanline overlay effect */
+.scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.08) 2px,
+    rgba(0, 0, 0, 0.08) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Vertical scrolling text */
+.vertical-text {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+}
+
+/* Noise texture overlay */
+.noise-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  opacity: 0.04;
+  z-index: 0;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #050505;
+}
+::-webkit-scrollbar-thumb {
+  background: #00e5c8;
 }
