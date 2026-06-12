@@ -4,8 +4,11 @@ import { Participant } from '../../registration/entities/participant.entity';
 import { InvitationStatus } from '../domain/rooming.types';
 import { Invitation } from '../entities/invitation.entity';
 import { Room } from '../entities/room.entity';
-
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { RoomInvitationCreatedEvent } from '../events/rooming.events';
+import { DomainEvents } from '../../../common/events/event-names';
 export class RoomingService {
+	constructor(private readonly eventEmitter: EventEmitter2) { }
 	createRoom(owner: Participant): Room {
 		const room = new Room();
 		room.roomId = randomUUID();
@@ -23,13 +26,26 @@ export class RoomingService {
 	}
 
 	inviteParticipant(room: Room, inviter: Account, guest: Participant): void {
-		void inviter;
 		const invitation = new Invitation();
 		invitation.id = randomUUID();
 		invitation.timestamp = new Date();
 		invitation.guest = guest;
 		invitation.status = InvitationStatus.Pending;
 		room.invitations.push(invitation);
+
+		this.eventEmitter.emit(
+			DomainEvents.ROOM_INVITATION_CREATED,
+			new RoomInvitationCreatedEvent(
+				invitation.id,
+				room.roomId,
+				guest.id,
+				guest.email,
+				`${guest.name} ${guest.lastName}`,
+				`${inviter.name} ${inviter.lastName}`,
+				InvitationStatus.Pending,
+				invitation.timestamp,
+			)
+		);
 	}
 
 	respondToInvitation(inv: Invitation, accept: boolean): void {
