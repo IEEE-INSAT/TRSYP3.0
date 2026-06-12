@@ -1,9 +1,9 @@
 import { User } from '../../auth/entities/user.entity';
-import { NotificationService } from '../../notification/service';
+// import { NotificationService } from '../../notification/service';
 import { FAQ, FAQResponse, UnansweredQuestion } from '../entities';
 
 export class ChatService {
-	constructor(private readonly notificationService: NotificationService) {}
+	constructor(/* private readonly notificationService: NotificationService */) {}
 
 	postQuestion(user: User, content: string): void {
 		const unanswered = new UnansweredQuestion();
@@ -26,7 +26,7 @@ export class ChatService {
 			unanswered.resolved = false;
 			unanswered.source = 'chat';
 			unanswered.responder = '';
-			void this.notificationService;
+			// void this.notificationService;
 			return 'Your question has been sent to admin review.';
 		}
 

@@ -63,9 +63,49 @@ model Admin {
 
 // --- Notification Module ---
 // Define notification-related models here
+enum NotificationType {
+  ROOM_INVITATION
+  PAYMENT_REVIEW_RESULT
+  PAYMENT_PROOF_SUBMITTED
+}
+model Notification {
+  id            String           @id @default(uuid())
+  recipientId   String           // userId or adminId
+  recipientType String           // "user" | "admin"
+  type          NotificationType
+  title         String
+  message       String
+  read          Boolean          @default(false)
+  metadata      Json?            // flexible payload (paymentId, roomId, etc.)
+  actionUrl     String?          // deep-link for click-to-navigate
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  @@index([recipientId, recipientType])
+  @@index([recipientId, read])
+  @@map("notifications")
+}
+
 
 // --- Email Module ---
 // Define email-related models here
-
+enum EmailStatus {
+  PENDING
+  SENT
+  FAILED
+}
+model EmailLog {
+  id          String      @id @default(uuid())
+  recipient   String      // email address
+  subject     String
+  templateId  String      // e.g., "room-invitation", "payment-result"
+  payload     Json        // template data
+  status      EmailStatus @default(PENDING)
+  sentAt      DateTime?
+  error       String?
+  createdAt   DateTime    @default(now())
+  @@index([recipient])
+  @@index([status])
+  @@map("email_logs")
+}
 // --- Admin Module ---
 // Define admin-related models here

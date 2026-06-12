@@ -3,8 +3,8 @@ import { AdminService } from "../service/admin.service";
 import { CreateAdminDto } from "../dto/create-admin.dto";
 import { Response, Request } from "express";
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from "@nestjs/swagger";
-import { SupabaseAuthGuard } from "src/modules/auth/guards/supabase-auth.guard";
-import { AdminGuard } from "src/modules/auth/guards/admin.guard";
+import { SupabaseAuthGuard } from "../../auth/guards/supabase-auth.guard";
+import { AdminGuard } from "../../auth/guards/admin.guard";
 import { DeleteAccountDto } from "../dto/delete-account.dto";
 @ApiTags('Admin')
 @Controller('admin')

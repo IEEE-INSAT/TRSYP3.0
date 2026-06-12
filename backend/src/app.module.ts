@@ -9,7 +9,8 @@ import * as Joi from 'joi';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { AdminModule } from './modules/admin/admin.module';
-
+// import { NotificationModule } from './modules/notification/notification.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 @Module({
     imports:[ConfigModule.forRoot({
         isGlobal:true,
@@ -34,7 +35,8 @@ import { AdminModule } from './modules/admin/admin.module';
                 signOptions: { expiresIn: configService.get<string>('JWT_EXPIRES_IN') as any },
             }),
         }),
-        PrismaModule, AuthModule, AdminModule],
+        EventEmitterModule.forRoot(),
+        PrismaModule, AuthModule, AdminModule, /* NotificationModule */],
     providers:[AppService],
 })
 export class AppModule {}

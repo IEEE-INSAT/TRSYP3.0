@@ -85,6 +85,7 @@
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
     "moduleNameMapper": {
+      "^@prisma/client(.*)$": "@prisma/client$1",
       "^@modules/(.*)$": "<rootDir>/modules/$1",
       "^@config/(.*)$": "<rootDir>/config/$1",
       "^@common/(.*)$": "<rootDir>/common/$1",
