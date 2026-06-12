@@ -1,10 +1,11 @@
-/**
- * Base class for domain events
- */
-export abstract class BaseDomainEvent {
-  public readonly occurredAt: Date;
+import { randomUUID } from 'crypto';
 
+export abstract class BaseDomainEvent {
+  readonly occurredAt: Date;
+  readonly eventId: string;
+  
   constructor() {
     this.occurredAt = new Date();
+    this.eventId = randomUUID();
   }
 }

@@ -18,45 +18,38 @@ datasource db {
 // ============================================================================
 
 // --- Auth Module ---
-model Account {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String
-  lastName  String   @map("last_name")
-  role      String   @default("user")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  // Relations
-  user  User?
-  admin Admin?
-
-  @@map("accounts")
-}
-
+// Define auth-related models here
 model User {
-  id        String   @id @default(uuid())
-  accountId String   @unique @map("account_id")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id         String   @id @default(uuid())
+  email      String   @unique
+  name       String
+  lastName   String
+  supabaseId String   @unique
+  provider   String   @default("email")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   // Relations
-  account     Account      @relation(fields: [accountId], references: [id], onDelete: Cascade)
   participant Participant?
 
   @@map("users")
 }
 
-model Admin {
-  id        String   @id @default(uuid())
-  accountId String   @unique @map("account_id")
-  position  POSITION
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+enum Position {
+  CHAIR
+  VICE_CHAIR
+  // add more as needed
+}
 
-  // Relations
-  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+model Admin {
+  id         String   @id @default(uuid())
+  email      String   @unique
+  name       String
+  lastName   String
+  position   Position
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  supabaseId String   @unique
 
   @@map("admins")
 }
@@ -202,9 +195,49 @@ enum POSITION {
 
 // --- Notification Module ---
 // Define notification-related models here
+//enum NotificationType {
+ // ROOM_INVITATION
+ // PAYMENT_REVIEW_RESULT
+ // PAYMENT_PROOF_SUBMITTED
+//}
+//model Notification {
+ // id            String           @id @default(uuid())
+ // recipientId   String           // userId or adminId
+  //recipientType String           // "user" | "admin"
+  //type          NotificationType
+  //title         String
+  //message       String
+  //read          Boolean          @default(false)
+  //metadata      Json?            // flexible payload (paymentId, roomId, etc.)
+  //actionUrl     String?          // deep-link for click-to-navigate
+ // createdAt     DateTime         @default(now())
+ // updatedAt     DateTime         @updatedAt
+  //@@index([recipientId, recipientType])
+  //@@index([recipientId, read])
+  //@@map("notifications")
+  //}
+
 
 // --- Email Module ---
 // Define email-related models here
-
+//enum EmailStatus {
+ // PENDING
+ // SENT
+ // FAILED
+//}
+ //model EmailLog {
+  //id          String      @id @default(uuid())
+  //recipient   String      // email address
+  //subject     String
+  //templateId  String      // e.g., "room-invitation", "payment-result"
+  //payload     Json        // template data
+  //status      EmailStatus @default(PENDING)
+  //sentAt      DateTime?
+  //error       String?
+  //createdAt   DateTime    @default(now())
+  //@@index([recipient])
+  //@@index([status])
+  //@@map("email_logs")
+//}
 // --- Admin Module ---
 // Define admin-related models here
