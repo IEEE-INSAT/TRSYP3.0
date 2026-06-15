@@ -53,7 +53,7 @@ export default function Footer() {
             &copy; 2026 TRSYP 3.0
           </p>
           <p className="footer-date">
-            October 3&ndash;4, 2026 &mdash; Tunis, Tunisia
+            October 17&ndash;18, 2026 &mdash; Hammamet, Tunisia
           </p>
           <div className="footer-socials">
             <a href="#" className="footer-social" aria-label="Facebook">

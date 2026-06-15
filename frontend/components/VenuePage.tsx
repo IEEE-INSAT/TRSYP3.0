@@ -159,11 +159,11 @@ export default function VenuePage() {
               <div className="venue-hotel-details">
                 <div className="venue-detail">
                   <span className="venue-detail-label">Date</span>
-                  <b>03–04 October 2026</b>
+                  <b>17–18 October 2026</b>
                 </div>
                 <div className="venue-detail">
                   <span className="venue-detail-label">Location</span>
-                  <b>Tunis, Tunisia</b>
+                  <b>Hammamet, Tunisia</b>
                 </div>
                 <div className="venue-detail">
                   <span className="venue-detail-label">Capacity</span>

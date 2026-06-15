@@ -1047,7 +1047,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 .why {
   position: relative;
   background: var(--color-bg);
-  padding: 120px clamp(24px, 5vw, 80px) 120px;
+  padding: 140px clamp(24px, 5vw, 80px) 140px;
   overflow: hidden;
 }
 
@@ -1072,26 +1072,26 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 
 .why-header {
   text-align: center;
-  margin-bottom: 80px;
+  margin-bottom: 96px;
 }
 
 .why-eyebrow {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: 20px;
+  margin-bottom: 28px;
 }
 
 .why-eyebrow-line {
-  width: 48px;
+  width: 56px;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(0,232,122,0.4), transparent);
+  background: linear-gradient(90deg, transparent, rgba(0,232,122,0.5), transparent);
 }
 
 .why-eyebrow-text {
   font-family: var(--font-heading);
-  font-size: 10px;
+  font-size: 20px;
   font-weight: 600;
   letter-spacing: 0.32em;
   text-transform: uppercase;
@@ -1100,39 +1100,40 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 
 .why-title {
   font-family: var(--font-heading);
-  font-size: clamp(28px, 3.5vw, 48px);
+  font-size: clamp(32px, 4vw, 56px);
   font-weight: 900;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.5);
+  color: rgba(255,255,255,0.6);
   line-height: 1.2;
 }
 
 .why-title-hl {
   color: #fff;
-  text-shadow: 0 0 40px rgba(0,232,122,0.3);
+  text-shadow: 0 0 50px rgba(0,232,122,0.35);
 }
 
 /* Bento grid — 2x2 */
 .why-bento {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 28px;
 }
 
 .why-bento-card {
   position: relative;
-  padding: 40px 36px 36px;
-  border-radius: 18px;
+  padding: 48px 44px 44px;
+  border-radius: 22px;
   background: rgba(4, 0, 14, 0.7);
-  border: 1px solid rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.05);
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
   overflow: hidden;
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
               border-color 0.35s ease,
-              box-shadow 0.35s ease;
+              box-shadow 0.35s ease,
+              background 0.35s ease;
   cursor: default;
 }
 
@@ -1141,11 +1142,26 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   box-shadow: 0 24px 64px rgba(0,0,0,0.5);
 }
 
-.why-bento-card--green { border-color: rgba(0,232,122,0.08); }
-.why-bento-card--pink { border-color: rgba(255,29,120,0.08); }
+/* Default accent borders — visible without hover */
+.why-bento-card--green {
+  border-color: rgba(0,232,122,0.12);
+  background: linear-gradient(160deg, rgba(0,232,122,0.03) 0%, rgba(4,0,14,0.7) 40%);
+}
+.why-bento-card--pink {
+  border-color: rgba(255,29,120,0.12);
+  background: linear-gradient(160deg, rgba(255,29,120,0.03) 0%, rgba(4,0,14,0.7) 40%);
+}
 
-.why-bento-card--green:hover { border-color: rgba(0,232,122,0.2); }
-.why-bento-card--pink:hover { border-color: rgba(255,29,120,0.2); }
+.why-bento-card--green:hover {
+  border-color: rgba(0,232,122,0.25);
+  background: linear-gradient(160deg, rgba(0,232,122,0.06) 0%, rgba(4,0,14,0.7) 40%);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.5), 0 0 60px -20px rgba(0,232,122,0.1);
+}
+.why-bento-card--pink:hover {
+  border-color: rgba(255,29,120,0.25);
+  background: linear-gradient(160deg, rgba(255,29,120,0.06) 0%, rgba(4,0,14,0.7) 40%);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.5), 0 0 60px -20px rgba(255,29,120,0.1);
+}
 
 .why-bento-edge {
   position: absolute;
@@ -1153,9 +1169,9 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   left: 0;
   right: 0;
   height: 2px;
-  border-radius: 18px 18px 0 0;
+  border-radius: 22px 22px 0 0;
   transition: opacity 0.35s ease;
-  opacity: 0.5;
+  opacity: 0.6;
 }
 
 .why-bento-card--green .why-bento-edge {
@@ -1176,55 +1192,79 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 
 .why-bento-num {
   font-family: var(--font-heading);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.1em;
-  color: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.15);
 }
 
-.why-bento-card:hover .why-bento-num { color: rgba(255,255,255,0.2); }
+.why-bento-card:hover .why-bento-num { color: rgba(255,255,255,0.25); }
 
+/* Tags are colored by default */
 .why-bento-tag {
   font-family: var(--font-heading);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.25em;
   text-transform: uppercase;
-  padding: 4px 12px;
+  padding: 5px 14px;
   border-radius: 20px;
-  border: 1px solid rgba(255,255,255,0.06);
-  color: rgba(255,255,255,0.35);
   transition: all 0.3s ease;
 }
 
+.why-bento-card--green .why-bento-tag {
+  border: 1px solid rgba(0,232,122,0.15);
+  color: rgba(0,232,122,0.6);
+}
+
+.why-bento-card--pink .why-bento-tag {
+  border: 1px solid rgba(255,29,120,0.15);
+  color: rgba(255,29,120,0.6);
+}
+
 .why-bento-card--green:hover .why-bento-tag {
-  border-color: rgba(0,232,122,0.2);
+  border-color: rgba(0,232,122,0.3);
   color: var(--color-green);
+  background: rgba(0,232,122,0.06);
 }
 
 .why-bento-card--pink:hover .why-bento-tag {
-  border-color: rgba(255,29,120,0.2);
+  border-color: rgba(255,29,120,0.3);
   color: var(--color-pink);
+  background: rgba(255,29,120,0.06);
 }
 
+/* Icons are colored by default */
 .why-bento-icon {
-  width: 56px;
-  height: 56px;
+  width: 64px;
+  height: 64px;
 }
 
 .why-bento-icon svg {
-  width: 56px;
-  height: 56px;
-  color: rgba(255,255,255,0.15);
-  transition: color 0.35s ease;
+  width: 64px;
+  height: 64px;
+  transition: color 0.35s ease, filter 0.35s ease;
 }
 
-.why-bento-card--green:hover .why-bento-icon svg { color: var(--color-green); }
-.why-bento-card--pink:hover .why-bento-icon svg { color: var(--color-pink); }
+.why-bento-card--green .why-bento-icon svg {
+  color: rgba(0,232,122,0.35);
+}
+.why-bento-card--pink .why-bento-icon svg {
+  color: rgba(255,29,120,0.35);
+}
+
+.why-bento-card--green:hover .why-bento-icon svg {
+  color: var(--color-green);
+  filter: drop-shadow(0 0 12px rgba(0,232,122,0.3));
+}
+.why-bento-card--pink:hover .why-bento-icon svg {
+  color: var(--color-pink);
+  filter: drop-shadow(0 0 12px rgba(255,29,120,0.3));
+}
 
 .why-bento-title {
   font-family: var(--font-heading);
-  font-size: clamp(16px, 1.6vw, 22px);
+  font-size: clamp(18px, 1.8vw, 26px);
   font-weight: 800;
   letter-spacing: 0.04em;
   color: #fff;
@@ -1233,10 +1273,10 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 
 .why-bento-desc {
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: 20px;
   font-weight: 300;
-  line-height: 1.75;
-  color: rgba(255,255,255,0.38);
+  line-height: 1.8;
+  color: rgba(255,255,255,0.55);
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -2928,33 +2968,45 @@ a, button {
   padding: 60px 0 40px;
 }
 .prog-tabs {
+  position: sticky;
+  top: 16px;
+  z-index: 50;
   display: flex;
-  gap: 6px;
-  padding: 5px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 12px;
-  margin-bottom: 32px;
+  gap: 8px;
+  padding: 6px;
+  background: rgba(1, 0, 8, 0.7);
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  border: 1px solid rgba(0, 232, 122, 0.08);
+  border-radius: 9999px;
+  margin-bottom: 40px;
+  box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.4);
+  transition: box-shadow 0.3s ease;
 }
 .prog-tab {
   flex: 1;
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-size: 13px;
+  padding: 16px 24px;
+  border-radius: 9999px;
+  font-size: 15px;
   font-weight: 600;
   color: rgba(255,255,255,0.5);
   background: none;
   border: none;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
   font-family: var(--font-body);
   white-space: nowrap;
+  letter-spacing: 0.02em;
 }
-.prog-tab:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.03); }
+.prog-tab:hover {
+  color: rgba(255,255,255,0.85);
+  background: rgba(255,255,255,0.04);
+}
 .prog-tab-active {
-  background: rgba(0,232,122,0.1);
+  background: rgba(0,232,122,0.12);
   color: var(--color-green);
   border: 1px solid rgba(0,232,122,0.2);
+  box-shadow: 0 0 20px -4px rgba(0,232,122,0.15);
 }
 
 /* ──── DAY INFO ──── */
@@ -2968,13 +3020,13 @@ a, button {
 }
 .prog-day-date {
   font-family: var(--font-heading);
-  font-size: 13px;
+  font-size: 17px;
   font-weight: 600;
   color: var(--color-green);
   letter-spacing: 0.04em;
 }
 .prog-day-venue {
-  font-size: 13px;
+  font-size: 17px;
   color: rgba(255,255,255,0.4);
 }
 
@@ -3042,7 +3094,7 @@ a, button {
 .prog-tl-time {
   display: inline-block;
   font-family: var(--font-heading);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.08em;
   color: var(--color-green);
@@ -3066,7 +3118,7 @@ a, button {
 }
 .prog-tl-icon svg { width: 100%; height: 100%; }
 .prog-tl-title {
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 600;
   color: #fff;
   letter-spacing: -0.01em;
@@ -3076,7 +3128,7 @@ a, button {
 }
 .prog-tl-card:hover .prog-tl-title { color: var(--color-green); }
 .prog-tl-desc {
-  font-size: 14px;
+  font-size: 17px;
   line-height: 1.6;
   color: rgba(255,255,255,0.5);
 }
