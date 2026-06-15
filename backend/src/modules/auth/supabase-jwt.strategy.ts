@@ -1,15 +1,18 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, UnauthorizedException } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
 import { Strategy, ExtractJwt } from "passport-jwt";
 import { ConfigService } from "@nestjs/config";
 import { passportJwtSecret } from "jwks-rsa";
-import * as jwt from "jsonwebtoken";
+import { PrismaService } from "../../prisma/prisma.service";
 
 @Injectable()
 export class SupabaseJwtStrategy extends PassportStrategy(Strategy, 'supabase-jwt') {
     private readonly logger = new Logger(SupabaseJwtStrategy.name);
 
-    constructor(private readonly configService: ConfigService) {
+    constructor(
+        private readonly configService: ConfigService,
+        private readonly prisma: PrismaService
+    ) {
         const supabaseUrl = configService.get<string>('SUPABASE_URL');
         if (!supabaseUrl) {
             throw new Error('SUPABASE_URL is not defined in environment variables');
@@ -39,6 +42,17 @@ export class SupabaseJwtStrategy extends PassportStrategy(Strategy, 'supabase-jw
     }
 
     async validate(payload: any) {
-        return payload;
+        // Look up the actual database user using the Supabase ID (sub)
+        const user = await this.prisma.user.findUnique({
+            where: { supabaseId: payload.sub }
+        });
+
+        if (!user) {
+            throw new UnauthorizedException('User not found in database');
+        }
+
+        // Replace the Supabase ID with the real internal database ID.
+        // This means @CurrentUser('sub') will now correctly return the DB ID across the entire app.
+        return { ...payload, sub: user.id };
     }
 }

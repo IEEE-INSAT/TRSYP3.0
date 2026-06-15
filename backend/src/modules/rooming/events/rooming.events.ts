@@ -13,3 +13,41 @@ export class RoomInvitationCreatedEvent extends BaseDomainEvent {
     // Optional: checkInDate, checkOutDate if added to Room
   ) { super(); }
 }
+
+export class RoomCreatedEvent extends BaseDomainEvent {
+	constructor(
+		public readonly roomId: string,
+		public readonly ownerId: string,
+		public readonly timestamp: Date,
+    public readonly size : number,
+	) { super(); }
+}
+
+export class RoomInvitationRespondedEvent extends BaseDomainEvent {
+	constructor(
+		public readonly invitationId: string,
+		public readonly roomId: string,
+		public readonly guestId: string,
+		public readonly invitationStatus: string, // 'Accepted' or 'Rejected'
+		public readonly timestamp: Date,
+    public readonly OwnerId:string,
+		// Optional: checkInDate, checkOutDate if added to Room
+	) { super(); }
+}
+
+export class RoomConfirmedEvent extends BaseDomainEvent {
+	constructor(
+		public readonly roomId: string,
+		public readonly ownerId: string,
+		public readonly timestamp: Date,
+    public readonly residentIds:string[],
+	) { super(); }
+}
+
+export class RoomDeletedEvent extends BaseDomainEvent {
+	constructor(
+		public readonly roomId: string,
+		public readonly ownerId: string,
+		public readonly timestamp: Date,
+	) { super(); }
+}
