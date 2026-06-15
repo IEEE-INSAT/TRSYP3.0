@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from './AuthContext';
 
@@ -15,11 +16,26 @@ const NAV_LINKS = [
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const { isRegistered } = useAuth();
+  const pathname = usePathname();
+
+  const handleScroll = useCallback(() => {
+    setScrolled(window.scrollY > 50);
+  }, []);
+
+  useEffect(() => {
+    handleScroll(); // check on mount
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
 
   return (
     <>
-      <nav className="navbar">
+      <nav className={`navbar ${scrolled ? 'navbar--scrolled' : ''}`}>
+        {/* Animated bottom border glow */}
+        <div className="navbar-glow-line" />
+
         <a className="navbar-logo" href="/">
           <Image
             src="/trsyp-logo.png"
@@ -34,7 +50,12 @@ export default function Navbar() {
         <ul className="navbar-links">
           {NAV_LINKS.map((l) => (
             <li key={l.label}>
-              <a href={l.href}>{l.label}</a>
+              <a
+                href={l.href}
+                className={pathname === l.href ? 'active' : ''}
+              >
+                {l.label}
+              </a>
             </li>
           ))}
         </ul>
@@ -50,6 +71,7 @@ export default function Navbar() {
             </a>
           ) : (
             <button className="navbar-register" onClick={() => setShowRegister(true)}>
+              <span className="navbar-register-pulse" />
               Register Now
             </button>
           )}
@@ -74,7 +96,12 @@ export default function Navbar() {
 
       <div className={`navbar-mobile-menu ${open ? 'open' : ''}`}>
         {NAV_LINKS.map((l) => (
-          <a key={l.label} href={l.href} onClick={() => setOpen(false)}>
+          <a
+            key={l.label}
+            href={l.href}
+            className={pathname === l.href ? 'active' : ''}
+            onClick={() => setOpen(false)}
+          >
             {l.label}
           </a>
         ))}
