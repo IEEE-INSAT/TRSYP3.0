@@ -75,6 +75,7 @@ export class RegistrationService {
         }
 
         // Create participant with optional international info
+        // Note: userId is the internal DB ID, resolved by SupabaseJwtStrategy
         const createdParticipant = await tx.participant.create({
           data: {
             userId,
