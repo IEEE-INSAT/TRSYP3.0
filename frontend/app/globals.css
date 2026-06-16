@@ -116,7 +116,7 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
   width: fit-content;
   max-width: calc(100% - 48px);
   height: 84px;
-  padding: 0 40px;
+  padding: 0  56px;
   gap: 40px;
   border-radius: 9999px;
   background: rgba(1, 0, 8, 0.65);
@@ -4876,3 +4876,123 @@ a, button {
   color: #3b82f6;
   border-color: rgba(59,130,246,0.2);
 }
+
+/* ═══════════════════════════════════════════════════════
+   COMING SOON
+═══════════════════════════════════════════════════════ */
+.cs-section {
+  position: relative;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.cs-bg-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #000000 0%, #0a0a0a 40%, var(--color-bg) 100%);
+  z-index: 0;
+}
+
+.cs-glow-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.cs-glow-top-right {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 55%;
+  height: 100%;
+  opacity: 0.4;
+  background: radial-gradient(ellipse at 80% 30%, rgba(0, 232, 122, 0.15) 0%, transparent 60%);
+}
+
+.cs-glow-bottom-left {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 40%;
+  height: 50%;
+  opacity: 0.3;
+  background: radial-gradient(ellipse at 20% 80%, rgba(255, 29, 120, 0.12) 0%, transparent 60%);
+}
+
+.cs-glow-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 400px;
+  height: 400px;
+  transform: translate(-50%, -50%);
+  opacity: 0.2;
+  background: radial-gradient(circle, rgba(0, 232, 122, 0.2) 0%, transparent 70%);
+}
+
+.cs-content {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  max-width: 800px;
+  padding: 0 24px;
+}
+
+.cs-title {
+  font-family: var(--font-heading);
+  font-size: clamp(48px, 6vw, 72px);
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+  text-shadow: 0 0 30px rgba(0, 232, 122, 0.5), 0 0 60px rgba(0, 232, 122, 0.3);
+}
+
+.cs-subtitle {
+  font-family: var(--font-heading);
+  font-size: clamp(16px, 2vw, 20px);
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 48px;
+}
+
+.cs-divider {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 48px;
+}
+
+.cs-div-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  transform: rotate(45deg);
+}
+
+.cs-div-dot--green {
+  background: var(--color-green);
+  box-shadow: 0 0 10px var(--color-green);
+}
+
+.cs-div-dot--pink {
+  background: var(--color-pink);
+  box-shadow: 0 0 10px var(--color-pink);
+}
+
+.cs-desc {
+  font-family: var(--font-body);
+  font-size: clamp(14px, 1.5vw, 16px);
+  color: rgba(255, 255, 255, 0.5);
+  max-width: 600px;
+  margin: 0 auto 32px;
+  line-height: 1.8;
+}
+
+

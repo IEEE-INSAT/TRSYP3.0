@@ -142,7 +142,7 @@ export default function VenuePage() {
           >
             <div className="venue-hotel-img">
               <Image
-                src="/aaa.jpg"
+                src="/Le Royal.webp"
                 alt="TRSYP 3.0 Host Venue"
                 width={800}
                 height={500}
@@ -151,10 +151,9 @@ export default function VenuePage() {
             </div>
             <div className="venue-hotel-info">
               <span className="venue-hotel-badge">TRSYP 3.0 HOST VENUE</span>
-              <h3 className="venue-hotel-name">Hotel Name — Tunis</h3>
+              <h3 className="venue-hotel-name">Le Royal, Hammamet</h3>
               <p className="venue-hotel-desc">
-                A premium venue in the heart of Tunis, equipped with state-of-the-art conference
-                facilities, exhibition halls, and workshop rooms to host 350+ attendees.
+                Le Royal Hammamet is a prestigious 5-star hotel located directly on the beautiful Yasmine Hammamet beach. It features luxurious rooms with panoramic Mediterranean views, multiple refined dining options, four outdoor pools, a modern spa, and fully equipped conference centers to perfectly host our event.
               </p>
               <div className="venue-hotel-details">
                 <div className="venue-detail">

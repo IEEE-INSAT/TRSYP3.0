@@ -66,6 +66,7 @@ export default function AboutSection() {
         <div className="ab-eyebrow">
           <span className="ab-eyebrow-line" />
           <span className="ab-eyebrow-text">About the Congress</span>
+          <span className="ab-eyebrow-line" />
         </div>
 
         {/* Two-column hero */}
