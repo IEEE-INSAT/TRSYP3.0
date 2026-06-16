@@ -18,8 +18,8 @@ const PROGRAM = [
   {
     id: 'd1',
     label: 'Day 01 — Innovation & Discovery',
-    date: '03 October 2026 · Friday',
-    venue: 'INSAT — Main Hall, Tunis',
+    date: '17 October 2026',
+    venue: 'Le Royal, Hammamet',
     items: [
       { time: '08:00', icon: 'pin', title: 'Check-in & Registration', desc: 'Pick up your badge, kit, and coffee.', where: 'Lobby', who: 'All attendees' },
       { time: '09:00', icon: 'mic', title: 'Opening Ceremony + Panel', desc: 'Max 1 hour — keynote addresses and expert panel on Human-Robot Symbiosis.', where: 'Main Hall', who: 'Plenary · 350 seats' },
@@ -34,8 +34,8 @@ const PROGRAM = [
   {
     id: 'd2',
     label: 'Day 02 — Learning & Celebration',
-    date: '04 October 2026 · Saturday',
-    venue: 'INSAT — Main Hall, Tunis',
+    date: '18 October 2026',
+    venue: 'Le Royal, Hammamet',
     items: [
       { time: '08:00', icon: 'food', title: 'Breakfast', desc: 'Start strong — pastries, coffee, conversation.', where: 'Atrium', who: 'All attendees' },
       { time: '09:00', icon: 'tools', title: 'Workshops · 4 in Parallel', desc: 'ROS 2 in Practice · Computer Vision · Embedded AI · Tech Communication — choose your track.', where: 'Labs A · B · C · D', who: 'Pre-registered · 30 / room' },
@@ -76,7 +76,7 @@ export default function ProgramPage() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
             <div className="prog-eyebrow">
               <span className="prog-eyebrow-line" />
-              <span className="prog-eyebrow-text">03–04 October 2026 · INSAT, Tunis</span>
+              <span className="prog-eyebrow-text">17–18 October 2026 · Le Royal, Hammamet</span>
               <span className="prog-eyebrow-line" />
             </div>
             <h1 className="prog-hero-h">PROGRAM</h1>
