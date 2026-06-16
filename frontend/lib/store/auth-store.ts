@@ -60,11 +60,33 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           /* user not synced yet — non-fatal */
         }
       }
-      supabase.auth.onAuthStateChange((_event, session) => {
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        const token = session?.access_token ?? null;
         set({
-          accessToken: session?.access_token ?? null,
+          accessToken: token,
           email: session?.user.email ?? null,
         });
+
+        // After Google (or any OAuth) sign-in, sync the user to the backend.
+        if (event === 'SIGNED_IN' && token && isApiConfigured) {
+          try {
+            const user = session?.user;
+            const meta = user?.user_metadata ?? {};
+            set({
+              account: await authService.syncUser(
+                {
+                  email: user?.email ?? '',
+                  name: meta.full_name?.split(' ')[0] ?? meta.name ?? '',
+                  lastName: meta.full_name?.split(' ').slice(1).join(' ') ?? meta.lastName ?? '',
+                  provider: user?.app_metadata?.provider ?? 'google',
+                },
+                token,
+              ),
+            });
+          } catch {
+            /* non-fatal: profile can be synced on next visit */
+          }
+        }
       });
     }
     set({ initialized: true });
