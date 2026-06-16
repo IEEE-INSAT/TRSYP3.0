@@ -1665,12 +1665,12 @@ a, button {
    TABLET / HAMBURGER BREAKPOINT — 900px
 ═══════════════════════════════════════════════════════ */
 @media (max-width: 900px) {
-  :root { --nav-height: 72px; }
+  :root { --nav-height: 84px; }
   /* Navbar */
   .navbar { padding: 0 20px; }
   .navbar-links, .navbar-register, .navbar-right-group { display: none; }
   .navbar-hamburger { display: flex; }
-  .navbar-logo img { height: 90px !important; }
+  .navbar-logo img { height: 110px !important; }
   .navbar-logo { margin-left: 8px; }
 
   /* Morphing pill adjustments for mobile */
@@ -4996,3 +4996,283 @@ a, button {
 }
 
 
+
+
+/* --- AUTH MODAL --------------------------------------- */
+.auth-modal-popup {
+  max-width: 360px;
+  text-align: center;
+}
+
+.auth-btn-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  color: #fff;
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.auth-btn-google:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.05);
+}
+
+.auth-btn-google svg {
+  flex-shrink: 0;
+}
+
+
+/* --- AINS AUTH MODAL --------------------------------------- */
+.ains-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: ainsFadeIn 0.2s ease;
+}
+@keyframes ainsFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.ains-popup {
+  position: relative;
+  background: rgba(22, 18, 38, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 32px;
+  min-width: 320px;
+  max-width: 440px;
+  width: 90vw;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+  animation: ainsSlideUp 0.25s ease;
+  text-align: left;
+}
+@keyframes ainsSlideUp {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.ains-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  padding: 4px;
+  transition: color 0.2s;
+}
+.ains-close svg {
+  width: 20px;
+  height: 20px;
+}
+.ains-close:hover { color: #fff; }
+
+.ains-popup-header {
+  margin-bottom: 24px;
+}
+.ains-popup-title {
+  font-family: var(--font-heading, sans-serif);
+  font-size: 26px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0 0 8px;
+}
+.ains-popup-sub {
+  font-family: var(--font-body, sans-serif);
+  font-size: 15px;
+  color: #fff;
+  margin: 0;
+}
+.ains-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.ains-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ains-label {
+  font-family: var(--font-heading, sans-serif);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #fff;
+  text-transform: uppercase;
+}
+.ains-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.ains-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: #fff;
+  font-family: var(--font-body, sans-serif);
+  font-size: 15px;
+  outline: none;
+  transition: all 0.2s;
+}
+.ains-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+.ains-input:focus {
+  border-color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 0 1px #fff;
+}
+.ains-input-pw {
+  padding-right: 40px;
+}
+.ains-pw-toggle {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ains-pw-toggle svg {
+  width: 20px;
+  height: 20px;
+}
+.ains-pw-toggle:hover {
+  color: #fff;
+}
+.ains-btn-login {
+  margin-top: 12px;
+  background: transparent;
+  color: #fff;
+  border: none;
+  font-family: var(--font-body, sans-serif);
+  font-size: 16px;
+  font-weight: 500;
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.ains-btn-login:hover {
+  opacity: 0.8;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+}
+.ains-popup-footer {
+  margin-top: 24px;
+  font-family: var(--font-body, sans-serif);
+  font-size: 15px;
+  color: #fff;
+  text-align: center;
+}
+.ains-popup-footer a {
+  color: #fff;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  margin-left: 4px;
+}
+.ains-popup-footer a:hover {
+  color: var(--color-green, #00e87a);
+}
+
+
+.ains-btn-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 12px;
+  color: #fff;
+  font-family: var(--font-body, sans-serif);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.ains-btn-google:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+.ains-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 24px 0;
+}
+.ains-divider::before,
+.ains-divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.ains-divider span {
+  padding: 0 16px;
+  color: rgba(255, 255, 255, 0.4);
+  font-family: var(--font-heading, sans-serif);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+
+.navbar-signout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.7);
+  border-radius: 30px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-body, sans-serif);
+  font-size: 14px;
+  font-weight: 500;
+}
+.navbar-signout svg {
+  width: 18px;
+  height: 18px;
+}
+.navbar-signout:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+.navbar--scrolled .navbar-signout {
+  padding: 8px 16px;
+  font-size: 13px;
+}
+.navbar--scrolled .navbar-signout svg {
+  width: 16px;
+  height: 16px;
+}

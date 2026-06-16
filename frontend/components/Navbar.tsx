@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from './AuthContext';
+import AuthModal from './AuthModal';
+import { useAuthStore } from '@/lib/store/auth-store';
 
 const NAV_LINKS = [
   { label: 'Home', href: '/' },
@@ -16,9 +18,25 @@ const NAV_LINKS = [
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingRoute, setPendingRoute] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
   const { isRegistered } = useAuth();
+  const { accessToken, signOut } = useAuthStore();
+  const isAuthenticated = !!accessToken;
   const pathname = usePathname();
+
+  const handleRegisterClick = (e: React.MouseEvent, route: string) => {
+    e.preventDefault();
+    setShowRegister(false);
+    
+    if (isAuthenticated) {
+      window.location.href = route;
+    } else {
+      setPendingRoute(route);
+      setShowAuthModal(true);
+    }
+  };
 
   const handleScroll = useCallback(() => {
     setScrolled(window.scrollY > 50);
@@ -61,6 +79,16 @@ export default function Navbar() {
         </ul>
 
         <div className="navbar-right-group">
+          {isAuthenticated && (
+            <button className="navbar-signout" onClick={() => signOut()} aria-label="Sign out">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              <span>Sign Out</span>
+            </button>
+          )}
           {isRegistered ? (
             <a className="navbar-dashboard" href="/dashboard">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -105,6 +133,11 @@ export default function Navbar() {
             {l.label}
           </a>
         ))}
+        {isAuthenticated && (
+          <button className="navbar-mobile-register" style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)' }} onClick={() => { setOpen(false); signOut(); }}>
+            Sign Out
+          </button>
+        )}
         {isRegistered ? (
           <a className="navbar-mobile-register navbar-mobile-dashboard" href="/dashboard" onClick={() => setOpen(false)}>
             My Dashboard
@@ -131,14 +164,14 @@ export default function Navbar() {
               <p className="reg-popup-sub">Choose your registration type</p>
             </div>
             <div className="reg-popup-buttons">
-              <a href="/register/participant" className="reg-btn reg-btn-participant">
+              <a href="/register/participant" className="reg-btn reg-btn-participant" onClick={(e) => handleRegisterClick(e, '/register/participant')}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                   <circle cx="12" cy="7" r="4" />
                 </svg>
                 <span>Participant</span>
               </a>
-              <a href="/register/challenger" className="reg-btn reg-btn-challenger">
+              <a href="/register/challenger" className="reg-btn reg-btn-challenger" onClick={(e) => handleRegisterClick(e, '/register/challenger')}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
                 </svg>
@@ -147,6 +180,21 @@ export default function Navbar() {
             </div>
           </div>
         </div>
+      )}
+
+      {showAuthModal && (
+        <AuthModal
+          onClose={() => setShowAuthModal(false)}
+          onSuccess={() => {
+            setShowAuthModal(false);
+            if (pendingRoute) window.location.href = pendingRoute;
+          }}
+          onRegister={() => {
+            setShowAuthModal(false);
+            if (pendingRoute) window.location.href = pendingRoute;
+          }}
+          pendingRoute={pendingRoute}
+        />
       )}
     </>
   );
