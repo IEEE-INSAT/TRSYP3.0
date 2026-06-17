@@ -57,6 +57,7 @@ export default function Navbar() {
         <a className="navbar-logo" href="/">
           <Image
             src="/trsyp-logo.png"
+            loading="eager"
             alt="TRSYP 3.0"
             width={240}
             height={82}
