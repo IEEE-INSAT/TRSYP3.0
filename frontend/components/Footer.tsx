@@ -14,6 +14,7 @@ export default function Footer() {
               width={600}
               height={204}
               style={{ height: '160px', width: 'auto', objectFit: 'contain' }}
+              loading="eager"
             />
             <p className="footer-brand-sub">
               IEEE Tunisian RAS Student &amp; Young Professional Congress
