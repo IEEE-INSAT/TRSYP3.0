@@ -4,14 +4,19 @@ import { motion } from 'motion/react';
 import Image from 'next/image';
 
 const TEAM = [
-  { name: 'Member Name', role: 'General Chair', email: 'chair@trsyp.ieee.tn', unit: 'GC-001' },
-  { name: 'Member Name', role: 'Vice Chair', email: 'vicechair@trsyp.ieee.tn', unit: 'VC-002' },
-  { name: 'Member Name', role: 'Technical Lead', email: 'tech@trsyp.ieee.tn', unit: 'TL-003' },
-  { name: 'Member Name', role: 'Logistics Lead', email: 'logistics@trsyp.ieee.tn', unit: 'LG-004' },
-  { name: 'Member Name', role: 'Media Lead', email: 'media@trsyp.ieee.tn', unit: 'ML-005' },
-  { name: 'Member Name', role: 'Sponsorship Lead', email: 'sponsors@trsyp.ieee.tn', unit: 'SP-006' },
-  { name: 'Member Name', role: 'Workshop Coordinator', email: 'workshops@trsyp.ieee.tn', unit: 'WC-007' },
-  { name: 'Member Name', role: 'Challenge Coordinator', email: 'challenge@trsyp.ieee.tn', unit: 'CC-008' },
+  { name: 'Rayhane Sahli', role: 'Chair', email: 'rayhanesahli@ieee.org', unit: 'GC-001', image:  "/team/rayhane.png"},
+  { name: 'Yassine Kolsi', role: 'Vice-Chair', email: 'yassine.kolsi@ieee.org', unit: 'VC-002', image:  "/team/yassineK.jpg" },
+  { name: 'Yassine Boudagga', role: 'Vice-Chair', email: 'boudegga91@gmail.com', unit: 'VC-003', image:  "/team/yassineB.png" },
+  { name: 'Mariem Jomaa', role: 'Secretry', email: 'mariem.education.jomaa@gmail.com', unit: 'SE-004', image:  "/team/mariem.png" },
+  { name: 'Yasmin Loukil', role: 'Secretry', email: 'itsyasminlouki@gmail.com', unit: 'SE-005', image:  "/team/yasmin.jpeg" },
+  { name: 'Ayette Batbout', role: 'Treasurer', email: 'ayetbetbout@gmail.com', unit: 'TR-006', image:  "/team/ayette.png" },
+  { name: 'Farouk Thabet', role: 'Administrative Affairs and External Relations', email: 'faroukthabet@ieee.org', unit: 'AE-007', image:  "/team/farouk.jpg" },
+  { name: 'Skander Loghmari', role: 'Technical Team Leader', email: 'loghmariskander@gmail.com', unit: 'TK-008', image:  "/team/skander.png" },
+  { name: 'Nermine Moumen', role: 'Organization Team Leader', email: 'nermine.moumen@gmail.com', unit: 'OR-009', image:  "/team/nermine.png" },
+  { name: 'Makki Aloulou', role: 'IT Team Leader', email: 'makkialoulou2005@gmail.com', unit: 'IT-010', image:  "/team/makki.jpg" },
+  { name: 'Mohamed Amine Achour', role: 'IT Team Leader', email: 'mohamedamineachour5@gmail.com', unit: 'IT-011', image:  "/team/achour.png" },
+  { name: 'Mohamed Ayoub Chebbi', role: 'Media Team Leader', email: 'chebbimohamedayoub@gmail.com', unit: 'MD-012', image:  "/team/ayoub.png" },
+  { name: 'Khalil Khadraoui', role: 'Sponsorship Team Leader', email: 'Khalil.kkhadraoui@gmail.com', unit: 'SP-013', image:  "/team/khalil.jpg" },
 ];
 
 function IdCard({ member, index }: { member: typeof TEAM[0]; index: number }) {
@@ -38,7 +43,7 @@ function IdCard({ member, index }: { member: typeof TEAM[0]; index: number }) {
             <div className="id-card-avatar-ring">
               <div className="id-card-avatar-inner">
                 <Image
-                  src="/rayhane.png"
+                  src={member.image || "/rayhane.png"}
                   alt={member.name}
                   width={80}
                   height={80}
