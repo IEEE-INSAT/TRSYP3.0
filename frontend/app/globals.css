@@ -349,16 +349,20 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 /* ─── Mobile menu ─── */
 .navbar-mobile-menu {
   display: none;
-  position: fixed;
-  inset: 0;
-  top: var(--nav-height);
-  background: rgba(1, 0, 8, 0.96);
+  position: absolute;
+  top: calc(var(--nav-height) + 10px);
+  left: 16px;
+  right: 16px;
+  background: rgba(1, 0, 8, 0.98);
   backdrop-filter: blur(24px) saturate(1.4);
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 36px;
+  gap: 16px;
+  padding: 24px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
   z-index: 99;
 }
 
@@ -366,44 +370,42 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 
 .navbar-mobile-menu a {
   text-decoration: none;
-  font-size: 18px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  color: rgba(255, 255, 255, 0.75);
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
   text-transform: uppercase;
-  transition: color 0.3s ease, letter-spacing 0.3s ease;
-  position: relative;
+  width: 100%;
+  text-align: center;
+  padding: 8px 0;
+  transition: color 0.3s ease;
 }
 
-.navbar-mobile-menu a:hover {
-  color: var(--color-green);
-  letter-spacing: 0.18em;
-}
-
+.navbar-mobile-menu a:hover,
 .navbar-mobile-menu a.active {
-  color: var(--color-green);
+  color: #fff;
 }
 
 .navbar-mobile-register {
   display: inline-flex;
-  padding: 14px 40px;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 16px;
   background: linear-gradient(135deg, var(--color-green), #00cc6a);
   color: #000;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  border-radius: 8px;
-  margin-top: 12px;
-  box-shadow: 0 0 24px rgba(0, 232, 122, 0.15);
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 20px;
+  margin-top: 10px;
+  box-shadow: 0 4px 20px rgba(0, 232, 122, 0.4);
   transition: all 0.3s ease;
+  border: none;
 }
 
 .navbar-mobile-register:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 24px rgba(0, 232, 122, 0.3);
+  box-shadow: 0 6px 24px rgba(0, 232, 122, 0.6);
 }
-
 /* ─── REGISTER POPUP ─────────────────────────────────── */
 .reg-overlay {
   position: fixed;
@@ -1678,11 +1680,14 @@ a, button {
     left: 12px;
     right: 12px;
     top: 10px;
-    height: 56px;
+    height: 72px;
     padding: 0 20px;
+    transform: none;
+    width: auto;
+    max-width: none;
   }
   .navbar--scrolled .navbar-logo img {
-    height: 60px !important;
+    height: 76px !important;
   }
 
   /* Hero */
