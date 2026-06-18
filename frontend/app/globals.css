@@ -3282,13 +3282,17 @@ a, button {
 
 .team-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 24px;
+  justify-content: center;
 }
 
 /* ─── ID Card ─── */
 .id-card-wrap {
   perspective: 900px;
+  width: 100%;
+  max-width: 260px;
+  margin: 0 auto;
 }
 .id-card {
   position: relative;
@@ -4060,8 +4064,6 @@ a, button {
   .team-sub { font-size: 14px; }
   .id-card-name { font-size: 13px; }
   .id-card-role { font-size: 9px; letter-spacing: 0.1em; }
-  .id-card-avatar-ring { width: 72px; height: 72px; }
-  .id-card-avatar-inner { width: 50px; height: 50px; }
   .id-card-front, .id-card-back { padding: 14px; }
   .id-card-org { font-size: 7px; }
   .id-card-unit { font-size: 8px; padding: 2px 6px; }
@@ -4102,8 +4104,6 @@ a, button {
 
 /* ──── About / Venue / Challenge — Small phone (390px) ──── */
 @media (max-width: 390px) {
-  .id-card-avatar-ring { width: 56px; height: 56px; }
-  .id-card-avatar-inner { width: 40px; height: 40px; }
   .id-card-name { font-size: 11px; }
   .id-card-role { font-size: 8px; }
   .id-card-front, .id-card-back { padding: 10px; }
