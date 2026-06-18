@@ -45,7 +45,14 @@ export default function Navbar() {
   useEffect(() => {
     handleScroll(); // check on mount
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    
+    const handleOpenModal = () => setShowRegister(true);
+    window.addEventListener('open-register-modal', handleOpenModal);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('open-register-modal', handleOpenModal);
+    };
   }, [handleScroll]);
 
   return (

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'motion/react';
+import { useAuth } from './AuthContext';
 
 const PROGRAM = [
   {
@@ -63,6 +64,12 @@ const ICONS: Record<string, React.ReactNode> = {
 
 export default function ProgramPage() {
   const [activeTab, setActiveTab] = useState('d1');
+  const { isRegistered } = useAuth();
+
+  const handleRegisterClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    window.dispatchEvent(new CustomEvent('open-register-modal'));
+  };
 
   const activeDay = PROGRAM.find((d) => d.id === activeTab)!;
 
@@ -169,7 +176,11 @@ export default function ProgramPage() {
               Secure your seat. <span className="prog-hl">Limited capacity.</span>
             </h2>
             <p className="prog-cta-p">Two days. One symbiosis. Zero excuses.</p>
-            <a href="#register" className="prog-cta-btn">REGISTER NOW</a>
+            {isRegistered ? (
+              <a href="/dashboard" className="prog-cta-btn">GO TO DASHBOARD</a>
+            ) : (
+              <button onClick={handleRegisterClick} className="prog-cta-btn">REGISTER NOW</button>
+            )}
           </div>
         </div>
       </section>
