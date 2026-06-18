@@ -5,17 +5,17 @@ import Image from 'next/image';
 
 const TEAM = [
   { name: 'Rayhane Sahli', role: 'Chair', email: 'rayhanesahli@ieee.org', unit: 'GC-001', image:  "/team/rayhane.png"},
-  { name: 'Yassine Kolsi', role: 'Vice-Chair', email: 'yassine.kolsi@ieee.org', unit: 'VC-002', image:  "/team/yassineK.jpg" },
-  { name: 'Yassine Boudagga', role: 'Vice-Chair', email: 'boudegga91@gmail.com', unit: 'VC-003', image:  "/team/yassineB.png" },
-  { name: 'Mariem Jomaa', role: 'Secretary', email: 'mariem.education.jomaa@gmail.com', unit: 'SE-004', image:  "/team/mariem.png" },
+  { name: 'Yassine Kolsi', role: 'Co-Vice-Chair', email: 'yassine.kolsi@ieee.org', unit: 'VC-002', image:  "/team/yassineK.jpg" },
+  { name: 'Yassine Boudagga', role: 'Co-Vice-Chair', email: 'boudegga91@gmail.com', unit: 'VC-003', image:  "/team/yassineB.png" },
+  { name: 'Mariem Jomaa', role: 'Secretary', email: 'mariem.education.jomaa@gmail.com', unit: 'SE-004', image:  "/team/mariem.jpg" },
   { name: 'Yasmin Loukil', role: 'Secretary', email: 'itsyasminlouki@gmail.com', unit: 'SE-005', image:  "/team/yasmin.jpeg" },
-  { name: 'Ayette Batbout', role: 'Treasurer', email: 'ayetbetbout@gmail.com', unit: 'TR-006', image:  "/team/ayette.png" },
+  { name: 'Ayette Batbout', role: 'Treasurer', email: 'ayetbetbout@gmail.com', unit: 'TR-006', image:  "/team/ayette.jpg" },
   { name: 'Farouk Thabet', role: 'Administrative Affairs and External Relations', email: 'faroukthabet@ieee.org', unit: 'AE-007', image:  "/team/farouk.jpg" },
-  { name: 'Skander Loghmari', role: 'Technical Team Leader', email: 'loghmariskander@gmail.com', unit: 'TK-008', image:  "/team/skander.png" },
-  { name: 'Nermine Moumen', role: 'Organization Team Leader', email: 'nermine.moumen@gmail.com', unit: 'OR-009', image:  "/team/nermine.png" },
-  { name: 'Makki Aloulou', role: 'IT Team Leader', email: 'makkialoulou2005@gmail.com', unit: 'IT-010', image:  "/team/makki.jpg" },
-  { name: 'Mohamed Amine Achour', role: 'IT Team Leader', email: 'mohamedamineachour5@gmail.com', unit: 'IT-011', image:  "/team/achour.png" },
-  { name: 'Mohamed Ayoub Chebbi', role: 'Media Team Leader', email: 'chebbimohamedayoub@gmail.com', unit: 'MD-012', image:  "/team/ayoub.png" },
+  { name: 'Skander Loghmari', role: 'Technical Team Leader', email: 'loghmariskander@gmail.com', unit: 'TK-008', image:  "/team/skander.jpg" },
+  { name: 'Nermine Moumen', role: 'Organization Team Leader', email: 'nermine.moumen@gmail.com', unit: 'OR-009', image:  "/team/nermine.jpg" },
+  { name: 'Makki Aloulou', role: 'IT Co-Team Leader', email: 'makkialoulou2005@gmail.com', unit: 'IT-010', image:  "/team/makki.jpg" },
+  { name: 'Mohamed Amine Achour', role: 'IT Co-Team Leader', email: 'mohamedamineachour5@gmail.com', unit: 'IT-011', image:  "/team/achour.png" },
+  { name: 'Wyssem Neila', role: 'Media Team Leader', email: 'wyssemneila@ieee.org', unit: 'MD-012', image:  "/team/wyssem.jpg" },
   { name: 'Khalil Khadraoui', role: 'Sponsorship Team Leader', email: 'Khalil.kkhadraoui@gmail.com', unit: 'SP-013', image:  "/team/khalil.jpg" },
 ];
 
