@@ -1,9 +1,10 @@
 import Image from 'next/image';
 
-const PARTNER_SLOTS = Array.from({ length: 6 }, (_, i) => ({
-  id: i + 1,
-  label: `Partner ${i + 1}`,
-}));
+const PARTNERS = [
+  { id: 1, src: '/partners/IEEEINSATSB.webp', label: 'IEEE INSAT Student Branch' },
+  { id: 2, src: '/partners/RASINSAT.webp', label: 'RAS INSAT' },
+  { id: 3, src: '/partners/tn-section.webp', label: 'IEEE Tunisia Section' },
+];
 
 export default function PartnersSection() {
   return (
@@ -19,10 +20,10 @@ export default function PartnersSection() {
         </div>
 
         <div className="partners-grid">
-          {PARTNER_SLOTS.map((p) => (
+          {PARTNERS.map((p) => (
             <div key={p.id} className="partners-slot">
               <Image
-                src="/tn-section.webp"
+                src={p.src}
                 alt={p.label}
                 width={320}
                 height={180}
