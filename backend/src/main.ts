@@ -6,7 +6,13 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.enableCors();
+  
+  // Enable CORS so the Next.js frontend on port 3000 can communicate with this backend
+  app.enableCors({
+    origin: 'http://localhost:3000',
+    credentials: true,
+  });
+
   const config = new DocumentBuilder()
     .setTitle('Your API Title')
     .setDescription('The API description goes here')

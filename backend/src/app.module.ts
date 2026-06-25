@@ -9,6 +9,8 @@ import * as Joi from 'joi';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { AdminModule } from './modules/admin/admin.module';
+import { RoomingModule } from './modules/rooming/rooming.module';
+import { RegistrationModule } from './modules/registration/registration.module';
 // import { NotificationModule } from './modules/notification/notification.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 @Module({
@@ -36,7 +38,8 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
             }),
         }),
         EventEmitterModule.forRoot(),
-        PrismaModule, AuthModule, AdminModule, /* NotificationModule */],
-    providers:[AppService],
+        PrismaModule, AuthModule, AdminModule, RoomingModule, RegistrationModule, /* NotificationModule */],
+    controllers: [],
+    providers: [AppService],
 })
 export class AppModule {}
