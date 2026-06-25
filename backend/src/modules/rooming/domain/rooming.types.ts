@@ -3,3 +3,8 @@ export enum InvitationStatus {
 	Accepted = 'Accepted',
 	Rejected = 'Rejected',
 }
+
+export enum RoomStatus {
+	Pending = 'Pending',
+	Confirmed = 'Confirmed',
+}

@@ -69,11 +69,13 @@ model Participant {
   country         COUNTRY
   createdAt       DateTime        @default(now()) @map("created_at")
   updatedAt       DateTime        @updatedAt @map("updated_at")
-
+  ownedRoom       Room?           @relation("RoomOwner")
+  room            Room?           @relation("RoomResidents", fields: [roomId], references: [id])
+  roomId          String?
+  invitations     Invitation[]
   // Relations
   user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   internationalInfo InternationalInfo? @relation("ParticipantInternationalInfo")
-
   @@map("participants")
 }
 
@@ -189,7 +191,41 @@ enum POSITION {
 
 // --- Rooming Module ---
 // Define rooming-related models here
-
+enum InvitationStatus {
+  Pending
+  Accepted
+  Rejected
+}
+enum RoomStatus {
+  Pending     // Default — waiting for residents and payments
+  Confirmed   // All residents have paid
+}
+model Room {
+  id         String     @id @default(uuid())
+  size       Int                              // max capacity
+  status     RoomStatus @default(Pending)
+  ownerId    String     @unique @map("owner_id")
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+  // Relations
+  owner       Participant   @relation("RoomOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  residents   Participant[] @relation("RoomResidents")
+  invitations Invitation[]
+  @@map("rooms")
+}
+model Invitation {
+  id          String           @id @default(uuid())
+  roomId      String           @map("room_id")
+  guestId     String           @map("guest_id")
+  status      InvitationStatus @default(Pending)
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+  // Relations
+  room  Room        @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  guest Participant @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  @@unique([roomId, guestId])   // prevent duplicate invitations
+  @@map("invitations")
+}
 // --- Visa Module ---
 // Define visa-related models here
 
