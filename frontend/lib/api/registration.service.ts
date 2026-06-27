@@ -7,7 +7,7 @@ import type { BackendParticipant, RegisterParticipantPayload } from './types';
  *
  * PLACEHOLDER STATUS: the backend `RegistrationController` exists but its module
  * is NOT imported into `app.module.ts`, so `/registration/*` routes are not
- * served yet. Every method below contains the real call, guarded by the
+ * served yet. Every method below conttrsyp the real call, guarded by the
  * `features.registrationApi` flag. While the flag is off the methods resolve to
  * `null` and the registration store keeps the profile locally so the dashboard
  * flow stays usable. Flip NEXT_PUBLIC_FEATURE_REGISTRATION_API=true to go live.

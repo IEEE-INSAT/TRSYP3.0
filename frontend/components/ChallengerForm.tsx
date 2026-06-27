@@ -192,7 +192,7 @@ export default function ChallengerForm() {
         <motion.div className="reg-info-banner reg-info-banner-pink" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
           <div className="reg-info-badge reg-info-badge-pink">CHALLENGE REGISTRATION</div>
           <h2 className="reg-info-title">TRSYP 3.0 Robotics Challenge</h2>
-          <p className="reg-info-subtitle">Compete in real-world robotics challenges — autonomous navigation, line-following, sumo bots, and more. Prove your engineering skills against the best teams in Tunisia.</p>
+          <p className="reg-info-subtitle">Compete in real-world robotics challenges — autonomous navigation, line-following, sumo bots, and more. Prove your engineering skills agtrsypt the best teams in Tunisia.</p>
           <a href="/docs/challenge-specifications.pdf" target="_blank" rel="noopener noreferrer" className="reg-spec-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
             Read Specification Book

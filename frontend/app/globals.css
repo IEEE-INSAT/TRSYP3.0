@@ -6635,7 +6635,7 @@ button {
 
 
 /* --- AINS AUTH MODAL --------------------------------------- */
-.ains-overlay {
+.trsyp-overlay {
   position: fixed;
   inset: 0;
   z-index: 200;
@@ -6644,10 +6644,10 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: ainsFadeIn 0.2s ease;
+  animation: trsypFadeIn 0.2s ease;
 }
 
-@keyframes ainsFadeIn {
+@keyframes trsypFadeIn {
   from {
     opacity: 0;
   }
@@ -6657,7 +6657,7 @@ button {
   }
 }
 
-.ains-popup {
+.trsyp-popup {
   position: relative;
   background: rgba(22, 18, 38, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -6667,11 +6667,11 @@ button {
   max-width: 440px;
   width: 90vw;
   box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
-  animation: ainsSlideUp 0.25s ease;
+  animation: trsypSlideUp 0.25s ease;
   text-align: left;
 }
 
-@keyframes ainsSlideUp {
+@keyframes trsypSlideUp {
   from {
     opacity: 0;
     transform: translateY(10px) scale(0.98);
@@ -6683,7 +6683,7 @@ button {
   }
 }
 
-.ains-close {
+.trsyp-close {
   position: absolute;
   top: 16px;
   right: 16px;
@@ -6695,20 +6695,20 @@ button {
   transition: color 0.2s;
 }
 
-.ains-close svg {
+.trsyp-close svg {
   width: 20px;
   height: 20px;
 }
 
-.ains-close:hover {
+.trsyp-close:hover {
   color: #fff;
 }
 
-.ains-popup-header {
+.trsyp-popup-header {
   margin-bottom: 24px;
 }
 
-.ains-popup-title {
+.trsyp-popup-title {
   font-family: var(--font-heading, sans-serif);
   font-size: 26px;
   font-weight: 600;
@@ -6716,26 +6716,26 @@ button {
   margin: 0 0 8px;
 }
 
-.ains-popup-sub {
+.trsyp-popup-sub {
   font-family: var(--font-body, sans-serif);
   font-size: 15px;
   color: #fff;
   margin: 0;
 }
 
-.ains-form {
+.trsyp-form {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.ains-form-group {
+.trsyp-form-group {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.ains-label {
+.trsyp-label {
   font-family: var(--font-heading, sans-serif);
   font-size: 12px;
   font-weight: 700;
@@ -6744,13 +6744,13 @@ button {
   text-transform: uppercase;
 }
 
-.ains-input-wrapper {
+.trsyp-input-wrapper {
   position: relative;
   display: flex;
   align-items: center;
 }
 
-.ains-input {
+.trsyp-input {
   width: 100%;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -6763,32 +6763,32 @@ button {
   transition: all 0.2s;
 }
 
-.ains-input::placeholder {
+.trsyp-input::placeholder {
   color: rgba(255, 255, 255, 0.4);
 }
 
-.ains-input:focus {
+.trsyp-input:focus {
   border-color: #fff;
   background: rgba(255, 255, 255, 0.1);
   box-shadow: 0 0 0 1px #fff;
 }
 
-.ains-input-pw {
+.trsyp-input-pw {
   padding-right: 40px;
 }
 
 /* Validation: error state on inputs */
-.ains-input-error {
+.trsyp-input-error {
   border-color: #ef4444 !important;
   background: rgba(239, 68, 68, 0.06);
 }
 
-.ains-input-error:focus {
+.trsyp-input-error:focus {
   box-shadow: 0 0 0 1px #ef4444;
 }
 
 /* Validation: inline field error text */
-.ains-field-error {
+.trsyp-field-error {
   margin: 2px 0 0;
   font-family: var(--font-body, sans-serif);
   font-size: 12px;
@@ -6797,22 +6797,22 @@ button {
 }
 
 /* Validation: checking indicator */
-.ains-field-checking {
+.trsyp-field-checking {
   margin: 2px 0 0;
   font-family: var(--font-body, sans-serif);
   font-size: 12px;
   color: rgba(255, 255, 255, 0.45);
   line-height: 1.4;
-  animation: ainsPulse 1.2s ease-in-out infinite;
+  animation: trsypPulse 1.2s ease-in-out infinite;
 }
 
-@keyframes ainsPulse {
+@keyframes trsypPulse {
   0%, 100% { opacity: 0.45; }
   50% { opacity: 1; }
 }
 
 /* Validation: password strength checklist */
-.ains-pw-checklist {
+.trsyp-pw-checklist {
   list-style: none;
   margin: 6px 0 0;
   padding: 0;
@@ -6821,7 +6821,7 @@ button {
   gap: 4px;
 }
 
-.ains-pw-checklist li {
+.trsyp-pw-checklist li {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -6831,22 +6831,22 @@ button {
   transition: color 0.2s;
 }
 
-.ains-pw-icon {
+.trsyp-pw-icon {
   flex-shrink: 0;
   font-size: 13px;
   width: 16px;
   text-align: center;
 }
 
-.ains-pw-pass {
+.trsyp-pw-pass {
   color: #34d399;
 }
 
-.ains-pw-fail {
+.trsyp-pw-fail {
   color: rgba(255, 255, 255, 0.35);
 }
 
-.ains-pw-toggle {
+.trsyp-pw-toggle {
   position: absolute;
   right: 12px;
   background: none;
@@ -6859,16 +6859,16 @@ button {
   justify-content: center;
 }
 
-.ains-pw-toggle svg {
+.trsyp-pw-toggle svg {
   width: 20px;
   height: 20px;
 }
 
-.ains-pw-toggle:hover {
+.trsyp-pw-toggle:hover {
   color: #fff;
 }
 
-.ains-btn-login {
+.trsyp-btn-login {
   margin-top: 12px;
   background: transparent;
   color: #fff;
@@ -6881,12 +6881,12 @@ button {
   transition: all 0.2s;
 }
 
-.ains-btn-login:hover {
+.trsyp-btn-login:hover {
   opacity: 0.8;
   text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
 }
 
-.ains-popup-footer {
+.trsyp-popup-footer {
   margin-top: 24px;
   font-family: var(--font-body, sans-serif);
   font-size: 15px;
@@ -6894,19 +6894,19 @@ button {
   text-align: center;
 }
 
-.ains-popup-footer a {
+.trsyp-popup-footer a {
   color: #fff;
   text-decoration: underline;
   text-underline-offset: 4px;
   margin-left: 4px;
 }
 
-.ains-popup-footer a:hover {
+.trsyp-popup-footer a:hover {
   color: var(--color-green, #00e87a);
 }
 
 
-.ains-btn-google {
+.trsyp-btn-google {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -6924,26 +6924,26 @@ button {
   transition: all 0.2s;
 }
 
-.ains-btn-google:hover {
+.trsyp-btn-google:hover {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.4);
 }
 
-.ains-divider {
+.trsyp-divider {
   display: flex;
   align-items: center;
   text-align: center;
   margin: 24px 0;
 }
 
-.ains-divider::before,
-.ains-divider::after {
+.trsyp-divider::before,
+.trsyp-divider::after {
   content: "";
   flex: 1;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.ains-divider span {
+.trsyp-divider span {
   padding: 0 16px;
   color: rgba(255, 255, 255, 0.4);
   font-family: var(--font-heading, sans-serif);
@@ -6953,16 +6953,16 @@ button {
 }
 
 /* Email confirmation sent — success view */
-.ains-confirmation {
+.trsyp-confirmation {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 16px;
   padding: 12px 0 8px;
-  animation: ainsSlideUp 0.3s ease;
+  animation: trsypSlideUp 0.3s ease;
 }
 
-.ains-confirmation-icon {
+.trsyp-confirmation-icon {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -6973,7 +6973,7 @@ button {
   color: var(--color-green, #00e87a);
 }
 
-.ains-confirmation-text {
+.trsyp-confirmation-text {
   font-family: var(--font-body, sans-serif);
   font-size: 14px;
   color: rgba(255, 255, 255, 0.65);
@@ -6982,7 +6982,7 @@ button {
   margin: 0;
 }
 
-.ains-confirmation-text strong {
+.trsyp-confirmation-text strong {
   color: #fff;
 }
 
