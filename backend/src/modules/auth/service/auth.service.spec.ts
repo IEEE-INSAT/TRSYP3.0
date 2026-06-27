@@ -61,7 +61,7 @@ describe('AuthService', () => {
       
       mockPrismaService.user.upsert.mockResolvedValue(expectedUser);
 
-      const result = await service.syncUser(supabaseId, dto as any);
+      const result = await service.syncUser(supabaseId, dto as any, true);
 
       expect(prisma.user.upsert).toHaveBeenCalledWith({
         where: { supabaseId },

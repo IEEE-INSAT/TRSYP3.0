@@ -23,7 +23,7 @@ interface AuthState {
   error: string | null;
 
   initialize: () => Promise<void>;
-  signUp: (input: SignUpInput) => Promise<void>;
+  signUp: (input: SignUpInput) => Promise<{ emailConfirmationPending: boolean }>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ message: string }>;
@@ -56,8 +56,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (token && isApiConfigured) {
         try {
           set({ account: await authService.getMe(token) });
-        } catch {
-          /* user not synced yet — non-fatal */
+        } catch (err) {
+          console.error('[auth] getMe failed during init:', err);
         }
       }
       supabase.auth.onAuthStateChange(async (event, session) => {
@@ -83,8 +83,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 token,
               ),
             });
-          } catch {
-            /* non-fatal: profile can be synced on next visit */
+          } catch (err) {
+            console.error('[auth] syncUser failed in onAuthStateChange:', err);
           }
         }
       });
@@ -99,7 +99,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (!supabase) {
         // Offline placeholder — no real account yet.
         set({ accessToken: `offline:${email}`, email, loading: false });
-        return;
+        return { emailConfirmationPending: false };
       }
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -111,9 +111,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const token = data.session?.access_token ?? null;
       set({ accessToken: token, email });
 
+      // If Supabase requires email confirmation, data.session will be null.
+      // The user must verify their email before they can sign in.
+      if (!token) {
+        set({ loading: false });
+        return { emailConfirmationPending: true };
+      }
+
       // If the project doesn't require email confirmation we already have a
       // session — sync the user into the backend immediately.
-      if (token && isApiConfigured) {
+      if (isApiConfigured) {
         try {
           set({
             account: await authService.syncUser(
@@ -126,6 +133,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
       }
       set({ loading: false });
+      return { emailConfirmationPending: false };
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Sign up failed';
       set({ loading: false, error: message });
@@ -150,9 +158,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ accessToken: token, email });
       if (token && isApiConfigured) {
         try {
+          // Try to fetch the existing user from the backend
           set({ account: await authService.getMe(token) });
-        } catch {
-          /* non-fatal */
+        } catch (getErr) {
+          console.error('[auth] getMe failed during signIn:', getErr);
+          // User not in DB yet (first login after email verification) — sync them
+          try {
+            const meta = data.session?.user?.user_metadata ?? {};
+            set({
+              account: await authService.syncUser(
+                {
+                  email,
+                  name: meta.name ?? meta.full_name?.split(' ')[0] ?? '',
+                  lastName: meta.lastName ?? meta.full_name?.split(' ').slice(1).join(' ') ?? '',
+                  provider: 'email',
+                },
+                token,
+              ),
+            });
+          } catch (syncErr) {
+            console.error('[auth] syncUser failed during signIn:', syncErr);
+          }
         }
       }
       set({ loading: false });
@@ -167,6 +193,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const supabase = getSupabaseClient();
     if (supabase) await supabase.auth.signOut();
     set({ accessToken: null, account: null, email: null });
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
   },
 
   resetPassword: async (email) => {

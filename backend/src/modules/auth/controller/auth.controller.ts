@@ -18,11 +18,15 @@ export class AuthController {
     @ApiResponse({ status: 200, description: 'User successfully synchronized.' })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })
     async syncUser(@Body() dto: SyncUserDto, @Res() res: Response, @Req() req: Request) {
-        const supabaseId = (req.user as any).sub;
+        const payload = req.user as any;
+        // _supabaseId is always the original Supabase UUID (set by the JWT strategy).
+        const supabaseId = payload._supabaseId;
         if (!supabaseId) {
             throw new UnauthorizedException('User not found');
         }
-        const user = await this.authService.syncUser(supabaseId, dto);
+        const emailConfirmed = !!payload.email_confirmed_at;
+
+        const user = await this.authService.syncUser(supabaseId, dto, emailConfirmed);
         return res.status(HttpStatus.OK).json(user);
     }
 
@@ -33,7 +37,7 @@ export class AuthController {
     @ApiResponse({ status: 200, description: 'User profile retrieved successfully.' })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })
     async getMe(@Req() req: Request, @Res() res: Response) {
-        const user = await this.authService.findbySupabaseId((req.user as any).sub);
+        const user = await this.authService.findbySupabaseId((req.user as any)._supabaseId);
         return res.status(HttpStatus.OK).json(user);
     }
 

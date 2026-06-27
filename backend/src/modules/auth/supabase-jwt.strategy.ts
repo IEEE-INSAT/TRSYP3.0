@@ -42,17 +42,23 @@ export class SupabaseJwtStrategy extends PassportStrategy(Strategy, 'supabase-jw
     }
 
     async validate(payload: any) {
+        // Preserve the original Supabase UUID so controllers can always access it.
+        const supabaseId = payload.sub;
+
         // Look up the actual database user using the Supabase ID (sub)
         const user = await this.prisma.user.findUnique({
-            where: { supabaseId: payload.sub }
+            where: { supabaseId }
         });
 
         if (!user) {
-            throw new UnauthorizedException('User not found in database');
+            // User not yet in DB — this is expected for the first call to
+            // POST /auth/sync-user after email verification.  Return the raw
+            // Supabase payload so the sync-user endpoint can create the user.
+            return { ...payload, _supabaseId: supabaseId, _noDbUser: true };
         }
 
         // Replace the Supabase ID with the real internal database ID.
         // This means @CurrentUser('sub') will now correctly return the DB ID across the entire app.
-        return { ...payload, sub: user.id };
+        return { ...payload, sub: user.id, _supabaseId: supabaseId };
     }
 }

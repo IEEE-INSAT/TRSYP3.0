@@ -1,10 +1,11 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { SyncUserDto } from "../dto/sync-user.dto";
 import { createClient, SupabaseClient } from "@supabase/supabase-js"
 import { ConfigService } from "@nestjs/config";
 @Injectable()
 export class AuthService{
+  private readonly logger = new Logger(AuthService.name);
   private supabase: SupabaseClient;
   constructor(private readonly prisma:PrismaService,
               private readonly configService: ConfigService
@@ -19,24 +20,52 @@ export class AuthService{
     });
   }
 
-  async syncUser(supabaseId:string,dto:SyncUserDto){
-    const user=await this.prisma.user.upsert({
-      where:{supabaseId:supabaseId as string},
-      update:{
-        email:dto.email as string,
-        name:dto.name as string,
-        lastName:dto.lastName as string,
-        provider:dto.provider ?? "email",
-      },
-      create:{
-        supabaseId:supabaseId as string,
-        email:dto.email as string,
-        name:dto.name as string,
-        lastName:dto.lastName as string,
-        provider:dto.provider ?? "email",
-      },
-    });
-    return user;
+  async syncUser(supabaseId: string, dto: SyncUserDto, emailConfirmed: boolean) {
+    this.logger.log(`syncUser called — supabaseId=${supabaseId}, email=${dto.email}, name=${dto.name}, lastName=${dto.lastName}, provider=${dto.provider}, emailConfirmed=${emailConfirmed}`);
+    try {
+      const user = await this.prisma.user.upsert({
+        where: { supabaseId },
+        update: {
+          email: dto.email,
+          name: dto.name,
+          lastName: dto.lastName,
+          provider: dto.provider ?? 'email',
+          active: emailConfirmed,
+        },
+        create: {
+          supabaseId,
+          email: dto.email,
+          name: dto.name,
+          lastName: dto.lastName,
+          provider: dto.provider ?? 'email',
+          active: emailConfirmed,
+        },
+      });
+      this.logger.log(`syncUser success — userId=${user.id}`);
+      return user;
+    } catch (error: any) {
+      // P2002 = unique constraint violation.
+      // If the conflict is on `email`, a row already exists with this email
+      // but a different supabaseId (e.g. user re-registered in Supabase).
+      // Adopt the existing row by updating it with the new supabaseId.
+      if (error?.code === 'P2002' && error?.meta?.target?.includes('email')) {
+        this.logger.warn(`Email ${dto.email} already exists — linking to new supabaseId=${supabaseId}`);
+        const user = await this.prisma.user.update({
+          where: { email: dto.email },
+          data: {
+            supabaseId,
+            name: dto.name,
+            lastName: dto.lastName,
+            provider: dto.provider ?? 'email',
+            active: emailConfirmed,
+          },
+        });
+        this.logger.log(`syncUser (email fallback) success — userId=${user.id}`);
+        return user;
+      }
+      this.logger.error(`syncUser failed for supabaseId=${supabaseId}`, error instanceof Error ? error.stack : error);
+      throw error;
+    }
   }
   async findbySupabaseId(supabaseId:string){
     return this.prisma.user.findUnique({
