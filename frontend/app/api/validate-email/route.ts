@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
 
     const domain = parts[1].toLowerCase();
 
-    // Block well-known reserved / documentation domains (RFC 2606)
+    // Block well-known reserved / documentation domtrsyp (RFC 2606)
     const RESERVED_DOMAINS = ['example.com', 'example.net', 'example.org', 'test.com', 'test.net', 'test.org', 'localhost', 'invalid'];
     if (RESERVED_DOMAINS.includes(domain)) {
       return NextResponse.json({ valid: false, reason: `"${domain}" is a reserved domain and cannot receive email.` });

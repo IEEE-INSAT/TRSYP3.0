@@ -7,7 +7,7 @@ import { getSupabaseClient } from '@/lib/supabase/client';
 // ── Validation helpers ──────────────────────────────────────────────────────
 
 /**
- * Map of mistyped email domains → correct domain.
+ * Map of mistyped email domtrsyp → correct domain.
  * Covers the most popular providers with their common misspellings.
  */
 const DOMAIN_TYPO_MAP: Record<string, string> = {
@@ -40,7 +40,7 @@ const DOMAIN_TYPO_MAP: Record<string, string> = {
   'otulook.com': 'outlook.com', 'outlok.fr': 'outlook.fr',
   // iCloud
   'icoud.com': 'icloud.com', 'iclod.com': 'icloud.com', 'iclould.com': 'icloud.com',
-  'icluod.com': 'icloud.com', 'iclould.com': 'icloud.com',
+  'icluod.com': 'icloud.com',
   // Live
   'live.co': 'live.com', 'liv.com': 'live.com',
   // Protonmail
@@ -67,7 +67,7 @@ function validateEmailFormat(value: string): string | null {
   const lower = value.toLowerCase();
   const domain = lower.split('@')[1];
 
-  // 1) Check against known domain misspellings
+  // 1) Check agtrsypt known domain misspellings
   if (domain && DOMAIN_TYPO_MAP[domain]) {
     const corrected = lower.replace(domain, DOMAIN_TYPO_MAP[domain]);
     return `Did you mean "${corrected}"?`;
@@ -293,28 +293,28 @@ export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute
   };
 
   return (
-    <div className="ains-overlay" onClick={onClose}>
-      <div className="ains-popup" onClick={(e) => e.stopPropagation()}>
-        <button className="ains-close" onClick={onClose} aria-label="Close">
+    <div className="trsyp-overlay" onClick={onClose}>
+      <div className="trsyp-popup" onClick={(e) => e.stopPropagation()}>
+        <button className="trsyp-close" onClick={onClose} aria-label="Close">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
         {emailConfirmationSent ? (
           /* ── Email confirmation sent — success view ── */
-          <div className="ains-confirmation">
-            <div className="ains-confirmation-icon">
+          <div className="trsyp-confirmation">
+            <div className="trsyp-confirmation-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="48" height="48">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
               </svg>
             </div>
-            <h3 className="ains-popup-title" style={{ textAlign: 'center' }}>Check your email</h3>
-            <p className="ains-confirmation-text">
+            <h3 className="trsyp-popup-title" style={{ textAlign: 'center' }}>Check your email</h3>
+            <p className="trsyp-confirmation-text">
               We&apos;ve sent a verification link to <strong>{email}</strong>. Please click the link to activate your account before logging in.
             </p>
             <button
               type="button"
-              className="ains-btn-login"
+              className="trsyp-btn-login"
               onClick={() => switchMode(true)}
               style={{ width: '100%' }}
             >
@@ -324,12 +324,12 @@ export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute
         ) : (
           /* ── Normal auth forms ── */
           <>
-            <div className="ains-popup-header">
-              <h3 className="ains-popup-title">{isLogin ? 'Authenticate' : 'Create Account'}</h3>
-              <p className="ains-popup-sub">{isLogin ? 'Access the restricted TRSYP portal.' : 'Join the TRSYP network.'}</p>
+            <div className="trsyp-popup-header">
+              <h3 className="trsyp-popup-title">{isLogin ? 'Authenticate' : 'Create Account'}</h3>
+              <p className="trsyp-popup-sub">{isLogin ? 'Access the restricted TRSYP portal.' : 'Join the TRSYP network.'}</p>
             </div>
 
-            <button type="button" className="ains-btn-google" onClick={handleGoogleLogin} disabled={loading}>
+            <button type="button" className="trsyp-btn-google" onClick={handleGoogleLogin} disabled={loading}>
               <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                 <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -339,20 +339,20 @@ export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute
               {loading ? 'Connecting...' : 'Connect with Google'}
             </button>
 
-            <div className="ains-divider">
+            <div className="trsyp-divider">
               <span>OR</span>
             </div>
 
             {error && <p style={{ color: '#ff6b6b', fontSize: '14px', marginBottom: '12px', textAlign: 'center' }}>{error}</p>}
 
             {isLogin ? (
-              <form className="ains-form" onSubmit={handleLogin}>
-                <div className="ains-form-group">
-                  <label className="ains-label" htmlFor="ains-email">Email *</label>
-                  <div className="ains-input-wrapper">
+              <form className="trsyp-form" onSubmit={handleLogin}>
+                <div className="trsyp-form-group">
+                  <label className="trsyp-label" htmlFor="trsyp-email">Email *</label>
+                  <div className="trsyp-input-wrapper">
                     <input
-                      id="ains-email"
-                      className={`ains-input${emailTouched && emailError ? ' ains-input-error' : ''}`}
+                      id="trsyp-email"
+                      className={`trsyp-input${emailTouched && emailError ? ' trsyp-input-error' : ''}`}
                       type="email"
                       value={email}
                       onChange={(e) => { setEmail(e.target.value); setEmailDomainError(null); lastCheckedEmail.current = ''; }}
@@ -361,18 +361,18 @@ export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute
                     />
                   </div>
                   {emailChecking && (
-                    <p className="ains-field-checking">Verifying email domain…</p>
+                    <p className="trsyp-field-checking">Verifying email domain…</p>
                   )}
                   {emailTouched && !emailChecking && emailError && (
-                    <p className="ains-field-error">{emailError}</p>
+                    <p className="trsyp-field-error">{emailError}</p>
                   )}
                 </div>
-                <div className="ains-form-group">
-                  <label className="ains-label" htmlFor="ains-password">Password *</label>
-                  <div className="ains-input-wrapper">
+                <div className="trsyp-form-group">
+                  <label className="trsyp-label" htmlFor="trsyp-password">Password *</label>
+                  <div className="trsyp-input-wrapper">
                     <input
-                      id="ains-password"
-                      className="ains-input ains-input-pw"
+                      id="trsyp-password"
+                      className="trsyp-input trsyp-input-pw"
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
@@ -380,7 +380,7 @@ export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute
                     />
                     <button
                       type="button"
-                      className="ains-pw-toggle"
+                      className="trsyp-pw-toggle"
                       onClick={() => setShowPassword(!showPassword)}
                       aria-label="Toggle password"
                     >
@@ -397,17 +397,17 @@ export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute
                     </button>
                   </div>
                 </div>
-                <button type="submit" className="ains-btn-login" disabled={loading}>{loading ? 'Logging in…' : 'Log In'}</button>
+                <button type="submit" className="trsyp-btn-login" disabled={loading}>{loading ? 'Logging in…' : 'Log In'}</button>
               </form>
             ) : (
-              <form className="ains-form" onSubmit={handleSignup}>
-                <div className="ains-row" style={{ display: 'flex', gap: '12px' }}>
-                  <div className="ains-form-group" style={{ flex: 1, marginBottom: 0 }}>
-                    <label className="ains-label" htmlFor="ains-first-name">First Name *</label>
-                    <div className="ains-input-wrapper">
+              <form className="trsyp-form" onSubmit={handleSignup}>
+                <div className="trsyp-row" style={{ display: 'flex', gap: '12px' }}>
+                  <div className="trsyp-form-group" style={{ flex: 1, marginBottom: 0 }}>
+                    <label className="trsyp-label" htmlFor="trsyp-first-name">First Name *</label>
+                    <div className="trsyp-input-wrapper">
                       <input
-                        id="ains-first-name"
-                        className="ains-input"
+                        id="trsyp-first-name"
+                        className="trsyp-input"
                         type="text"
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
@@ -415,12 +415,12 @@ export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute
                       />
                     </div>
                   </div>
-                  <div className="ains-form-group" style={{ flex: 1, marginBottom: 0 }}>
-                    <label className="ains-label" htmlFor="ains-last-name">Last Name *</label>
-                    <div className="ains-input-wrapper">
+                  <div className="trsyp-form-group" style={{ flex: 1, marginBottom: 0 }}>
+                    <label className="trsyp-label" htmlFor="trsyp-last-name">Last Name *</label>
+                    <div className="trsyp-input-wrapper">
                       <input
-                        id="ains-last-name"
-                        className="ains-input"
+                        id="trsyp-last-name"
+                        className="trsyp-input"
                         type="text"
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
@@ -429,12 +429,12 @@ export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute
                     </div>
                   </div>
                 </div>
-                <div className="ains-form-group">
-                  <label className="ains-label" htmlFor="ains-email-reg">Email *</label>
-                  <div className="ains-input-wrapper">
+                <div className="trsyp-form-group">
+                  <label className="trsyp-label" htmlFor="trsyp-email-reg">Email *</label>
+                  <div className="trsyp-input-wrapper">
                     <input
-                      id="ains-email-reg"
-                      className={`ains-input${emailTouched && emailError ? ' ains-input-error' : ''}`}
+                      id="trsyp-email-reg"
+                      className={`trsyp-input${emailTouched && emailError ? ' trsyp-input-error' : ''}`}
                       type="email"
                       value={email}
                       onChange={(e) => { setEmail(e.target.value); setEmailDomainError(null); lastCheckedEmail.current = ''; }}
@@ -443,18 +443,18 @@ export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute
                     />
                   </div>
                   {emailChecking && (
-                    <p className="ains-field-checking">Verifying email domain…</p>
+                    <p className="trsyp-field-checking">Verifying email domain…</p>
                   )}
                   {emailTouched && !emailChecking && emailError && (
-                    <p className="ains-field-error">{emailError}</p>
+                    <p className="trsyp-field-error">{emailError}</p>
                   )}
                 </div>
-                <div className="ains-form-group">
-                  <label className="ains-label" htmlFor="ains-password-reg">Password *</label>
-                  <div className="ains-input-wrapper">
+                <div className="trsyp-form-group">
+                  <label className="trsyp-label" htmlFor="trsyp-password-reg">Password *</label>
+                  <div className="trsyp-input-wrapper">
                     <input
-                      id="ains-password-reg"
-                      className={`ains-input ains-input-pw${passwordTouched && passwordError ? ' ains-input-error' : ''}`}
+                      id="trsyp-password-reg"
+                      className={`trsyp-input trsyp-input-pw${passwordTouched && passwordError ? ' trsyp-input-error' : ''}`}
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
@@ -463,7 +463,7 @@ export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute
                     />
                     <button
                       type="button"
-                      className="ains-pw-toggle"
+                      className="trsyp-pw-toggle"
                       onClick={() => setShowPassword(!showPassword)}
                       aria-label="Toggle password visibility"
                     >
@@ -481,21 +481,21 @@ export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute
                   </div>
                   {/* Password strength checklist — always visible once user starts typing */}
                   {password.length > 0 && (
-                    <ul className="ains-pw-checklist">
+                    <ul className="trsyp-pw-checklist">
                       {passwordChecks.map((check) => (
-                        <li key={check.label} className={check.passed ? 'ains-pw-pass' : 'ains-pw-fail'}>
-                          <span className="ains-pw-icon">{check.passed ? '✓' : '✗'}</span>
+                        <li key={check.label} className={check.passed ? 'trsyp-pw-pass' : 'trsyp-pw-fail'}>
+                          <span className="trsyp-pw-icon">{check.passed ? '✓' : '✗'}</span>
                           {check.label}
                         </li>
                       ))}
                     </ul>
                   )}
                 </div>
-                <button type="submit" className="ains-btn-login" disabled={loading}>{loading ? 'Creating…' : 'Create Account'}</button>
+                <button type="submit" className="trsyp-btn-login" disabled={loading}>{loading ? 'Creating…' : 'Create Account'}</button>
               </form>
             )}
 
-            <div className="ains-popup-footer">
+            <div className="trsyp-popup-footer">
               {isLogin ? (
                 <>Don&apos;t have an account? <button type="button" onClick={() => switchMode(false)} style={{ background: 'none', border: 'none', color: '#fff', textDecoration: 'underline', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', padding: 0, marginLeft: '4px' }}>Register here</button></>
               ) : (
