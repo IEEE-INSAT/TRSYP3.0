@@ -581,6 +581,15 @@ button {
   transform: translateY(-2px);
 }
 
+@media (max-width: 480px) {
+  .reg-popup {
+    padding: 32px 24px;
+  }
+  .reg-popup-buttons {
+    flex-direction: column;
+  }
+}
+
 /* ─── HERO ────────────────────────────────────────────── */
 .hero {
   position: relative;
@@ -2438,6 +2447,7 @@ button {
 .reg-count-group {
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .reg-count-btn {
@@ -2771,6 +2781,21 @@ button {
 
 .reg-success-popup-btn-pink:hover {
   background: #e0105e;
+}
+
+@media (max-width: 600px) {
+  .reg-page {
+    padding: calc(var(--nav-height) + 20px) 16px 60px;
+  }
+  .reg-row {
+    grid-template-columns: 1fr;
+  }
+  .reg-member-card {
+    padding: 16px;
+  }
+  .reg-info-banner {
+    padding: 24px 20px;
+  }
 }
 
 /* ─── Navbar Dashboard Button ──────────────────────── */
@@ -6752,6 +6777,75 @@ button {
   padding-right: 40px;
 }
 
+/* Validation: error state on inputs */
+.ains-input-error {
+  border-color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.ains-input-error:focus {
+  box-shadow: 0 0 0 1px #ef4444;
+}
+
+/* Validation: inline field error text */
+.ains-field-error {
+  margin: 2px 0 0;
+  font-family: var(--font-body, sans-serif);
+  font-size: 12px;
+  color: #f87171;
+  line-height: 1.4;
+}
+
+/* Validation: checking indicator */
+.ains-field-checking {
+  margin: 2px 0 0;
+  font-family: var(--font-body, sans-serif);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+  line-height: 1.4;
+  animation: ainsPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes ainsPulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+
+/* Validation: password strength checklist */
+.ains-pw-checklist {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ains-pw-checklist li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-body, sans-serif);
+  font-size: 12px;
+  line-height: 1.4;
+  transition: color 0.2s;
+}
+
+.ains-pw-icon {
+  flex-shrink: 0;
+  font-size: 13px;
+  width: 16px;
+  text-align: center;
+}
+
+.ains-pw-pass {
+  color: #34d399;
+}
+
+.ains-pw-fail {
+  color: rgba(255, 255, 255, 0.35);
+}
+
 .ains-pw-toggle {
   position: absolute;
   right: 12px;
@@ -6856,6 +6950,40 @@ button {
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.1em;
+}
+
+/* Email confirmation sent — success view */
+.ains-confirmation {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0 8px;
+  animation: ainsSlideUp 0.3s ease;
+}
+
+.ains-confirmation-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(0, 232, 122, 0.1);
+  color: var(--color-green, #00e87a);
+}
+
+.ains-confirmation-text {
+  font-family: var(--font-body, sans-serif);
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.65);
+  text-align: center;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.ains-confirmation-text strong {
+  color: #fff;
 }
 
 

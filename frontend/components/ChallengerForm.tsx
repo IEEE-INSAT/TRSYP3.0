@@ -204,7 +204,7 @@ export default function ChallengerForm() {
 
           <div className="reg-field">
             <label className="reg-label" htmlFor="teamName">Team Name *</label>
-            <input id="teamName" className={`reg-input ${errors.teamName ? 'reg-input-error' : ''}`} type="text" placeholder="Enter your team name" value={form.teamName} onChange={(e) => set('teamName', e.target.value)} />
+            <input id="teamName" className={`reg-input ${errors.teamName ? 'reg-input-error' : ''}`} type="text" value={form.teamName} onChange={(e) => set('teamName', e.target.value)} />
             {errors.teamName && <span className="reg-error">{errors.teamName}</span>}
           </div>
 
@@ -212,26 +212,26 @@ export default function ChallengerForm() {
 
           <div className="reg-field">
             <label className="reg-label" htmlFor="leaderName">Full Name *</label>
-            <input id="leaderName" className={`reg-input ${errors.leaderName ? 'reg-input-error' : ''}`} type="text" placeholder="Team leader full name" value={form.leaderName} onChange={(e) => set('leaderName', e.target.value)} />
+            <input id="leaderName" className={`reg-input ${errors.leaderName ? 'reg-input-error' : ''}`} type="text" value={form.leaderName} onChange={(e) => set('leaderName', e.target.value)} />
             {errors.leaderName && <span className="reg-error">{errors.leaderName}</span>}
           </div>
 
           <div className="reg-row">
             <div className="reg-field">
               <label className="reg-label" htmlFor="leaderEmail">Email Address *</label>
-              <input id="leaderEmail" className={`reg-input ${errors.leaderEmail ? 'reg-input-error' : ''}`} type="email" placeholder="leader@example.com" value={form.leaderEmail} onChange={(e) => set('leaderEmail', e.target.value)} />
+              <input id="leaderEmail" className={`reg-input ${errors.leaderEmail ? 'reg-input-error' : ''}`} type="email" value={form.leaderEmail} onChange={(e) => set('leaderEmail', e.target.value)} />
               {errors.leaderEmail && <span className="reg-error">{errors.leaderEmail}</span>}
             </div>
             <div className="reg-field">
               <label className="reg-label" htmlFor="leaderWhatsapp">WhatsApp Number *</label>
-              <input id="leaderWhatsapp" className={`reg-input ${errors.leaderWhatsapp ? 'reg-input-error' : ''}`} type="tel" placeholder="+216 XX XXX XXX" value={form.leaderWhatsapp} onChange={(e) => set('leaderWhatsapp', e.target.value)} />
+              <input id="leaderWhatsapp" className={`reg-input ${errors.leaderWhatsapp ? 'reg-input-error' : ''}`} type="tel" value={form.leaderWhatsapp} onChange={(e) => set('leaderWhatsapp', e.target.value)} />
               {errors.leaderWhatsapp && <span className="reg-error">{errors.leaderWhatsapp}</span>}
             </div>
           </div>
 
           <div className="reg-field">
             <label className="reg-label" htmlFor="university">University / Student Branch *</label>
-            <input id="university" className={`reg-input ${errors.university ? 'reg-input-error' : ''}`} type="text" placeholder="e.g. INSAT, ENIT, ENSIT..." value={form.university} onChange={(e) => set('university', e.target.value)} />
+            <input id="university" className={`reg-input ${errors.university ? 'reg-input-error' : ''}`} type="text" value={form.university} onChange={(e) => set('university', e.target.value)} />
             {errors.university && <span className="reg-error">{errors.university}</span>}
           </div>
 
@@ -251,7 +251,7 @@ export default function ChallengerForm() {
               <motion.div className="reg-ieee-fields" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }}>
                 <div className="reg-field">
                   <label className="reg-label" htmlFor="ieeeId">IEEE Member ID *</label>
-                  <input id="ieeeId" className={`reg-input ${errors.ieeeId ? 'reg-input-error' : ''}`} type="text" placeholder="e.g. 12345678" value={form.ieeeId} onChange={(e) => set('ieeeId', e.target.value)} />
+                  <input id="ieeeId" className={`reg-input ${errors.ieeeId ? 'reg-input-error' : ''}`} type="text" value={form.ieeeId} onChange={(e) => set('ieeeId', e.target.value)} />
                   {errors.ieeeId && <span className="reg-error">{errors.ieeeId}</span>}
                 </div>
                 <div className="reg-field">
@@ -288,26 +288,26 @@ export default function ChallengerForm() {
 
                 <div className="reg-field">
                   <label className="reg-label">Name *</label>
-                  <input className={`reg-input ${errors[`m${idx}_name`] ? 'reg-input-error' : ''}`} type="text" placeholder="Member full name" value={member.name} onChange={(e) => setMember(idx, 'name', e.target.value)} />
+                  <input className={`reg-input ${errors[`m${idx}_name`] ? 'reg-input-error' : ''}`} type="text" value={member.name} onChange={(e) => setMember(idx, 'name', e.target.value)} />
                   {errors[`m${idx}_name`] && <span className="reg-error">{errors[`m${idx}_name`]}</span>}
                 </div>
 
                 <div className="reg-row">
                   <div className="reg-field">
                     <label className="reg-label">Email *</label>
-                    <input className={`reg-input ${errors[`m${idx}_email`] ? 'reg-input-error' : ''}`} type="email" placeholder="member@example.com" value={member.email} onChange={(e) => setMember(idx, 'email', e.target.value)} />
+                    <input className={`reg-input ${errors[`m${idx}_email`] ? 'reg-input-error' : ''}`} type="email" value={member.email} onChange={(e) => setMember(idx, 'email', e.target.value)} />
                     {errors[`m${idx}_email`] && <span className="reg-error">{errors[`m${idx}_email`]}</span>}
                   </div>
                   <div className="reg-field">
                     <label className="reg-label">WhatsApp *</label>
-                    <input className={`reg-input ${errors[`m${idx}_whatsapp`] ? 'reg-input-error' : ''}`} type="tel" placeholder="+216 XX XXX XXX" value={member.whatsapp} onChange={(e) => setMember(idx, 'whatsapp', e.target.value)} />
+                    <input className={`reg-input ${errors[`m${idx}_whatsapp`] ? 'reg-input-error' : ''}`} type="tel" value={member.whatsapp} onChange={(e) => setMember(idx, 'whatsapp', e.target.value)} />
                     {errors[`m${idx}_whatsapp`] && <span className="reg-error">{errors[`m${idx}_whatsapp`]}</span>}
                   </div>
                 </div>
 
                 <div className="reg-field">
                   <label className="reg-label">University / Student Branch *</label>
-                  <input className={`reg-input ${errors[`m${idx}_university`] ? 'reg-input-error' : ''}`} type="text" placeholder="e.g. INSAT, ENIT, ENSIT..." value={member.university} onChange={(e) => setMember(idx, 'university', e.target.value)} />
+                  <input className={`reg-input ${errors[`m${idx}_university`] ? 'reg-input-error' : ''}`} type="text" value={member.university} onChange={(e) => setMember(idx, 'university', e.target.value)} />
                   {errors[`m${idx}_university`] && <span className="reg-error">{errors[`m${idx}_university`]}</span>}
                 </div>
 
@@ -325,7 +325,7 @@ export default function ChallengerForm() {
                     <motion.div className="reg-ieee-fields" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }}>
                       <div className="reg-field">
                         <label className="reg-label">IEEE Member ID *</label>
-                        <input className={`reg-input ${errors[`m${idx}_ieeeId`] ? 'reg-input-error' : ''}`} type="text" placeholder="e.g. 12345678" value={member.ieeeId} onChange={(e) => setMember(idx, 'ieeeId', e.target.value)} />
+                        <input className={`reg-input ${errors[`m${idx}_ieeeId`] ? 'reg-input-error' : ''}`} type="text" value={member.ieeeId} onChange={(e) => setMember(idx, 'ieeeId', e.target.value)} />
                         {errors[`m${idx}_ieeeId`] && <span className="reg-error">{errors[`m${idx}_ieeeId`]}</span>}
                       </div>
                       <div className="reg-field">
@@ -349,7 +349,7 @@ export default function ChallengerForm() {
           <div className="reg-field">
             <label className="reg-label" htmlFor="pw">Password *</label>
             <div className="reg-pw-wrap">
-              <input id="pw" className={`reg-input ${errors.password ? 'reg-input-error' : ''}`} type={showPw ? 'text' : 'password'} placeholder="Minimum 8 characters" value={form.password} onChange={(e) => set('password', e.target.value)} />
+              <input id="pw" className={`reg-input ${errors.password ? 'reg-input-error' : ''}`} type={showPw ? 'text' : 'password'} value={form.password} onChange={(e) => set('password', e.target.value)} />
               <PwToggle show={showPw} onToggle={() => setShowPw((p) => !p)} />
             </div>
             {errors.password && <span className="reg-error">{errors.password}</span>}
@@ -358,7 +358,7 @@ export default function ChallengerForm() {
           <div className="reg-field">
             <label className="reg-label" htmlFor="cpw">Confirm Password *</label>
             <div className="reg-pw-wrap">
-              <input id="cpw" className={`reg-input ${errors.confirmPassword ? 'reg-input-error' : ''}`} type={showCpw ? 'text' : 'password'} placeholder="Re-enter your password" value={form.confirmPassword} onChange={(e) => set('confirmPassword', e.target.value)} />
+              <input id="cpw" className={`reg-input ${errors.confirmPassword ? 'reg-input-error' : ''}`} type={showCpw ? 'text' : 'password'} value={form.confirmPassword} onChange={(e) => set('confirmPassword', e.target.value)} />
               <PwToggle show={showCpw} onToggle={() => setShowCpw((p) => !p)} />
             </div>
             {errors.confirmPassword && <span className="reg-error">{errors.confirmPassword}</span>}

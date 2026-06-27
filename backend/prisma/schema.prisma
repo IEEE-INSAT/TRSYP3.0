@@ -28,11 +28,24 @@ model User {
   provider   String   @default("email")
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  active     Boolean  @default(false)
 
   // Relations
-  participant Participant?
+  participant Participant?  
+  activateToken ActivateToken?
 
   @@map("users")
+}
+model ActivateToken {
+  id        String   @id @default(uuid())
+  userId    String   @unique @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  activatedAt DateTime? @map("activated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("activate_tokens")
 }
 
 enum Position {
