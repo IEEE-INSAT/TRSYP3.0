@@ -9,6 +9,9 @@ jest.mock('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => ({
     auth: {
       resetPasswordForEmail: jest.fn(),
+      admin: {
+        getUserById: jest.fn(),
+      },
     },
   })),
 }));
@@ -29,6 +32,7 @@ describe('AuthService', () => {
     get: jest.fn<any>((key: string) => {
       if (key === 'SUPABASE_URL') return 'http://localhost:54321';
       if (key === 'SUPABASE_SERVICE_ROLE_KEY') return 'test-key';
+      if (key === 'FRONTEND_URL') return 'https://rtc.ieee.tn';
       return null;
     }),
   };
@@ -61,7 +65,10 @@ describe('AuthService', () => {
       
       mockPrismaService.user.upsert.mockResolvedValue(expectedUser);
 
-      const result = await service.syncUser(supabaseId, dto as any, true);
+      const getUserByIdMock = service['supabase'].auth.admin.getUserById as jest.Mock<any>;
+      getUserByIdMock.mockResolvedValue({ data: { user: { email_confirmed_at: '2026-01-01' } }, error: null });
+
+      const result = await service.syncUser(supabaseId, dto as any);
 
       expect(prisma.user.upsert).toHaveBeenCalledWith({
         where: { supabaseId },
@@ -70,6 +77,7 @@ describe('AuthService', () => {
           name: dto.name,
           lastName: dto.lastName,
           provider: dto.provider,
+          active: true,
         },
         create: {
           supabaseId,
@@ -77,6 +85,7 @@ describe('AuthService', () => {
           name: dto.name,
           lastName: dto.lastName,
           provider: dto.provider,
+          active: true,
         },
       });
       expect(result).toEqual(expectedUser);
@@ -98,32 +107,38 @@ describe('AuthService', () => {
   });
 
   describe('resetPassword', () => {
-    it('should throw an error if the user is not found', async () => {
+    const genericResponse = { message: 'If an account exists, a password reset email has been sent' };
+
+    it('should return the generic message even if the user is not found (no enumeration)', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.resetPassword('test@test.com')).rejects.toThrow('User not found');
+      const result = await service.resetPassword('unknown@test.com');
+
+      expect(result).toEqual(genericResponse);
     });
 
     it('should send a password reset email if the user exists', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue({ id: '1', email: 'test@test.com' });
       
-      // We can access the mocked supabase client from the service instance
       const resetMock = service['supabase'].auth.resetPasswordForEmail as jest.Mock<any>;
       resetMock.mockResolvedValue({ data: {}, error: null });
 
       const result = await service.resetPassword('test@test.com');
 
-      expect(resetMock).toHaveBeenCalledWith('test@test.com', { redirectTo: 'http://localhost:3000' });
-      expect(result).toEqual({ message: 'If an account exists, a password reset email has been sent' });
+      expect(resetMock).toHaveBeenCalledWith('test@test.com', { redirectTo: 'https://rtc.ieee.tn' });
+      expect(result).toEqual(genericResponse);
     });
 
-    it('should throw an error if supabase resetPasswordForEmail fails', async () => {
+    it('should return the generic message even if supabase fails (no error leakage)', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue({ id: '1', email: 'test@test.com' });
       
       const resetMock = service['supabase'].auth.resetPasswordForEmail as jest.Mock<any>;
       resetMock.mockResolvedValue({ data: null, error: { message: 'Supabase error' } });
 
-      await expect(service.resetPassword('test@test.com')).rejects.toThrow('Supabase error');
+      const result = await service.resetPassword('test@test.com');
+
+      // The error is swallowed — the response is still the generic message.
+      expect(result).toEqual(genericResponse);
     });
   });
 });

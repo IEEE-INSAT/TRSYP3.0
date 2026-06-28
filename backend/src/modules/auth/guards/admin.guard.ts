@@ -14,7 +14,9 @@ export class AdminGuard implements CanActivate {
             return false;
         }
 
-        const admin = await this.adminService.findBySupabaseId(user.sub);
+        // Use _supabaseId (the original Supabase UUID preserved by the JWT
+        // strategy), NOT user.sub which has been remapped to the internal DB ID.
+        const admin = await this.adminService.findBySupabaseId(user._supabaseId);
         return !!admin;
     }
 }
