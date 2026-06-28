@@ -22,7 +22,7 @@ export class SupabaseJwtStrategy extends PassportStrategy(Strategy, 'supabase-jw
             jwtFromRequest: (req: any) => {
                 const token = ExtractJwt.fromAuthHeaderAsBearerToken()(req);
                 if (token) {
-                    this.logger.debug(`Extracted Token: ${token.substring(0, 20)}...`);
+                    this.logger.debug('Extracted Token');
                     // Note: We bypass manual jwt.verify() because jwks-rsa handles asynchronous secret fetching natively via passport-jwt.
                     // If it throws a 401, Nest's built-in AuthGuard intercepts it.
                 } else {

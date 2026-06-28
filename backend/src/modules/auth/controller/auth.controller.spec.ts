@@ -51,7 +51,7 @@ describe('AuthController', () => {
     });
 
     it('should sync user and return 200 OK', async () => {
-      const req = { user: { sub: 'supa-123' } } as unknown as Request;
+      const req = { user: { _supabaseId: 'supa-123', email_confirmed_at: '2026-01-01' } } as unknown as Request;
       const res = mockResponse();
       const dto = { email: 'test@test.com', name: 'Test', lastName: 'User', provider: 'google' } as any;
       const expectedUser = { id: '1', email: 'test@test.com' };
@@ -68,7 +68,7 @@ describe('AuthController', () => {
 
   describe('getMe', () => {
     it('should return the current user profile with 200 OK', async () => {
-      const req = { user: { sub: 'supa-123' } } as unknown as Request;
+      const req = { user: { _supabaseId: 'supa-123', sub: 'db-id-123' } } as unknown as Request;
       const res = mockResponse();
       const expectedUser = { id: '1', email: 'test@test.com' };
 

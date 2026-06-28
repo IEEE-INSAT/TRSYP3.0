@@ -12,7 +12,7 @@ export default function ThemeSection() {
       </div>
 
       {/* Banner image container */}
-      <div className="theme-banner-wrap">
+      <div className="theme-banner-wrap" style={{ position: 'relative' }}>
         <Image
           className="theme-banner-img theme-banner-desktop"
           src="/b.png"

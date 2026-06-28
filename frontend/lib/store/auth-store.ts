@@ -154,6 +154,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         password,
       });
       if (error) throw new Error(error.message);
+
+      // ── Email confirmation gate ──────────────────────────────────────
+      // Supabase may return a valid session even if the user hasn't
+      // confirmed their email. Block login and sign them back out.
+      const user = data.session?.user;
+      if (user && !user.email_confirmed_at) {
+        await supabase.auth.signOut();
+        throw new Error('Please confirm your email address before logging in. Check your inbox for the verification link.');
+      }
+
       const token = data.session?.access_token ?? null;
       set({ accessToken: token, email });
       if (token && isApiConfigured) {
