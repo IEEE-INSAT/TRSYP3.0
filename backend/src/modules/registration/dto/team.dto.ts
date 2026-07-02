@@ -133,3 +133,25 @@ export class TeamResponseDto {
   @Type(() => TeamMemberResponseDto)
   members!: TeamMemberResponseDto[];
 }
+
+/**
+ * Response DTO for admin team list operations with pagination
+ */
+export class TeamListResponseDto {
+  @ApiProperty({ description: 'List of teams', type: [TeamResponseDto] })
+  @Expose()
+  @Type(() => TeamResponseDto)
+  data!: TeamResponseDto[];
+
+  @ApiProperty({ description: 'Total number of teams matching filters' })
+  @Expose()
+  total!: number;
+
+  @ApiProperty({ description: 'Number of items skipped' })
+  @Expose()
+  skip!: number;
+
+  @ApiProperty({ description: 'Number of items returned' })
+  @Expose()
+  take!: number;
+}

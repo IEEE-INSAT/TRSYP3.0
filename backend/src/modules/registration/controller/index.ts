@@ -45,6 +45,7 @@ import {
   JoinTeamSchema,
   TeamResponseDto,
   TeamMemberResponseDto,
+  TeamListResponseDto,
 } from '../dto';
 import { JwtAuthGuard, RolesGuard } from '../../../common/guards';
 import { CurrentUser, Roles } from '../../../common/decorators';
@@ -507,6 +508,53 @@ export class RegistrationController {
     return plainToInstance(ParticipantAdminResponseDto, participant, {
       excludeExtraneousValues: true,
     });
+  }
+
+  /**
+   * List all teams (admin only)
+   */
+  @Get('admin/teams')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @ApiOperation({ summary: '[Admin] List all teams' })
+  @ApiQuery({ name: 'skip', required: false, type: Number })
+  @ApiQuery({ name: 'take', required: false, type: Number })
+  @ApiQuery({ name: 'search', required: false, type: String, description: 'Filter by team name or join code' })
+  @ApiResponse({ status: 200, description: 'Teams list', type: TeamListResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - admin only' })
+  async listTeams(
+    @Query('skip', new DefaultValuePipe(0), ParseIntPipe) skip: number,
+    @Query('take', new DefaultValuePipe(20), ParseIntPipe) take: number,
+    @Query('search') search?: string,
+  ): Promise<TeamListResponseDto> {
+    const filters = { skip, take, search };
+
+    const [teams, total] = await Promise.all([
+      this.registrationService.listTeams(filters),
+      this.registrationService.countTeams({ search }),
+    ]);
+
+    return plainToInstance(
+      TeamListResponseDto,
+      {
+        data: teams.map((t) => ({
+          ...t,
+          memberCount: t.members.length,
+          spotsLeft: t.size - t.members.length,
+          members: t.members.map((m: { id: string; user: { name: string; lastName: string; email: string } }) => ({
+            id: m.id,
+            name: m.user.name,
+            lastName: m.user.lastName,
+            email: m.user.email,
+          })),
+        })),
+        total,
+        skip,
+        take,
+      },
+      { excludeExtraneousValues: true },
+    );
   }
 
   /**
