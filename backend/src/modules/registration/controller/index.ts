@@ -380,6 +380,39 @@ export class RegistrationController {
     await this.registrationService.leaveTeam(userId);
   }
 
+  /**
+   * Remove a member from your team (leader path only).
+   */
+  @Delete('team/members/:participantId')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Remove a member from your team (leader only)' })
+  @ApiParam({ name: 'participantId', description: 'Participant ID of the member to remove' })
+  @ApiResponse({ status: 200, description: 'Member removed successfully', type: TeamResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'You do not lead a team, or the target is not a member' })
+  @ApiResponse({ status: 409, description: 'Leaders cannot kick themselves' })
+  async kickMember(
+    @CurrentUser('sub') userId: string,
+    @Param('participantId', ParseUUIDPipe) participantId: string,
+  ): Promise<TeamResponseDto> {
+    const team = await this.registrationService.kickMember(userId, participantId);
+    return plainToInstance(
+      TeamResponseDto,
+      {
+        ...team,
+        memberCount: team.members.length,
+        spotsLeft: team.size - team.members.length,
+        members: team.members.map((m: { id: string; user: { name: string; lastName: string; email: string } }) => ({
+          id: m.id,
+          name: m.user.name,
+          lastName: m.user.lastName,
+          email: m.user.email,
+        })),
+      },
+      { excludeExtraneousValues: true },
+    );
+  }
+
   // ============================================================================
   // ADMIN ROUTES
   // ============================================================================
