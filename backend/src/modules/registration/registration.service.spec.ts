@@ -600,4 +600,47 @@ describe('RegistrationService', () => {
       );
     });
   });
+
+  describe('disbandTeam', () => {
+    it('should let the leader disband their team', async () => {
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        const mockTx = {
+          participant: {
+            findUnique: jest.fn().mockResolvedValue({
+              id: 'leader-participant',
+              ownedTeam: { id: 'team-1' },
+            }),
+          },
+          team: {
+            delete: jest.fn().mockResolvedValue({ id: 'team-1' }),
+          },
+        };
+        return cb(mockTx);
+      });
+
+      await expect(service.disbandTeam('user-1')).resolves.toBeUndefined();
+    });
+
+    it('should throw NotFoundException if the caller has no profile', async () => {
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        const mockTx = { participant: { findUnique: jest.fn().mockResolvedValue(null) } };
+        return cb(mockTx);
+      });
+
+      await expect(service.disbandTeam('user-1')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException if the caller does not lead a team', async () => {
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        const mockTx = {
+          participant: {
+            findUnique: jest.fn().mockResolvedValue({ id: 'participant-1', ownedTeam: null }),
+          },
+        };
+        return cb(mockTx);
+      });
+
+      await expect(service.disbandTeam('user-1')).rejects.toThrow(NotFoundException);
+    });
+  });
 });

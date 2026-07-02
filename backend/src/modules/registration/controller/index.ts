@@ -413,6 +413,21 @@ export class RegistrationController {
     );
   }
 
+  /**
+   * Disband your team entirely (leader path only).
+   * Deletes the team; all members (including you) are freed to join or
+   * create another team afterwards.
+   */
+  @Delete('team')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Disband your team (leader only)' })
+  @ApiResponse({ status: 204, description: 'Team disbanded successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'You do not lead a team' })
+  async disbandTeam(@CurrentUser('sub') userId: string): Promise<void> {
+    await this.registrationService.disbandTeam(userId);
+  }
+
   // ============================================================================
   // ADMIN ROUTES
   // ============================================================================
