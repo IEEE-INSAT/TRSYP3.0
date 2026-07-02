@@ -2,6 +2,7 @@
 
 import { useEffect, useState, ReactNode } from 'react';
 import { useAdminStore } from '@/lib/store';
+import { useAuthStore } from '@/lib/store/auth-store';
 import { ToastProvider } from './AdminToast';
 
 const SIDEBAR_LINKS = [
@@ -14,6 +15,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const load = useAdminStore((s) => s.load);
   const lock = useAdminStore((s) => s.lock);
+  const signOut = useAuthStore((s) => s.signOut);
 
   useEffect(() => {
     void load();
@@ -21,7 +23,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   const handleLogout = () => {
     lock();
-    window.location.href = '/';
+    signOut(); // signOut() already redirects to '/'
   };
 
   const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';

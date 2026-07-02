@@ -9,15 +9,6 @@ import { generateSeedData } from '../admin/seed';
 
 const STORAGE_KEY = 'trsyp_registrations';
 
-/**
- * PLACEHOLDER admin password gate.
- *
- * TODO(backend): replace with real admin authentication — sign in through
- * Supabase, then authorise via the backend `AdminGuard` (which checks the
- * Prisma `Admin` table). Kept here so the admin area is reachable in the demo.
- */
-const ADMIN_PASSWORD = 'trsyp2026';
-
 // ── Local placeholder persistence for registrations ───────────────────────────
 
 function readLocal(): AdminRegistrations {
@@ -43,16 +34,27 @@ function writeLocal(data: AdminRegistrations): void {
 /**
  * Admin service.
  *
+ * `verifyAdmin` calls `GET /admin/me` (guarded by SupabaseAuthGuard +
+ * AdminGuard on the backend) to check whether the currently signed-in
+ * Supabase user is an admin.
+ *
  * `createAdmin` / `deleteAccount` are wired to the live backend routes.
  * The registration listing & moderation methods are PLACEHOLDERS backed by
  * local storage + seed data because the backend `/registration/admin/*` routes
- * live in the un-wired registration module. Each documents the real endpoint
- * and is gated by `features.adminApi`.
+ * live in the un-wired registration module.
  */
 export const adminService = {
-  /** Verify the placeholder admin password (see TODO above). */
-  verifyPassword(password: string): boolean {
-    return password === ADMIN_PASSWORD;
+  /**
+   * Verify admin status by calling the backend.
+   * Returns the admin profile on success, null if the user is not an admin.
+   */
+  async verifyAdmin(token: string): Promise<BackendAdmin | null> {
+    try {
+      return await apiFetch<BackendAdmin>('/admin/me', { token });
+    } catch {
+      // 401 (not logged in) or 403 (not an admin) — treat both as "not admin"
+      return null;
+    }
   },
 
   /** POST /admin/create-admin (requires an admin Supabase token). */

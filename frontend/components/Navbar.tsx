@@ -21,15 +21,15 @@ export default function Navbar() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [pendingRoute, setPendingRoute] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
-  const { isRegistered } = useAuth();
-  const { accessToken, signOut } = useAuthStore();
+  const { isRegistered, logout } = useAuth();
+  const { accessToken } = useAuthStore();
   const isAuthenticated = !!accessToken;
   const pathname = usePathname();
 
   const handleRegisterClick = (e: React.MouseEvent, route: string) => {
     e.preventDefault();
     setShowRegister(false);
-    
+
     if (isAuthenticated) {
       window.location.href = route;
     } else {
@@ -45,10 +45,10 @@ export default function Navbar() {
   useEffect(() => {
     handleScroll(); // check on mount
     window.addEventListener('scroll', handleScroll, { passive: true });
-    
+
     const handleOpenModal = () => setShowRegister(true);
     window.addEventListener('open-register-modal', handleOpenModal);
-    
+
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('open-register-modal', handleOpenModal);
@@ -88,7 +88,7 @@ export default function Navbar() {
 
         <div className="navbar-right-group">
           {isAuthenticated && (
-            <button className="navbar-signout" onClick={() => signOut()} aria-label="Sign out">
+            <button className="navbar-signout" onClick={() => logout()} aria-label="Sign out">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                 <polyline points="16 17 21 12 16 7" />
@@ -142,7 +142,7 @@ export default function Navbar() {
           </a>
         ))}
         {isAuthenticated && (
-          <button className="navbar-mobile-register" style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)' }} onClick={() => { setOpen(false); signOut(); }}>
+          <button className="navbar-mobile-register" style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)' }} onClick={() => { setOpen(false); logout(); }}>
             Sign Out
           </button>
         )}

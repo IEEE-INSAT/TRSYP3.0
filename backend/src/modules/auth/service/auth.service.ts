@@ -4,12 +4,12 @@ import { SyncUserDto } from "../dto/sync-user.dto";
 import { createClient, SupabaseClient } from "@supabase/supabase-js"
 import { ConfigService } from "@nestjs/config";
 @Injectable()
-export class AuthService{
+export class AuthService {
   private readonly logger = new Logger(AuthService.name);
   private supabase: SupabaseClient;
-  constructor(private readonly prisma:PrismaService,
-              private readonly configService: ConfigService
-  ){
+  constructor(private readonly prisma: PrismaService,
+    private readonly configService: ConfigService
+  ) {
     const supabaseUrl = this.configService.get<string>('SUPABASE_URL');
     const supabaseKey = this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY');
     if (!supabaseUrl || !supabaseKey) {
@@ -77,30 +77,30 @@ export class AuthService{
       throw error;
     }
   }
-  async findbySupabaseId(supabaseId:string){
+  async findbySupabaseId(supabaseId: string) {
     return this.prisma.user.findUnique({
-      where:{supabaseId},
+      where: { supabaseId },
     });
   }
-  async resetPassword(email:string){
-    const user=await this.prisma.user.findUnique({
-      where:{email},
+  async resetPassword(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
     });
 
     // Only send the reset email if the user actually exists.
     // We intentionally do NOT throw or return a different response when the
     // user is missing — doing so would let an attacker enumerate registered
     // emails by comparing HTTP status codes (200 vs 500).
-    if(user){
+    if (user) {
       const redirectTo = this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
-      const {error}=await this.supabase.auth.resetPasswordForEmail(email,{redirectTo});
-      if(error){
+      const { error } = await this.supabase.auth.resetPasswordForEmail(email, { redirectTo });
+      if (error) {
         this.logger.error(`resetPassword Supabase error for email=${email}: ${error.message}`);
         // Swallow the error — still return the generic message so the
         // response is indistinguishable from success.
       }
     }
 
-    return {message:"If an account exists, a password reset email has been sent"};
+    return { message: "If an account exists, a password reset email has been sent" };
   }
 }

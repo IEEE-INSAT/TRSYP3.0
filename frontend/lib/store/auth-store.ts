@@ -200,9 +200,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   signOut: async () => {
-    const supabase = getSupabaseClient();
-    if (supabase) await supabase.auth.signOut();
     set({ accessToken: null, account: null, email: null });
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        await supabase.auth.signOut();
+      } catch (err) {
+        console.error('[auth] Supabase sign out error:', err);
+      }
+    }
     if (typeof window !== 'undefined') {
       window.location.href = '/';
     }
