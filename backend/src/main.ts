@@ -24,7 +24,14 @@ async function bootstrap() {
       .setTitle('TRSYP 3.0 API')
       .setDescription('Backend API for TRSYP 3.0')
       .setVersion('1.0')
-      .addBearerAuth()
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+        'JWT-auth',
+      )
       .build();
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api/docs', app, document);
@@ -33,4 +40,4 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   await app.listen(process.env.PORT ? Number(process.env.PORT) : 3001);
 }
-bootstrap();
+bootstrap();

@@ -1127,6 +1127,55 @@ export class RegistrationService {
     }
   }
 
+  /**
+   * List all teams with optional pagination and search (Admin only).
+   * Search matches against team name or join code (case-insensitive).
+   *
+   * @param options - Filter/pagination options
+   * @returns List of teams including members
+   */
+  async listTeams(options?: {
+    search?: string;
+    skip?: number;
+    take?: number;
+  }): Promise<TeamWithMembers[]> {
+    const where: Prisma.TeamWhereInput = {};
+    if (options?.search) {
+      where.OR = [
+        { name: { contains: options.search, mode: 'insensitive' } },
+        { code: { contains: options.search, mode: 'insensitive' } },
+      ];
+    }
+
+    return this.prisma.team.findMany({
+      where,
+      skip: options?.skip,
+      take: options?.take,
+      include: {
+        members: { include: { user: { select: { name: true, lastName: true, email: true } } } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Count teams matching optional search (Admin only).
+   *
+   * @param options - Filter options
+   * @returns Count of teams
+   */
+  async countTeams(options?: { search?: string }): Promise<number> {
+    const where: Prisma.TeamWhereInput = {};
+    if (options?.search) {
+      where.OR = [
+        { name: { contains: options.search, mode: 'insensitive' } },
+        { code: { contains: options.search, mode: 'insensitive' } },
+      ];
+    }
+
+    return this.prisma.team.count({ where });
+  }
+
   // ============================================================================
   // PRIVATE HELPERS
   // ============================================================================
