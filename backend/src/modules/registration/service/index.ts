@@ -804,6 +804,7 @@ export class RegistrationService {
    * @param userId  - JWT sub resolved to internal DB user ID
    * @param dto     - Team name and maximum size
    * @throws NotFoundException   if no participant profile exists for this user
+   * @throws ForbiddenException  if the participant is banned or has already paid
    * @throws ConflictException   if the participant already leads or belongs to a team
    */
   async createTeam(userId: string, dto: CreateTeamDto): Promise<TeamWithMembers> {
@@ -814,6 +815,8 @@ export class RegistrationService {
           select: {
             id: true,
             teamId: true,
+            paid: true,
+            banned: true,
             ownedTeam: { select: { id: true } },
           },
         });
@@ -821,6 +824,19 @@ export class RegistrationService {
         if (!participant) {
           throw new NotFoundException(
             'Participant profile not found. Complete Step 1 of registration first.',
+          );
+        }
+
+        // Edge case: Banned participants cannot form teams
+        if (participant.banned) {
+          throw new ForbiddenException('Banned participants cannot create a team.');
+        }
+
+        // Edge case: Team composition is locked once payment is confirmed,
+        // same as profile edits (see updateProfile).
+        if (participant.paid) {
+          throw new ForbiddenException(
+            'Your registration is paid and locked. Contact support to change your team.',
           );
         }
 
@@ -864,20 +880,39 @@ export class RegistrationService {
    * @param userId  - JWT sub resolved to internal DB user ID
    * @param dto     - The join code
    * @throws NotFoundException   if no participant profile or team with that code exists
+   * @throws ForbiddenException  if the participant is banned, has already paid, or the team is full
    * @throws ConflictException   if the participant is already in a team
-   * @throws ForbiddenException  if the team is already at full capacity
    */
   async joinTeam(userId: string, dto: JoinTeamDto): Promise<TeamWithMembers> {
     try {
       const team = await this.prisma.$transaction(async (tx) => {
         const participant = await tx.participant.findUnique({
           where: { userId },
-          select: { id: true, teamId: true, ownedTeam: { select: { id: true } } },
+          select: {
+            id: true,
+            teamId: true,
+            paid: true,
+            banned: true,
+            ownedTeam: { select: { id: true } },
+          },
         });
 
         if (!participant) {
           throw new NotFoundException(
             'Participant profile not found. Complete Step 1 of registration first.',
+          );
+        }
+
+        // Edge case: Banned participants cannot join teams
+        if (participant.banned) {
+          throw new ForbiddenException('Banned participants cannot join a team.');
+        }
+
+        // Edge case: Team composition is locked once payment is confirmed,
+        // same as profile edits (see updateProfile).
+        if (participant.paid) {
+          throw new ForbiddenException(
+            'Your registration is paid and locked. Contact support to change your team.',
           );
         }
 

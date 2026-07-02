@@ -442,6 +442,307 @@ describe('RegistrationService', () => {
     });
   });
 
+  describe('createTeam', () => {
+    const createDto = { name: 'RoboTeam Alpha', size: 4 };
+
+    it('should let an eligible participant create a team', async () => {
+      const createdTeam = {
+        id: 'team-1',
+        code: 'A3KX9Z',
+        name: 'RoboTeam Alpha',
+        size: 4,
+        leaderId: 'participant-1',
+        members: [
+          { id: 'participant-1', user: { name: 'A', lastName: 'B', email: 'a@b.com' } },
+        ],
+      };
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        const mockTx = {
+          participant: {
+            findUnique: jest.fn().mockResolvedValue({
+              id: 'participant-1',
+              teamId: null,
+              paid: false,
+              banned: false,
+              ownedTeam: null,
+            }),
+          },
+          team: {
+            findUnique: jest.fn().mockResolvedValue(null), // code uniqueness check
+            create: jest.fn().mockResolvedValue(createdTeam),
+          },
+        };
+        return cb(mockTx);
+      });
+
+      const result = await service.createTeam('user-1', createDto as any);
+
+      expect(result.id).toBe('team-1');
+      expect(result.members).toHaveLength(1);
+    });
+
+    it('should throw NotFoundException if the caller has no profile', async () => {
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        const mockTx = { participant: { findUnique: jest.fn().mockResolvedValue(null) } };
+        return cb(mockTx);
+      });
+
+      await expect(service.createTeam('user-1', createDto as any)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should throw ForbiddenException if the participant is banned', async () => {
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        const mockTx = {
+          participant: {
+            findUnique: jest.fn().mockResolvedValue({
+              id: 'participant-1',
+              teamId: null,
+              paid: false,
+              banned: true,
+              ownedTeam: null,
+            }),
+          },
+        };
+        return cb(mockTx);
+      });
+
+      await expect(service.createTeam('user-1', createDto as any)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should throw ForbiddenException if the participant has already paid', async () => {
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        const mockTx = {
+          participant: {
+            findUnique: jest.fn().mockResolvedValue({
+              id: 'participant-1',
+              teamId: null,
+              paid: true,
+              banned: false,
+              ownedTeam: null,
+            }),
+          },
+        };
+        return cb(mockTx);
+      });
+
+      await expect(service.createTeam('user-1', createDto as any)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should throw ConflictException if the participant already leads a team', async () => {
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        const mockTx = {
+          participant: {
+            findUnique: jest.fn().mockResolvedValue({
+              id: 'participant-1',
+              teamId: null,
+              paid: false,
+              banned: false,
+              ownedTeam: { id: 'team-1' },
+            }),
+          },
+        };
+        return cb(mockTx);
+      });
+
+      await expect(service.createTeam('user-1', createDto as any)).rejects.toThrow(
+        ConflictException,
+      );
+    });
+
+    it('should throw ConflictException if the participant already belongs to a team', async () => {
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        const mockTx = {
+          participant: {
+            findUnique: jest.fn().mockResolvedValue({
+              id: 'participant-1',
+              teamId: 'team-2',
+              paid: false,
+              banned: false,
+              ownedTeam: null,
+            }),
+          },
+        };
+        return cb(mockTx);
+      });
+
+      await expect(service.createTeam('user-1', createDto as any)).rejects.toThrow(
+        ConflictException,
+      );
+    });
+  });
+
+  describe('joinTeam', () => {
+    const joinDto = { code: 'A3KX9Z' };
+
+    it('should let an eligible participant join a team with spots left', async () => {
+      const updatedTeam = {
+        id: 'team-1',
+        code: 'A3KX9Z',
+        size: 4,
+        members: [
+          { id: 'leader-participant', user: { name: 'A', lastName: 'B', email: 'a@b.com' } },
+          { id: 'participant-1', user: { name: 'C', lastName: 'D', email: 'c@d.com' } },
+        ],
+      };
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        const mockTx = {
+          participant: {
+            findUnique: jest.fn().mockResolvedValue({
+              id: 'participant-1',
+              teamId: null,
+              paid: false,
+              banned: false,
+              ownedTeam: null,
+            }),
+          },
+          team: {
+            findUnique: jest.fn().mockResolvedValue({
+              id: 'team-1',
+              size: 4,
+              members: [{ id: 'leader-participant' }],
+            }),
+            update: jest.fn().mockResolvedValue(updatedTeam),
+          },
+        };
+        return cb(mockTx);
+      });
+
+      const result = await service.joinTeam('user-1', joinDto as any);
+
+      expect(result.members).toHaveLength(2);
+    });
+
+    it('should throw NotFoundException if the caller has no profile', async () => {
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        const mockTx = { participant: { findUnique: jest.fn().mockResolvedValue(null) } };
+        return cb(mockTx);
+      });
+
+      await expect(service.joinTeam('user-1', joinDto as any)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should throw ForbiddenException if the participant is banned', async () => {
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        const mockTx = {
+          participant: {
+            findUnique: jest.fn().mockResolvedValue({
+              id: 'participant-1',
+              teamId: null,
+              paid: false,
+              banned: true,
+              ownedTeam: null,
+            }),
+          },
+        };
+        return cb(mockTx);
+      });
+
+      await expect(service.joinTeam('user-1', joinDto as any)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should throw ForbiddenException if the participant has already paid', async () => {
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        const mockTx = {
+          participant: {
+            findUnique: jest.fn().mockResolvedValue({
+              id: 'participant-1',
+              teamId: null,
+              paid: true,
+              banned: false,
+              ownedTeam: null,
+            }),
+          },
+        };
+        return cb(mockTx);
+      });
+
+      await expect(service.joinTeam('user-1', joinDto as any)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should throw ConflictException if the participant is already in a team', async () => {
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        const mockTx = {
+          participant: {
+            findUnique: jest.fn().mockResolvedValue({
+              id: 'participant-1',
+              teamId: 'team-2',
+              paid: false,
+              banned: false,
+              ownedTeam: null,
+            }),
+          },
+        };
+        return cb(mockTx);
+      });
+
+      await expect(service.joinTeam('user-1', joinDto as any)).rejects.toThrow(
+        ConflictException,
+      );
+    });
+
+    it('should throw NotFoundException if no team matches the code', async () => {
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        const mockTx = {
+          participant: {
+            findUnique: jest.fn().mockResolvedValue({
+              id: 'participant-1',
+              teamId: null,
+              paid: false,
+              banned: false,
+              ownedTeam: null,
+            }),
+          },
+          team: { findUnique: jest.fn().mockResolvedValue(null) },
+        };
+        return cb(mockTx);
+      });
+
+      await expect(service.joinTeam('user-1', joinDto as any)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should throw ForbiddenException if the team is already full', async () => {
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        const mockTx = {
+          participant: {
+            findUnique: jest.fn().mockResolvedValue({
+              id: 'participant-1',
+              teamId: null,
+              paid: false,
+              banned: false,
+              ownedTeam: null,
+            }),
+          },
+          team: {
+            findUnique: jest.fn().mockResolvedValue({
+              id: 'team-1',
+              size: 2,
+              members: [{ id: 'a' }, { id: 'b' }],
+            }),
+          },
+        };
+        return cb(mockTx);
+      });
+
+      await expect(service.joinTeam('user-1', joinDto as any)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+  });
+
   describe('leaveTeam', () => {
     it('should let a member leave their team', async () => {
       mockPrismaService.$transaction.mockImplementation(async (cb: any) => {

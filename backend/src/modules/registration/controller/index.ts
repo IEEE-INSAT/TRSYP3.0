@@ -281,6 +281,7 @@ export class RegistrationController {
   @ApiResponse({ status: 201, description: 'Team created successfully', type: TeamResponseDto })
   @ApiResponse({ status: 400, description: 'Validation error' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Participant is banned or already paid' })
   @ApiResponse({ status: 404, description: 'Participant profile not found' })
   @ApiResponse({ status: 409, description: 'Already in a team' })
   async createTeam(
@@ -314,7 +315,7 @@ export class RegistrationController {
   @ApiResponse({ status: 200, description: 'Joined team successfully', type: TeamResponseDto })
   @ApiResponse({ status: 400, description: 'Validation error' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Team is full' })
+  @ApiResponse({ status: 403, description: 'Team is full, or participant is banned/already paid' })
   @ApiResponse({ status: 404, description: 'Participant or team not found' })
   @ApiResponse({ status: 409, description: 'Already in a team' })
   async joinTeam(
