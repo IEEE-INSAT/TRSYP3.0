@@ -2367,6 +2367,11 @@ button {
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
+select.reg-input option {
+  background: var(--color-bg, #010008);
+  color: #fff;
+}
+
 .reg-input::placeholder {
   color: rgba(255, 255, 255, 0.2);
 }

@@ -5,8 +5,9 @@ generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
 }
+
 datasource db {
-  provider  = "postgresql"
+  provider = "postgresql"
 }
 
 // ============================================================================
@@ -160,12 +161,64 @@ enum ParticipantType {
 }
 
 enum SB {
-  INSAT
-  ESPRIT
-  SUPCOM
-  ENIT
-  ENETCOM
   ENIS
+  ENSI
+  SupCom
+  EPS
+  EPPM
+  ISI
+  ISETRADES
+  INAT
+  IIT
+  PolytechSfax
+  ESSTHS
+  ISIMS
+  ISSATM
+  ENISO
+  EPI
+  ISIMM
+  ENICarthage
+  ENIG
+  INSAT
+  FST
+  ENIB
+  ENSIT
+  ENIM
+  FSB
+  ENETCom
+  ISETCom
+  ULT
+  ISSATSo
+  ENSTAB
+  ENIT
+  ISETDjerba
+  TEKUP
+  SESAME
+  ISIMa
+  EPT
+  ISIMG
+  UCentrale
+  ISTIC
+  ISTMT
+  ESPIN
+  FSG
+  ISETNABEUL
+  ISETKef
+  ESPRIT
+  ESPITA
+  ISETBizerte
+  ISETKairouan
+  SMU
+  ISGI
+  FSS
+  FSM
+  CU
+  MSE
+  ISGIS
+  
+   
+
+
   Other
 }
 
