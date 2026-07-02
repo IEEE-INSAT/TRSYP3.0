@@ -935,6 +935,48 @@ export class RegistrationService {
     return team;
   }
 
+  /**
+   * Leave a team the participant is a member of (member path only).
+   * Team leaders cannot use this — they must disband the team instead,
+   * since removing the leader would orphan the remaining members.
+   *
+   * @param userId - JWT sub resolved to internal DB user ID
+   * @throws NotFoundException  if no participant profile exists, or the participant isn't in a team
+   * @throws ConflictException  if the participant is the team leader
+   */
+  async leaveTeam(userId: string): Promise<void> {
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        const participant = await tx.participant.findUnique({
+          where: { userId },
+          select: { id: true, teamId: true, ownedTeam: { select: { id: true } } },
+        });
+
+        if (!participant) {
+          throw new NotFoundException('Participant profile not found.');
+        }
+
+        if (participant.ownedTeam) {
+          throw new ConflictException(
+            'Team leaders cannot leave their own team. Disband the team instead.',
+          );
+        }
+
+        if (!participant.teamId) {
+          throw new NotFoundException('You are not part of any team.');
+        }
+
+        await tx.participant.update({
+          where: { id: participant.id },
+          data: { team: { disconnect: true } },
+        });
+      });
+    } catch (error) {
+      this.handlePrismaError(error);
+      throw error;
+    }
+  }
+
   // ============================================================================
   // PRIVATE HELPERS
   // ============================================================================
