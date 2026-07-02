@@ -977,6 +977,63 @@ export class RegistrationService {
     }
   }
 
+  /**
+   * Remove a member from a team (leader path only).
+   * The leader cannot kick themselves — use disbandTeam for that.
+   *
+   * @param userId        - JWT sub of the caller, resolved to internal DB user ID
+   * @param memberId      - Participant ID of the member to remove
+   * @throws NotFoundException   if the caller has no profile, doesn't lead a team,
+   *                             or the target isn't a member of that team
+   * @throws ConflictException   if the leader tries to kick themselves
+   */
+  async kickMember(userId: string, memberId: string): Promise<TeamWithMembers> {
+    try {
+      const team = await this.prisma.$transaction(async (tx) => {
+        const participant = await tx.participant.findUnique({
+          where: { userId },
+          select: { id: true, ownedTeam: { select: { id: true } } },
+        });
+
+        if (!participant) {
+          throw new NotFoundException('Participant profile not found.');
+        }
+
+        if (!participant.ownedTeam) {
+          throw new NotFoundException('You do not lead a team.');
+        }
+
+        if (memberId === participant.id) {
+          throw new ConflictException(
+            'Leaders cannot kick themselves. Disband the team instead.',
+          );
+        }
+
+        const target = await tx.team.findFirst({
+          where: { id: participant.ownedTeam.id, members: { some: { id: memberId } } },
+          select: { id: true },
+        });
+
+        if (!target) {
+          throw new NotFoundException('That participant is not a member of your team.');
+        }
+
+        return tx.team.update({
+          where: { id: participant.ownedTeam.id },
+          data: { members: { disconnect: { id: memberId } } },
+          include: {
+            members: { include: { user: { select: { name: true, lastName: true, email: true } } } },
+          },
+        });
+      });
+
+      return team;
+    } catch (error) {
+      this.handlePrismaError(error);
+      throw error;
+    }
+  }
+
   // ============================================================================
   // PRIVATE HELPERS
   // ============================================================================
