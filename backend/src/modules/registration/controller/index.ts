@@ -365,6 +365,21 @@ export class RegistrationController {
     );
   }
 
+  /**
+   * Leave the current user's team (member path).
+   * Team leaders cannot leave their own team — they must disband it instead.
+   */
+  @Delete('team/leave')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Leave your current team (members only, not the leader)' })
+  @ApiResponse({ status: 204, description: 'Left the team successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Not in a team' })
+  @ApiResponse({ status: 409, description: 'Team leaders cannot leave; disband the team instead' })
+  async leaveTeam(@CurrentUser('sub') userId: string): Promise<void> {
+    await this.registrationService.leaveTeam(userId);
+  }
+
   // ============================================================================
   // ADMIN ROUTES
   // ============================================================================

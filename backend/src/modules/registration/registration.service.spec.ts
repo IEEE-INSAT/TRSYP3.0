@@ -441,4 +441,69 @@ describe('RegistrationService', () => {
       expect(mockEventEmitter.emit).toHaveBeenCalled();
     });
   });
+
+  describe('leaveTeam', () => {
+    it('should let a member leave their team', async () => {
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        const mockTx = {
+          participant: {
+            findUnique: jest.fn().mockResolvedValue({
+              id: 'participant-1',
+              teamId: 'team-1',
+              ownedTeam: null,
+            }),
+            update: jest.fn().mockResolvedValue({}),
+          },
+        };
+        return cb(mockTx);
+      });
+
+      await expect(service.leaveTeam('user-1')).resolves.toBeUndefined();
+    });
+
+    it('should throw NotFoundException if the participant profile does not exist', async () => {
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        const mockTx = {
+          participant: { findUnique: jest.fn().mockResolvedValue(null) },
+        };
+        return cb(mockTx);
+      });
+
+      await expect(service.leaveTeam('user-1')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ConflictException if the participant is the team leader', async () => {
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        const mockTx = {
+          participant: {
+            findUnique: jest.fn().mockResolvedValue({
+              id: 'participant-1',
+              teamId: null,
+              ownedTeam: { id: 'team-1' },
+            }),
+          },
+        };
+        return cb(mockTx);
+      });
+
+      await expect(service.leaveTeam('user-1')).rejects.toThrow(ConflictException);
+    });
+
+    it('should throw NotFoundException if the participant is not in any team', async () => {
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        const mockTx = {
+          participant: {
+            findUnique: jest.fn().mockResolvedValue({
+              id: 'participant-1',
+              teamId: null,
+              ownedTeam: null,
+            }),
+          },
+        };
+        return cb(mockTx);
+      });
+
+      await expect(service.leaveTeam('user-1')).rejects.toThrow(NotFoundException);
+    });
+  });
 });
