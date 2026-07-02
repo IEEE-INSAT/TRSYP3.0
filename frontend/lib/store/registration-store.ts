@@ -2,7 +2,13 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useAuthStore } from './auth-store';
 import { registrationService } from '../api/registration.service';
-import type { RegisterParticipantPayload } from '../api/types';
+import { ApiError } from '../api/http';
+import type {
+  Gender,
+  ParticipantType,
+  RegisterParticipantPayload,
+  SB,
+} from '../api/types';
 
 export type UserType = 'participant' | 'challenger';
 export type RegStatus =
@@ -10,6 +16,7 @@ export type RegStatus =
   | 'waiting_for_verification'
   | 'approved';
 
+/** Kept for the dashboard's optional team display. */
 export interface TeamMember {
   name: string;
   email: string;
@@ -20,7 +27,10 @@ export interface TeamMember {
   isRas: boolean;
 }
 
-/** The participant/challenger profile that drives the dashboard. */
+/**
+ * Dashboard-facing profile. Identity (name/email) comes from Supabase auth;
+ * the participant fields come from Page 1 of the registration flow.
+ */
 export interface UserData {
   userType: UserType;
   fullName: string;
@@ -33,27 +43,19 @@ export interface UserData {
   status: RegStatus;
   paymentProofSubmitted: boolean;
   paymentFileName: string;
-  // Challenger-only
+  // Team display (optional)
   teamName?: string;
   memberCount?: number;
   members?: TeamMember[];
 }
 
+/** Page 1 (participant info) input — matches the registration flow spec. */
 export interface ParticipantRegistrationInput {
-  fullName: string;
-  email: string;
-  whatsapp: string;
-  university: string;
-  isIeee: boolean;
-  ieeeId: string;
-  isRas: boolean;
-  password: string;
-}
-
-export interface ChallengerRegistrationInput extends ParticipantRegistrationInput {
-  teamName: string;
-  memberCount: number;
-  members: TeamMember[];
+  participantType: ParticipantType;
+  gender: Gender;
+  phone: string;
+  ieeeId?: number;
+  sb?: SB;
 }
 
 interface RegistrationState {
@@ -63,44 +65,26 @@ interface RegistrationState {
   error: string | null;
 
   registerParticipant: (input: ParticipantRegistrationInput) => Promise<void>;
-  registerChallenger: (input: ChallengerRegistrationInput) => Promise<void>;
   submitPayment: (fileName: string) => Promise<void>;
   updateStatus: (status: RegStatus) => void;
   reset: () => void;
 }
 
-function splitName(fullName: string): { name: string; lastName: string } {
-  const parts = fullName.trim().split(/\s+/);
-  const name = parts.shift() ?? '';
-  return { name, lastName: parts.join(' ') };
-}
-
-/**
- * Maps the V2 form input to the backend RegisterLocalDto.
- *
- * TODO(backend/form): the form does not yet collect `gender`, `participantType`
- * or `country`, and `university` is free text whereas the backend `sb` field is
- * an enum. These placeholders only travel to the server once
- * `features.registrationApi` is enabled — close the gaps (add the fields to the
- * form / relax the backend enum) before flipping the flag.
- */
-function toRegisterPayload(
-  input: ParticipantRegistrationInput,
-): RegisterParticipantPayload {
+function toPayload(input: ParticipantRegistrationInput): RegisterParticipantPayload {
+  const isIeee = input.participantType !== 'NonIEEE';
   return {
-    ieeeId: input.isIeee && input.ieeeId ? Number(input.ieeeId) : undefined,
-    phone: input.whatsapp,
-    gender: 'male',
-    participantType: input.isIeee ? 'Student' : 'NonIEEE',
-    sb: input.university,
-    country: 'Tunisia',
+    phone: input.phone,
+    gender: input.gender,
+    participantType: input.participantType,
+    ieeeId: isIeee ? input.ieeeId : undefined,
+    sb: input.participantType === 'Student' ? input.sb : undefined,
   };
 }
 
 /**
- * Registration store — the source of truth for the signed-in participant's own
- * profile. Persisted to localStorage so the dashboard survives reloads while
- * the backend registration module is still a placeholder.
+ * Registration store — source of truth for the signed-in participant's profile.
+ * Persisted so the dashboard survives reloads while the backend registration
+ * module is still a placeholder.
  */
 export const useRegistrationStore = create<RegistrationState>()(
   persist(
@@ -113,69 +97,39 @@ export const useRegistrationStore = create<RegistrationState>()(
       registerParticipant: async (input) => {
         set({ submitting: true, error: null });
         try {
-          const { name, lastName } = splitName(input.fullName);
-          await useAuthStore
-            .getState()
-            .signUp({ email: input.email, password: input.password, name, lastName });
+          const auth = useAuthStore.getState();
+          const token = await auth.getAccessToken();
 
-          const token = await useAuthStore.getState().getAccessToken();
-          if (token) await registrationService.register(toRegisterPayload(input), token);
+          // POST /registration — tolerate 409 (already registered).
+          if (token) {
+            try {
+              await registrationService.register(toPayload(input), token);
+            } catch (e) {
+              if (!(e instanceof ApiError && e.status === 409)) throw e;
+            }
+          }
+
+          const account = auth.account;
+          const email = account?.email ?? auth.email ?? '';
+          const fullName = account
+            ? `${account.name} ${account.lastName}`.trim()
+            : email
+              ? email.split('@')[0]
+              : 'Participant';
 
           set({
             user: {
               userType: 'participant',
-              fullName: input.fullName,
-              email: input.email,
-              whatsapp: input.whatsapp,
-              university: input.university,
-              isIeee: input.isIeee,
-              ieeeId: input.ieeeId,
-              isRas: input.isRas,
+              fullName,
+              email,
+              whatsapp: input.phone,
+              university: input.sb ?? '',
+              isIeee: input.participantType !== 'NonIEEE',
+              ieeeId: input.ieeeId ? String(input.ieeeId) : '',
+              isRas: false,
               status: 'waiting_for_payment',
               paymentProofSubmitted: false,
               paymentFileName: '',
-            },
-            isRegistered: true,
-            submitting: false,
-          });
-        } catch (e) {
-          set({
-            submitting: false,
-            error: e instanceof Error ? e.message : 'Registration failed',
-          });
-          throw e;
-        }
-      },
-
-      registerChallenger: async (input) => {
-        set({ submitting: true, error: null });
-        try {
-          // Per current scope the team leader registers as a normal participant;
-          // the full team is kept client-side until the backend models teams.
-          const { name, lastName } = splitName(input.fullName);
-          await useAuthStore
-            .getState()
-            .signUp({ email: input.email, password: input.password, name, lastName });
-
-          const token = await useAuthStore.getState().getAccessToken();
-          if (token) await registrationService.register(toRegisterPayload(input), token);
-
-          set({
-            user: {
-              userType: 'challenger',
-              fullName: input.fullName,
-              email: input.email,
-              whatsapp: input.whatsapp,
-              university: input.university,
-              isIeee: input.isIeee,
-              ieeeId: input.ieeeId,
-              isRas: input.isRas,
-              status: 'waiting_for_payment',
-              paymentProofSubmitted: false,
-              paymentFileName: '',
-              teamName: input.teamName,
-              memberCount: input.memberCount,
-              members: input.members,
             },
             isRegistered: true,
             submitting: false,

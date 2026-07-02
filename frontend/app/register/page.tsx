@@ -5,17 +5,17 @@ import Footer from '@/components/Footer';
 import GridBeam from '@/components/GridBeam';
 
 export const metadata: Metadata = {
-  title: 'Challenge Registration · TRSYP 3.0',
-  description: 'Register your team for the TRSYP 3.0 Robotics Challenge',
+  title: 'Registration · TRSYP 3.0',
+  description: 'Register for TRSYP 3.0',
 };
 
-export default function ChallengerPage() {
+export default function RegisterPage() {
   return (
     <>
       <Navbar />
       <GridBeam>
         <main>
-          <RegisterFlow initialChallenge />
+          <RegisterFlow />
         </main>
         <Footer />
       </GridBeam>

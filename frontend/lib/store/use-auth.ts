@@ -14,7 +14,6 @@ export function useAuth() {
   const submitting = useRegistrationStore((s) => s.submitting);
   const error = useRegistrationStore((s) => s.error);
   const registerParticipant = useRegistrationStore((s) => s.registerParticipant);
-  const registerChallenger = useRegistrationStore((s) => s.registerChallenger);
   const submitPayment = useRegistrationStore((s) => s.submitPayment);
   const updateStatus = useRegistrationStore((s) => s.updateStatus);
   const resetRegistration = useRegistrationStore((s) => s.reset);
@@ -31,7 +30,6 @@ export function useAuth() {
     submitting,
     error,
     registerParticipant,
-    registerChallenger,
     submitPayment,
     updateStatus,
     logout,
