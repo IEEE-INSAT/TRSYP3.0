@@ -6,13 +6,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Prisma, Participant, VisaApplication, VisaStatus } from '@prisma/client';
+import { Prisma, Participant, Team, VisaApplication, VisaStatus } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import {
   RegisterLocalDto,
   RegisterInternationalDto,
   UpdateProfileDto,
   RequestVisaDto,
+  CreateTeamDto,
+  JoinTeamDto,
 } from '../dto';
 import {
   ParticipantRegisteredEvent,
@@ -31,6 +33,13 @@ type ParticipantWithRelations = Participant & {
     id: string;
     visaApplication?: VisaApplication | null;
   } | null;
+};
+
+/** Type for team with members and their user info */
+type TeamWithMembers = Team & {
+  members: (Participant & {
+    user: { name: string; lastName: string; email: string };
+  })[];
 };
 
 /**
@@ -251,13 +260,19 @@ export class RegistrationService {
    * @param participantId - The participant ID
    * @throws NotFoundException if participant not found
    * @throws ForbiddenException if participant has paid (refund required first)
+   * @throws ConflictException if participant leads a team that still has other members
    */
   async deleteParticipant(participantId: string): Promise<void> {
     try {
       await this.prisma.$transaction(async (tx) => {
         const participant = await tx.participant.findUnique({
           where: { id: participantId },
-          select: { id: true, userId: true, paid: true },
+          select: {
+            id: true,
+            userId: true,
+            paid: true,
+            ownedTeam: { select: { id: true, members: { select: { id: true } } } },
+          },
         });
 
         if (!participant) {
@@ -271,7 +286,25 @@ export class RegistrationService {
           );
         }
 
+        // Edge case: Cannot delete a profile that leads a team with other
+        // members — the DB-level ON DELETE CASCADE on Team.leaderId would
+        // silently delete the team and drop every teammate out with no
+        // warning. Force an explicit disband/kick first instead.
+        if (participant.ownedTeam) {
+          const teammateCount = participant.ownedTeam.members.filter(
+            (m) => m.id !== participant.id,
+          ).length;
+
+          if (teammateCount > 0) {
+            throw new ConflictException(
+              `You lead a team with ${teammateCount} other member(s). ` +
+                'Disband the team or remove them before deleting your profile.',
+            );
+          }
+        }
+
         // Cascade delete handled by Prisma schema relations
+        // (safe here: either no team, or a solo team with no other members)
         await tx.participant.delete({ where: { id: participantId } });
 
         this.eventEmitter.emit(
@@ -760,8 +793,416 @@ export class RegistrationService {
   }
 
   // ============================================================================
+  // TEAM METHODS
+  // ============================================================================
+
+  /**
+   * Create a team (leader path).
+   * Generates a unique 6-character join code.
+   * The creating participant becomes both leader and first member.
+   *
+   * @param userId  - JWT sub resolved to internal DB user ID
+   * @param dto     - Team name and maximum size
+   * @throws NotFoundException   if no participant profile exists for this user
+   * @throws ForbiddenException  if the participant is banned or has already paid
+   * @throws ConflictException   if the participant already leads or belongs to a team
+   */
+  async createTeam(userId: string, dto: CreateTeamDto): Promise<TeamWithMembers> {
+    try {
+      const team = await this.prisma.$transaction(async (tx) => {
+        const participant = await tx.participant.findUnique({
+          where: { userId },
+          select: {
+            id: true,
+            teamId: true,
+            paid: true,
+            banned: true,
+            ownedTeam: { select: { id: true } },
+          },
+        });
+
+        if (!participant) {
+          throw new NotFoundException(
+            'Participant profile not found. Complete Step 1 of registration first.',
+          );
+        }
+
+        // Edge case: Banned participants cannot form teams
+        if (participant.banned) {
+          throw new ForbiddenException('Banned participants cannot create a team.');
+        }
+
+        // Edge case: Team composition is locked once payment is confirmed,
+        // same as profile edits (see updateProfile).
+        if (participant.paid) {
+          throw new ForbiddenException(
+            'Your registration is paid and locked. Contact support to change your team.',
+          );
+        }
+
+        if (participant.ownedTeam) {
+          throw new ConflictException('You already lead a team.');
+        }
+
+        if (participant.teamId) {
+          throw new ConflictException('You are already a member of a team.');
+        }
+
+        const code = await this.generateUniqueCode(tx);
+
+        // Create the team and immediately connect the leader as a member
+        const created = await tx.team.create({
+          data: {
+            code,
+            name: dto.name,
+            size: dto.size,
+            leader: { connect: { id: participant.id } },
+            members: { connect: { id: participant.id } },
+          },
+          include: {
+            members: { include: { user: { select: { name: true, lastName: true, email: true } } } },
+          },
+        });
+
+        return created;
+      });
+
+      return team;
+    } catch (error) {
+      this.handlePrismaError(error);
+      throw error;
+    }
+  }
+
+  /**
+   * Join an existing team using a 6-character code (member path).
+   *
+   * @param userId  - JWT sub resolved to internal DB user ID
+   * @param dto     - The join code
+   * @throws NotFoundException   if no participant profile or team with that code exists
+   * @throws ForbiddenException  if the participant is banned, has already paid, or the team is full
+   * @throws ConflictException   if the participant is already in a team
+   */
+  async joinTeam(userId: string, dto: JoinTeamDto): Promise<TeamWithMembers> {
+    try {
+      const team = await this.prisma.$transaction(async (tx) => {
+        const participant = await tx.participant.findUnique({
+          where: { userId },
+          select: {
+            id: true,
+            teamId: true,
+            paid: true,
+            banned: true,
+            ownedTeam: { select: { id: true } },
+          },
+        });
+
+        if (!participant) {
+          throw new NotFoundException(
+            'Participant profile not found. Complete Step 1 of registration first.',
+          );
+        }
+
+        // Edge case: Banned participants cannot join teams
+        if (participant.banned) {
+          throw new ForbiddenException('Banned participants cannot join a team.');
+        }
+
+        // Edge case: Team composition is locked once payment is confirmed,
+        // same as profile edits (see updateProfile).
+        if (participant.paid) {
+          throw new ForbiddenException(
+            'Your registration is paid and locked. Contact support to change your team.',
+          );
+        }
+
+        if (participant.ownedTeam || participant.teamId) {
+          throw new ConflictException('You are already in a team.');
+        }
+
+        const target = await tx.team.findUnique({
+          where: { code: dto.code.toUpperCase() },
+          include: {
+            members: { select: { id: true } },
+          },
+        });
+
+        if (!target) {
+          throw new NotFoundException('No team found with that code. Check the code and try again.');
+        }
+
+        // Enforce the hard size cap
+        if (target.members.length >= target.size) {
+          throw new ForbiddenException(
+            `This team is already full (${target.size}/${target.size} members).`,
+          );
+        }
+
+        // Add the participant to the team
+        const updated = await tx.team.update({
+          where: { id: target.id },
+          data: { members: { connect: { id: participant.id } } },
+          include: {
+            members: { include: { user: { select: { name: true, lastName: true, email: true } } } },
+          },
+        });
+
+        return updated;
+      });
+
+      return team;
+    } catch (error) {
+      this.handlePrismaError(error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get the team the current user belongs to.
+   *
+   * @param userId - JWT sub resolved to internal DB user ID
+   * @throws NotFoundException if the user has no participant profile or is not in a team
+   */
+  async getMyTeam(userId: string): Promise<TeamWithMembers> {
+    const participant = await this.prisma.participant.findUnique({
+      where: { userId },
+      select: { id: true, teamId: true, ownedTeam: { select: { id: true } } },
+    });
+
+    if (!participant) {
+      throw new NotFoundException('Participant profile not found.');
+    }
+
+    // A participant's team is either one they joined or one they lead
+    const teamId = participant.teamId ?? participant.ownedTeam?.id;
+
+    if (!teamId) {
+      throw new NotFoundException('You are not part of any team yet.');
+    }
+
+    const team = await this.prisma.team.findUnique({
+      where: { id: teamId },
+      include: {
+        members: { include: { user: { select: { name: true, lastName: true, email: true } } } },
+      },
+    });
+
+    if (!team) {
+      throw new NotFoundException('Team not found.');
+    }
+
+    return team;
+  }
+
+  /**
+   * Leave a team the participant is a member of (member path only).
+   * Team leaders cannot use this — they must disband the team instead,
+   * since removing the leader would orphan the remaining members.
+   *
+   * @param userId - JWT sub resolved to internal DB user ID
+   * @throws NotFoundException  if no participant profile exists, or the participant isn't in a team
+   * @throws ConflictException  if the participant is the team leader
+   */
+  async leaveTeam(userId: string): Promise<void> {
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        const participant = await tx.participant.findUnique({
+          where: { userId },
+          select: { id: true, teamId: true, ownedTeam: { select: { id: true } } },
+        });
+
+        if (!participant) {
+          throw new NotFoundException('Participant profile not found.');
+        }
+
+        if (participant.ownedTeam) {
+          throw new ConflictException(
+            'Team leaders cannot leave their own team. Disband the team instead.',
+          );
+        }
+
+        if (!participant.teamId) {
+          throw new NotFoundException('You are not part of any team.');
+        }
+
+        await tx.participant.update({
+          where: { id: participant.id },
+          data: { team: { disconnect: true } },
+        });
+      });
+    } catch (error) {
+      this.handlePrismaError(error);
+      throw error;
+    }
+  }
+
+  /**
+   * Remove a member from a team (leader path only).
+   * The leader cannot kick themselves — use disbandTeam for that.
+   *
+   * @param userId        - JWT sub of the caller, resolved to internal DB user ID
+   * @param memberId      - Participant ID of the member to remove
+   * @throws NotFoundException   if the caller has no profile, doesn't lead a team,
+   *                             or the target isn't a member of that team
+   * @throws ConflictException   if the leader tries to kick themselves
+   */
+  async kickMember(userId: string, memberId: string): Promise<TeamWithMembers> {
+    try {
+      const team = await this.prisma.$transaction(async (tx) => {
+        const participant = await tx.participant.findUnique({
+          where: { userId },
+          select: { id: true, ownedTeam: { select: { id: true } } },
+        });
+
+        if (!participant) {
+          throw new NotFoundException('Participant profile not found.');
+        }
+
+        if (!participant.ownedTeam) {
+          throw new NotFoundException('You do not lead a team.');
+        }
+
+        if (memberId === participant.id) {
+          throw new ConflictException(
+            'Leaders cannot kick themselves. Disband the team instead.',
+          );
+        }
+
+        const target = await tx.team.findFirst({
+          where: { id: participant.ownedTeam.id, members: { some: { id: memberId } } },
+          select: { id: true },
+        });
+
+        if (!target) {
+          throw new NotFoundException('That participant is not a member of your team.');
+        }
+
+        return tx.team.update({
+          where: { id: participant.ownedTeam.id },
+          data: { members: { disconnect: { id: memberId } } },
+          include: {
+            members: { include: { user: { select: { name: true, lastName: true, email: true } } } },
+          },
+        });
+      });
+
+      return team;
+    } catch (error) {
+      this.handlePrismaError(error);
+      throw error;
+    }
+  }
+
+  /**
+   * Disband a team entirely (leader path only).
+   * Deletes the Team row. The `team_id` foreign key on Participant is
+   * `ON DELETE SET NULL`, so every member (including the ex-leader) is
+   * automatically freed from the team at the database level.
+   * The leader's own participant profile is untouched — only the team goes away.
+   *
+   * @param userId - JWT sub resolved to internal DB user ID
+   * @throws NotFoundException  if the caller has no participant profile or does not lead a team
+   */
+  async disbandTeam(userId: string): Promise<void> {
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        const participant = await tx.participant.findUnique({
+          where: { userId },
+          select: { id: true, ownedTeam: { select: { id: true } } },
+        });
+
+        if (!participant) {
+          throw new NotFoundException('Participant profile not found.');
+        }
+
+        if (!participant.ownedTeam) {
+          throw new NotFoundException('You do not lead a team.');
+        }
+
+        await tx.team.delete({ where: { id: participant.ownedTeam.id } });
+      });
+    } catch (error) {
+      this.handlePrismaError(error);
+      throw error;
+    }
+  }
+
+  /**
+   * List all teams with optional pagination and search (Admin only).
+   * Search matches against team name or join code (case-insensitive).
+   *
+   * @param options - Filter/pagination options
+   * @returns List of teams including members
+   */
+  async listTeams(options?: {
+    search?: string;
+    skip?: number;
+    take?: number;
+  }): Promise<TeamWithMembers[]> {
+    const where: Prisma.TeamWhereInput = {};
+    if (options?.search) {
+      where.OR = [
+        { name: { contains: options.search, mode: 'insensitive' } },
+        { code: { contains: options.search, mode: 'insensitive' } },
+      ];
+    }
+
+    return this.prisma.team.findMany({
+      where,
+      skip: options?.skip,
+      take: options?.take,
+      include: {
+        members: { include: { user: { select: { name: true, lastName: true, email: true } } } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Count teams matching optional search (Admin only).
+   *
+   * @param options - Filter options
+   * @returns Count of teams
+   */
+  async countTeams(options?: { search?: string }): Promise<number> {
+    const where: Prisma.TeamWhereInput = {};
+    if (options?.search) {
+      where.OR = [
+        { name: { contains: options.search, mode: 'insensitive' } },
+        { code: { contains: options.search, mode: 'insensitive' } },
+      ];
+    }
+
+    return this.prisma.team.count({ where });
+  }
+
+  // ============================================================================
   // PRIVATE HELPERS
   // ============================================================================
+
+  /**
+   * Generate a unique 6-character alphanumeric team code.
+   * Uses an unambiguous character set (no 0/O, 1/I/L).
+   * Retries up to 5 times before giving up (practically impossible to exhaust).
+   */
+  private async generateUniqueCode(tx: Prisma.TransactionClient): Promise<string> {
+    const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const code = Array.from(
+        { length: 6 },
+        () => CHARS[Math.floor(Math.random() * CHARS.length)],
+      ).join('');
+
+      const existing = await tx.team.findUnique({
+        where: { code },
+        select: { id: true },
+      });
+
+      if (!existing) return code;
+    }
+
+    throw new Error('Failed to generate a unique team code. Please try again.');
+  }
 
   /**
    * Change visa application status with validation

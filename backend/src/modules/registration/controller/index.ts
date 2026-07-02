@@ -39,6 +39,13 @@ import {
   ParticipantAdminResponseDto,
   VisaApplicationResponseDto,
   ParticipantListResponseDto,
+  CreateTeamDto,
+  CreateTeamSchema,
+  JoinTeamDto,
+  JoinTeamSchema,
+  TeamResponseDto,
+  TeamMemberResponseDto,
+  TeamListResponseDto,
 } from '../dto';
 import { JwtAuthGuard, RolesGuard } from '../../../common/guards';
 import { CurrentUser, Roles } from '../../../common/decorators';
@@ -162,6 +169,10 @@ export class RegistrationController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Cannot delete paid registration' })
   @ApiResponse({ status: 404, description: 'Profile not found' })
+  @ApiResponse({
+    status: 409,
+    description: 'You lead a team with other members; disband or remove them first',
+  })
   async deleteMyProfile(@CurrentUser('sub') userId: string): Promise<void> {
     const participant = await this.registrationService.findByUserId(userId);
     if (!participant) {
@@ -257,6 +268,173 @@ export class RegistrationController {
   }
 
   // ============================================================================
+  // TEAM ROUTES
+  // ============================================================================
+
+  /**
+   * Create a team (leader path).
+   * The authenticated participant becomes the team leader and first member.
+   * Returns the team including the generated join code.
+   */
+  @Post('team')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Create a team and receive a join code (leader path)' })
+  @ApiResponse({ status: 201, description: 'Team created successfully', type: TeamResponseDto })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Participant is banned or already paid' })
+  @ApiResponse({ status: 404, description: 'Participant profile not found' })
+  @ApiResponse({ status: 409, description: 'Already in a team' })
+  async createTeam(
+    @CurrentUser('sub') userId: string,
+    @Body(new ZodValidationPipe(CreateTeamSchema)) dto: CreateTeamDto,
+  ): Promise<TeamResponseDto> {
+    const team = await this.registrationService.createTeam(userId, dto);
+    return plainToInstance(
+      TeamResponseDto,
+      {
+        ...team,
+        memberCount: team.members.length,
+        spotsLeft: team.size - team.members.length,
+        members: team.members.map((m: { id: string; user: { name: string; lastName: string; email: string } }) => ({
+          id: m.id,
+          name: m.user.name,
+          lastName: m.user.lastName,
+          email: m.user.email,
+        })),
+      },
+      { excludeExtraneousValues: true },
+    );
+  }
+
+  /**
+   * Join an existing team using a 6-character code (member path).
+   */
+  @Post('team/join')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Join a team using a join code (member path)' })
+  @ApiResponse({ status: 200, description: 'Joined team successfully', type: TeamResponseDto })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Team is full, or participant is banned/already paid' })
+  @ApiResponse({ status: 404, description: 'Participant or team not found' })
+  @ApiResponse({ status: 409, description: 'Already in a team' })
+  async joinTeam(
+    @CurrentUser('sub') userId: string,
+    @Body(new ZodValidationPipe(JoinTeamSchema)) dto: JoinTeamDto,
+  ): Promise<TeamResponseDto> {
+    const team = await this.registrationService.joinTeam(userId, dto);
+    return plainToInstance(
+      TeamResponseDto,
+      {
+        ...team,
+        memberCount: team.members.length,
+        spotsLeft: team.size - team.members.length,
+        members: team.members.map((m: { id: string; user: { name: string; lastName: string; email: string } }) => ({
+          id: m.id,
+          name: m.user.name,
+          lastName: m.user.lastName,
+          email: m.user.email,
+        })),
+      },
+      { excludeExtraneousValues: true },
+    );
+  }
+
+  /**
+   * Get the current user's team.
+   * Returns full team info including members.
+   * Note: the join code is only useful to the leader — consider omitting it
+   * from the response for non-leaders in a future iteration.
+   */
+  @Get('team')
+  @ApiOperation({ summary: 'Get the current user\'s team' })
+  @ApiResponse({ status: 200, description: 'Team retrieved successfully', type: TeamResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Not in a team' })
+  async getMyTeam(@CurrentUser('sub') userId: string): Promise<TeamResponseDto> {
+    const team = await this.registrationService.getMyTeam(userId);
+    return plainToInstance(
+      TeamResponseDto,
+      {
+        ...team,
+        memberCount: team.members.length,
+        spotsLeft: team.size - team.members.length,
+        members: team.members.map((m: { id: string; user: { name: string; lastName: string; email: string } }) => ({
+          id: m.id,
+          name: m.user.name,
+          lastName: m.user.lastName,
+          email: m.user.email,
+        })),
+      },
+      { excludeExtraneousValues: true },
+    );
+  }
+
+  /**
+   * Leave the current user's team (member path).
+   * Team leaders cannot leave their own team — they must disband it instead.
+   */
+  @Delete('team/leave')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Leave your current team (members only, not the leader)' })
+  @ApiResponse({ status: 204, description: 'Left the team successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Not in a team' })
+  @ApiResponse({ status: 409, description: 'Team leaders cannot leave; disband the team instead' })
+  async leaveTeam(@CurrentUser('sub') userId: string): Promise<void> {
+    await this.registrationService.leaveTeam(userId);
+  }
+
+  /**
+   * Remove a member from your team (leader path only).
+   */
+  @Delete('team/members/:participantId')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Remove a member from your team (leader only)' })
+  @ApiParam({ name: 'participantId', description: 'Participant ID of the member to remove' })
+  @ApiResponse({ status: 200, description: 'Member removed successfully', type: TeamResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'You do not lead a team, or the target is not a member' })
+  @ApiResponse({ status: 409, description: 'Leaders cannot kick themselves' })
+  async kickMember(
+    @CurrentUser('sub') userId: string,
+    @Param('participantId', ParseUUIDPipe) participantId: string,
+  ): Promise<TeamResponseDto> {
+    const team = await this.registrationService.kickMember(userId, participantId);
+    return plainToInstance(
+      TeamResponseDto,
+      {
+        ...team,
+        memberCount: team.members.length,
+        spotsLeft: team.size - team.members.length,
+        members: team.members.map((m: { id: string; user: { name: string; lastName: string; email: string } }) => ({
+          id: m.id,
+          name: m.user.name,
+          lastName: m.user.lastName,
+          email: m.user.email,
+        })),
+      },
+      { excludeExtraneousValues: true },
+    );
+  }
+
+  /**
+   * Disband your team entirely (leader path only).
+   * Deletes the team; all members (including you) are freed to join or
+   * create another team afterwards.
+   */
+  @Delete('team')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Disband your team (leader only)' })
+  @ApiResponse({ status: 204, description: 'Team disbanded successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'You do not lead a team' })
+  async disbandTeam(@CurrentUser('sub') userId: string): Promise<void> {
+    await this.registrationService.disbandTeam(userId);
+  }
+
+  // ============================================================================
   // ADMIN ROUTES
   // ============================================================================
 
@@ -330,6 +508,53 @@ export class RegistrationController {
     return plainToInstance(ParticipantAdminResponseDto, participant, {
       excludeExtraneousValues: true,
     });
+  }
+
+  /**
+   * List all teams (admin only)
+   */
+  @Get('admin/teams')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @ApiOperation({ summary: '[Admin] List all teams' })
+  @ApiQuery({ name: 'skip', required: false, type: Number })
+  @ApiQuery({ name: 'take', required: false, type: Number })
+  @ApiQuery({ name: 'search', required: false, type: String, description: 'Filter by team name or join code' })
+  @ApiResponse({ status: 200, description: 'Teams list', type: TeamListResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - admin only' })
+  async listTeams(
+    @Query('skip', new DefaultValuePipe(0), ParseIntPipe) skip: number,
+    @Query('take', new DefaultValuePipe(20), ParseIntPipe) take: number,
+    @Query('search') search?: string,
+  ): Promise<TeamListResponseDto> {
+    const filters = { skip, take, search };
+
+    const [teams, total] = await Promise.all([
+      this.registrationService.listTeams(filters),
+      this.registrationService.countTeams({ search }),
+    ]);
+
+    return plainToInstance(
+      TeamListResponseDto,
+      {
+        data: teams.map((t) => ({
+          ...t,
+          memberCount: t.members.length,
+          spotsLeft: t.size - t.members.length,
+          members: t.members.map((m: { id: string; user: { name: string; lastName: string; email: string } }) => ({
+            id: m.id,
+            name: m.user.name,
+            lastName: m.user.lastName,
+            email: m.user.email,
+          })),
+        })),
+        total,
+        skip,
+        take,
+      },
+      { excludeExtraneousValues: true },
+    );
   }
 
   /**
