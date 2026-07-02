@@ -3,6 +3,8 @@
 import { useState, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from './AuthContext';
+import { useAuthStore } from '@/lib/store/auth-store';
+import AuthModal from './AuthModal';
 
 interface FormData {
   fullName: string;
@@ -32,6 +34,9 @@ const initial: FormData = {
 
 export default function ParticipantForm() {
   const { registerParticipant, submitting } = useAuth();
+  const { accessToken, initialized } = useAuthStore();
+  const isAuthenticated = !!accessToken;
+  const [showAuthGate, setShowAuthGate] = useState(true);
   const [form, setForm] = useState<FormData>(initial);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -98,6 +103,27 @@ export default function ParticipantForm() {
     form.password.length >= 8 &&
     form.password === form.confirmPassword &&
     form.feeAgreed;
+
+  // ── Auth guard ────────────────────────────────────────────────────────────
+  if (!initialized) return null;
+
+  if (!isAuthenticated && showAuthGate) {
+    return (
+      <div className="reg-page">
+        <AuthModal
+          onClose={() => {
+            setShowAuthGate(false);
+            window.location.href = '/';
+          }}
+          onSuccess={() => setShowAuthGate(false)}
+          onRegister={() => setShowAuthGate(false)}
+          pendingRoute="/register/participant"
+        />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) return null;
 
   return (
     <div className="reg-page">

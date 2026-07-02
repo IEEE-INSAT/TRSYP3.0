@@ -3,6 +3,8 @@
 import { useState, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from './AuthContext';
+import { useAuthStore } from '@/lib/store/auth-store';
+import AuthModal from './AuthModal';
 
 interface MemberData {
   name: string;
@@ -53,6 +55,9 @@ const initial: FormData = {
 
 export default function ChallengerForm() {
   const { registerChallenger, submitting } = useAuth();
+  const { accessToken, initialized } = useAuthStore();
+  const isAuthenticated = !!accessToken;
+  const [showAuthGate, setShowAuthGate] = useState(true);
   const [form, setForm] = useState<FormData>(initial);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -180,6 +185,31 @@ export default function ChallengerForm() {
       )}
     </button>
   );
+
+  // ── Auth guard ────────────────────────────────────────────────────────────
+  // Wait for auth state to load before deciding
+  if (!initialized) return null;
+
+  // Not logged in → show auth modal over a blank page
+  if (!isAuthenticated && showAuthGate) {
+    return (
+      <div className="reg-page">
+        <AuthModal
+          onClose={() => {
+            setShowAuthGate(false);
+            window.location.href = '/';
+          }}
+          onSuccess={() => setShowAuthGate(false)}
+          onRegister={() => setShowAuthGate(false)}
+          pendingRoute="/register/challenger"
+        />
+      </div>
+    );
+  }
+
+  // User closed the modal without logging in — redirect handled above, but
+  // guard against render while redirecting
+  if (!isAuthenticated) return null;
 
   return (
     <div className="reg-page">
