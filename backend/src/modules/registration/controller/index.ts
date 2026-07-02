@@ -53,7 +53,7 @@ import { JwtPayload } from '../../../common/guards/jwt-auth.guard';
 @Controller('registration')
 @UseGuards(JwtAuthGuard)
 export class RegistrationController {
-  constructor(private readonly registrationService: RegistrationService) {}
+  constructor(private readonly registrationService: RegistrationService) { }
 
   // ============================================================================
   // PARTICIPANT REGISTRATION ROUTES

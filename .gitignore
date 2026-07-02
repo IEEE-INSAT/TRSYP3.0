@@ -6,5 +6,11 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Environment variables — NEVER commit secrets
+.env
+.env.*
+.env.local
+.env.production
+
 # Logs
 *.log

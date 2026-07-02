@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { adminService } from '../api/admin.service';
+import { useAuthStore } from './auth-store';
 import type {
   AdminChallenger,
   AdminParticipant,
@@ -8,13 +8,16 @@ import type {
 } from '../admin/types';
 
 interface AdminState {
-  /** Placeholder gate flag — see TODO in admin.service.ts. */
+  /** Whether the current user has been verified as an admin via the backend. */
   authed: boolean;
+  /** True while verifyAdmin() is in flight. */
+  verifying: boolean;
   participants: AdminParticipant[];
   challengers: AdminChallenger[];
   loaded: boolean;
 
-  unlock: (password: string) => boolean;
+  /** Verify admin status by calling GET /admin/me with the current Supabase token. */
+  verifyAdmin: () => Promise<boolean>;
   lock: () => void;
   load: () => Promise<void>;
 
@@ -28,62 +31,71 @@ interface AdminState {
 }
 
 /**
- * Admin store — single source of truth for the admin area. Registration data is
- * fetched through the admin service (placeholder local data today, real
- * `/registration/admin/*` once `features.adminApi` is enabled). Only the auth
- * flag is persisted.
+ * Admin store — single source of truth for the admin area.
+ *
+ * Auth is NO LONGER persisted to localStorage. On each admin page load the
+ * `AdminGate` calls `verifyAdmin()`, which hits `GET /admin/me` (guarded by
+ * SupabaseAuthGuard + AdminGuard on the backend). This ensures only real admins
+ * registered in the Prisma `Admin` table can access the admin panel.
  */
 export const useAdminStore = create<AdminState>()(
-  persist(
-    (set, get) => ({
-      authed: false,
-      participants: [],
-      challengers: [],
-      loaded: false,
+  (set, get) => ({
+    authed: false,
+    verifying: false,
+    participants: [],
+    challengers: [],
+    loaded: false,
 
-      unlock: (password) => {
-        const ok = adminService.verifyPassword(password);
-        if (ok) set({ authed: true });
-        return ok;
-      },
-
-      lock: () => set({ authed: false }),
-
-      load: async () => {
-        const data = await adminService.loadRegistrations();
-        set({
-          participants: data.participants,
-          challengers: data.challengers,
-          loaded: true,
-        });
-      },
-
-      setParticipantStatus: async (id, status) => {
-        const data = await adminService.setParticipantStatus(id, status);
-        set({ participants: data.participants });
-      },
-
-      deleteParticipant: async (id) => {
-        const data = await adminService.deleteParticipant(id);
-        set({ participants: data.participants });
-      },
-
-      setChallengerStatus: async (id, status) => {
-        const data = await adminService.setChallengerStatus(id, status);
-        set({ challengers: data.challengers });
-      },
-
-      deleteChallenger: async (id) => {
-        const data = await adminService.deleteChallenger(id);
-        set({ challengers: data.challengers });
-      },
-
-      getParticipant: (id) => get().participants.find((p) => p.id === id),
-      getChallenger: (id) => get().challengers.find((c) => c.id === id),
-    }),
-    {
-      name: 'trsyp_admin_auth',
-      partialize: (state) => ({ authed: state.authed }),
+    verifyAdmin: async () => {
+      set({ verifying: true });
+      try {
+        const token = await useAuthStore.getState().getAccessToken();
+        if (!token) {
+          set({ authed: false, verifying: false });
+          return false;
+        }
+        const admin = await adminService.verifyAdmin(token);
+        const isAdmin = !!admin;
+        set({ authed: isAdmin, verifying: false });
+        return isAdmin;
+      } catch {
+        set({ authed: false, verifying: false });
+        return false;
+      }
     },
-  ),
+
+    lock: () => set({ authed: false }),
+
+    load: async () => {
+      const data = await adminService.loadRegistrations();
+      set({
+        participants: data.participants,
+        challengers: data.challengers,
+        loaded: true,
+      });
+    },
+
+    setParticipantStatus: async (id, status) => {
+      const data = await adminService.setParticipantStatus(id, status);
+      set({ participants: data.participants });
+    },
+
+    deleteParticipant: async (id) => {
+      const data = await adminService.deleteParticipant(id);
+      set({ participants: data.participants });
+    },
+
+    setChallengerStatus: async (id, status) => {
+      const data = await adminService.setChallengerStatus(id, status);
+      set({ challengers: data.challengers });
+    },
+
+    deleteChallenger: async (id) => {
+      const data = await adminService.deleteChallenger(id);
+      set({ challengers: data.challengers });
+    },
+
+    getParticipant: (id) => get().participants.find((p) => p.id === id),
+    getChallenger: (id) => get().challengers.find((c) => c.id === id),
+  }),
 );

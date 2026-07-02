@@ -10,6 +10,20 @@ import { DeleteAccountDto } from "../dto/delete-account.dto";
 @Controller('admin')
 export class AdminController{
     constructor(private readonly adminService:AdminService){}
+
+    @Get('me')
+    @UseGuards(SupabaseAuthGuard, AdminGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Verify admin status and get admin profile' })
+    @ApiResponse({ status: 200, description: 'User is an admin.' })
+    @ApiResponse({ status: 401, description: 'Unauthorized — not logged in.' })
+    @ApiResponse({ status: 403, description: 'Forbidden — not an admin.' })
+    async getMe(@Req() req: Request, @Res() res: Response) {
+        const user = req.user as any;
+        const admin = await this.adminService.findBySupabaseId(user._supabaseId);
+        return res.status(HttpStatus.OK).json(admin);
+    }
+
     @Post('create-admin')
     @UseGuards(SupabaseAuthGuard,AdminGuard)
     @ApiBearerAuth()
