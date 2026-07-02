@@ -643,4 +643,102 @@ describe('RegistrationService', () => {
       await expect(service.disbandTeam('user-1')).rejects.toThrow(NotFoundException);
     });
   });
+
+  describe('deleteParticipant', () => {
+    it('should delete a participant who does not lead a team', async () => {
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        const mockTx = {
+          participant: {
+            findUnique: jest.fn().mockResolvedValue({
+              id: 'participant-1',
+              userId: 'user-1',
+              paid: false,
+              ownedTeam: null,
+            }),
+            delete: jest.fn().mockResolvedValue({}),
+          },
+        };
+        return cb(mockTx);
+      });
+
+      await expect(service.deleteParticipant('participant-1')).resolves.toBeUndefined();
+    });
+
+    it('should delete a leader whose team has no other members (solo team)', async () => {
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        const mockTx = {
+          participant: {
+            findUnique: jest.fn().mockResolvedValue({
+              id: 'leader-participant',
+              userId: 'user-1',
+              paid: false,
+              ownedTeam: { id: 'team-1', members: [{ id: 'leader-participant' }] },
+            }),
+            delete: jest.fn().mockResolvedValue({}),
+          },
+        };
+        return cb(mockTx);
+      });
+
+      await expect(service.deleteParticipant('leader-participant')).resolves.toBeUndefined();
+    });
+
+    it('should throw ConflictException if the leader has other teammates', async () => {
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        const mockTx = {
+          participant: {
+            findUnique: jest.fn().mockResolvedValue({
+              id: 'leader-participant',
+              userId: 'user-1',
+              paid: false,
+              ownedTeam: {
+                id: 'team-1',
+                members: [{ id: 'leader-participant' }, { id: 'member-1' }],
+              },
+            }),
+            delete: jest.fn(),
+          },
+        };
+        return cb(mockTx);
+      });
+
+      await expect(service.deleteParticipant('leader-participant')).rejects.toThrow(
+        ConflictException,
+      );
+    });
+
+    it('should throw ForbiddenException if the participant has paid', async () => {
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        const mockTx = {
+          participant: {
+            findUnique: jest.fn().mockResolvedValue({
+              id: 'participant-1',
+              userId: 'user-1',
+              paid: true,
+              ownedTeam: null,
+            }),
+            delete: jest.fn(),
+          },
+        };
+        return cb(mockTx);
+      });
+
+      await expect(service.deleteParticipant('participant-1')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should throw NotFoundException if the participant does not exist', async () => {
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
+        const mockTx = {
+          participant: { findUnique: jest.fn().mockResolvedValue(null) },
+        };
+        return cb(mockTx);
+      });
+
+      await expect(service.deleteParticipant('participant-1')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
 });
