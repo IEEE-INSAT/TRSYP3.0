@@ -39,6 +39,12 @@ import {
   ParticipantAdminResponseDto,
   VisaApplicationResponseDto,
   ParticipantListResponseDto,
+  CreateTeamDto,
+  CreateTeamSchema,
+  JoinTeamDto,
+  JoinTeamSchema,
+  TeamResponseDto,
+  TeamMemberResponseDto,
 } from '../dto';
 import { JwtAuthGuard, RolesGuard } from '../../../common/guards';
 import { CurrentUser, Roles } from '../../../common/decorators';
@@ -254,6 +260,109 @@ export class RegistrationController {
     return plainToInstance(VisaApplicationResponseDto, updated, {
       excludeExtraneousValues: true,
     });
+  }
+
+  // ============================================================================
+  // TEAM ROUTES
+  // ============================================================================
+
+  /**
+   * Create a team (leader path).
+   * The authenticated participant becomes the team leader and first member.
+   * Returns the team including the generated join code.
+   */
+  @Post('team')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Create a team and receive a join code (leader path)' })
+  @ApiResponse({ status: 201, description: 'Team created successfully', type: TeamResponseDto })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Participant profile not found' })
+  @ApiResponse({ status: 409, description: 'Already in a team' })
+  async createTeam(
+    @CurrentUser('sub') userId: string,
+    @Body(new ZodValidationPipe(CreateTeamSchema)) dto: CreateTeamDto,
+  ): Promise<TeamResponseDto> {
+    const team = await this.registrationService.createTeam(userId, dto);
+    return plainToInstance(
+      TeamResponseDto,
+      {
+        ...team,
+        memberCount: team.members.length,
+        spotsLeft: team.size - team.members.length,
+        members: team.members.map((m: { id: string; user: { name: string; lastName: string; email: string } }) => ({
+          id: m.id,
+          name: m.user.name,
+          lastName: m.user.lastName,
+          email: m.user.email,
+        })),
+      },
+      { excludeExtraneousValues: true },
+    );
+  }
+
+  /**
+   * Join an existing team using a 6-character code (member path).
+   */
+  @Post('team/join')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Join a team using a join code (member path)' })
+  @ApiResponse({ status: 200, description: 'Joined team successfully', type: TeamResponseDto })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Team is full' })
+  @ApiResponse({ status: 404, description: 'Participant or team not found' })
+  @ApiResponse({ status: 409, description: 'Already in a team' })
+  async joinTeam(
+    @CurrentUser('sub') userId: string,
+    @Body(new ZodValidationPipe(JoinTeamSchema)) dto: JoinTeamDto,
+  ): Promise<TeamResponseDto> {
+    const team = await this.registrationService.joinTeam(userId, dto);
+    return plainToInstance(
+      TeamResponseDto,
+      {
+        ...team,
+        memberCount: team.members.length,
+        spotsLeft: team.size - team.members.length,
+        members: team.members.map((m: { id: string; user: { name: string; lastName: string; email: string } }) => ({
+          id: m.id,
+          name: m.user.name,
+          lastName: m.user.lastName,
+          email: m.user.email,
+        })),
+      },
+      { excludeExtraneousValues: true },
+    );
+  }
+
+  /**
+   * Get the current user's team.
+   * Returns full team info including members.
+   * Note: the join code is only useful to the leader — consider omitting it
+   * from the response for non-leaders in a future iteration.
+   */
+  @Get('team')
+  @ApiOperation({ summary: 'Get the current user\'s team' })
+  @ApiResponse({ status: 200, description: 'Team retrieved successfully', type: TeamResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Not in a team' })
+  async getMyTeam(@CurrentUser('sub') userId: string): Promise<TeamResponseDto> {
+    const team = await this.registrationService.getMyTeam(userId);
+    return plainToInstance(
+      TeamResponseDto,
+      {
+        ...team,
+        memberCount: team.members.length,
+        spotsLeft: team.size - team.members.length,
+        members: team.members.map((m: { id: string; user: { name: string; lastName: string; email: string } }) => ({
+          id: m.id,
+          name: m.user.name,
+          lastName: m.user.lastName,
+          email: m.user.email,
+        })),
+      },
+      { excludeExtraneousValues: true },
+    );
   }
 
   // ============================================================================
