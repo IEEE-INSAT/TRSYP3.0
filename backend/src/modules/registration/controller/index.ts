@@ -168,6 +168,10 @@ export class RegistrationController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Cannot delete paid registration' })
   @ApiResponse({ status: 404, description: 'Profile not found' })
+  @ApiResponse({
+    status: 409,
+    description: 'You lead a team with other members; disband or remove them first',
+  })
   async deleteMyProfile(@CurrentUser('sub') userId: string): Promise<void> {
     const participant = await this.registrationService.findByUserId(userId);
     if (!participant) {

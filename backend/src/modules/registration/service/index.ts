@@ -260,13 +260,19 @@ export class RegistrationService {
    * @param participantId - The participant ID
    * @throws NotFoundException if participant not found
    * @throws ForbiddenException if participant has paid (refund required first)
+   * @throws ConflictException if participant leads a team that still has other members
    */
   async deleteParticipant(participantId: string): Promise<void> {
     try {
       await this.prisma.$transaction(async (tx) => {
         const participant = await tx.participant.findUnique({
           where: { id: participantId },
-          select: { id: true, userId: true, paid: true },
+          select: {
+            id: true,
+            userId: true,
+            paid: true,
+            ownedTeam: { select: { id: true, members: { select: { id: true } } } },
+          },
         });
 
         if (!participant) {
@@ -280,7 +286,25 @@ export class RegistrationService {
           );
         }
 
+        // Edge case: Cannot delete a profile that leads a team with other
+        // members — the DB-level ON DELETE CASCADE on Team.leaderId would
+        // silently delete the team and drop every teammate out with no
+        // warning. Force an explicit disband/kick first instead.
+        if (participant.ownedTeam) {
+          const teammateCount = participant.ownedTeam.members.filter(
+            (m) => m.id !== participant.id,
+          ).length;
+
+          if (teammateCount > 0) {
+            throw new ConflictException(
+              `You lead a team with ${teammateCount} other member(s). ` +
+                'Disband the team or remove them before deleting your profile.',
+            );
+          }
+        }
+
         // Cascade delete handled by Prisma schema relations
+        // (safe here: either no team, or a solo team with no other members)
         await tx.participant.delete({ where: { id: participantId } });
 
         this.eventEmitter.emit(
