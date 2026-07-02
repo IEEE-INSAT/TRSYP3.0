@@ -1034,6 +1034,40 @@ export class RegistrationService {
     }
   }
 
+  /**
+   * Disband a team entirely (leader path only).
+   * Deletes the Team row. The `team_id` foreign key on Participant is
+   * `ON DELETE SET NULL`, so every member (including the ex-leader) is
+   * automatically freed from the team at the database level.
+   * The leader's own participant profile is untouched — only the team goes away.
+   *
+   * @param userId - JWT sub resolved to internal DB user ID
+   * @throws NotFoundException  if the caller has no participant profile or does not lead a team
+   */
+  async disbandTeam(userId: string): Promise<void> {
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        const participant = await tx.participant.findUnique({
+          where: { userId },
+          select: { id: true, ownedTeam: { select: { id: true } } },
+        });
+
+        if (!participant) {
+          throw new NotFoundException('Participant profile not found.');
+        }
+
+        if (!participant.ownedTeam) {
+          throw new NotFoundException('You do not lead a team.');
+        }
+
+        await tx.team.delete({ where: { id: participant.ownedTeam.id } });
+      });
+    } catch (error) {
+      this.handlePrismaError(error);
+      throw error;
+    }
+  }
+
   // ============================================================================
   // PRIVATE HELPERS
   // ============================================================================
