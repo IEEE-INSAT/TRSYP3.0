@@ -62,21 +62,115 @@ export type Gender = 'male' | 'female';
 
 /** Student branch enum (backend `SB`). */
 export type SB =
-  | 'INSAT'
-  | 'ESPRIT'
-  | 'SUPCOM'
-  | 'ENIT'
-  | 'ENETCOM'
+  | 'CU'
+  | 'ENETCom'
+  | 'ENIB'
+  | 'ENICarthage'
+  | 'ENIG'
+  | 'ENIM'
   | 'ENIS'
+  | 'ENISO'
+  | 'ENIT'
+  | 'ENSI'
+  | 'ENSIT'
+  | 'ENSTAB'
+  | 'EPI'
+  | 'EPPM'
+  | 'EPS'
+  | 'EPT'
+  | 'ESPIN'
+  | 'ESPITA'
+  | 'ESPRIT'
+  | 'ESSTHS'
+  | 'FSB'
+  | 'FSG'
+  | 'FSM'
+  | 'FSS'
+  | 'FST'
+  | 'IIT'
+  | 'INAT'
+  | 'INSAT'
+  | 'ISETBizerte'
+  | 'ISETCom'
+  | 'ISETDjerba'
+  | 'ISETKairouan'
+  | 'ISETKef'
+  | 'ISETNABEUL'
+  | 'ISETRADES'
+  | 'ISGI'
+  | 'ISGIS'
+  | 'ISI'
+  | 'ISIMa'
+  | 'ISIMG'
+  | 'ISIMM'
+  | 'ISIMS'
+  | 'ISSATM'
+  | 'ISSATSo'
+  | 'ISTIC'
+  | 'ISTMT'
+  | 'MSE'
+  | 'PolytechSfax'
+  | 'SESAME'
+  | 'SMU'
+  | 'SupCom'
+  | 'TEKUP'
+  | 'UCentrale'
   | 'Other';
 
 export const SB_OPTIONS: SB[] = [
-  'INSAT',
-  'ESPRIT',
-  'SUPCOM',
-  'ENIT',
-  'ENETCOM',
+  'CU',
+  'ENETCom',
+  'ENIB',
+  'ENICarthage',
+  'ENIG',
+  'ENIM',
   'ENIS',
+  'ENISO',
+  'ENIT',
+  'ENSI',
+  'ENSIT',
+  'ENSTAB',
+  'EPI',
+  'EPPM',
+  'EPS',
+  'EPT',
+  'ESPIN',
+  'ESPITA',
+  'ESPRIT',
+  'ESSTHS',
+  'FSB',
+  'FSG',
+  'FSM',
+  'FSS',
+  'FST',
+  'IIT',
+  'INAT',
+  'INSAT',
+  'ISETBizerte',
+  'ISETCom',
+  'ISETDjerba',
+  'ISETKairouan',
+  'ISETKef',
+  'ISETNABEUL',
+  'ISETRADES',
+  'ISGI',
+  'ISGIS',
+  'ISI',
+  'ISIMa',
+  'ISIMG',
+  'ISIMM',
+  'ISIMS',
+  'ISSATM',
+  'ISSATSo',
+  'ISTIC',
+  'ISTMT',
+  'MSE',
+  'PolytechSfax',
+  'SESAME',
+  'SMU',
+  'SupCom',
+  'TEKUP',
+  
   'Other',
 ];
 
