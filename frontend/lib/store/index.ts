@@ -7,8 +7,9 @@ export type {
   UserType,
   RegStatus,
   ParticipantRegistrationInput,
-  ChallengerRegistrationInput,
 } from './registration-store';
+export { useTeamStore } from './team-store';
+export type { TeamRole } from './team-store';
 export { useAdminStore } from './admin-store';
 export { AuthProvider } from './auth-provider';
 export { useAuth } from './use-auth';

@@ -58,21 +58,40 @@ export interface BackendAdmin {
 
 export type ParticipantType = 'NonIEEE' | 'Student' | 'YoungProfessional';
 
+export type Gender = 'male' | 'female';
+
+/** Student branch enum (backend `SB`). */
+export type SB =
+  | 'INSAT'
+  | 'ESPRIT'
+  | 'SUPCOM'
+  | 'ENIT'
+  | 'ENETCOM'
+  | 'ENIS'
+  | 'Other';
+
+export const SB_OPTIONS: SB[] = [
+  'INSAT',
+  'ESPRIT',
+  'SUPCOM',
+  'ENIT',
+  'ENETCOM',
+  'ENIS',
+  'Other',
+];
+
 /**
- * Body of POST /registration (backend RegisterLocalDto).
+ * Body of POST /registration (Page 1 of the registration flow spec).
  *
- * NOTE: the V2 forms collect a different shape (free-text university, no
- * gender / participantType / country). The mapping in
- * `registration.service.ts` documents the gaps to close once the backend
- * registration module is finalised.
+ * `sb` is only sent for Students; `ieeeId` only for IEEE members
+ * (participantType != NonIEEE).
  */
 export interface RegisterParticipantPayload {
   ieeeId?: number;
   phone: string;
-  gender: 'male' | 'female';
+  gender: Gender;
   participantType: ParticipantType;
-  sb?: string;
-  country: string;
+  sb?: SB;
 }
 
 /** Participant row returned by /registration (Prisma `Participant`). */
@@ -90,4 +109,28 @@ export interface BackendParticipant {
   country: string;
   createdAt: string;
   updatedAt: string;
+}
+
+// ── Teams (Page 2 of the registration flow spec) ─────────────────────────────
+
+export interface TeamMemberSummary {
+  participantId: string;
+  fullName: string;
+  email?: string;
+  isLeader: boolean;
+}
+
+/** Team object returned by /registration/team*. `code` is only present for the leader. */
+export interface Team {
+  id: string;
+  name: string;
+  size: number;
+  code?: string;
+  members: TeamMemberSummary[];
+}
+
+/** Body of POST /registration/team. */
+export interface CreateTeamPayload {
+  name: string;
+  size: number;
 }

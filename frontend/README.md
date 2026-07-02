@@ -61,14 +61,17 @@ intended call, guarded by a feature flag:
 
 - **Auth** — `signUp`/`signIn` via Supabase, then `POST /auth/sync-user`. With
   no Supabase creds the auth store runs offline so the flow is still demoable.
-- **Registration** (`/registration/*`) — the backend controller exists but its
-  module isn't imported into `app.module.ts` yet. The profile is kept locally;
-  set `NEXT_PUBLIC_FEATURE_REGISTRATION_API=true` to switch to the live route.
-  ⚠️ The form does not yet collect `gender` / `participantType` / `country`, and
-  `university` is free text vs. the backend `sb` enum — see the `TODO(backend/
-  form)` note in `registration-store.ts` before going live.
-- **Challenger / teams** — frontend-only for now; the leader registers as a
-  participant and team details are kept client-side (no backend team model yet).
+- **Registration flow** (`/register`) — unified two-step flow behind the
+  Supabase auth gate (`AuthModal`):
+  - _Page 1 — participant info_: `participantType`, `gender`, `phone` (E.164),
+    `ieeeId` (IEEE only), `sb` (Student only) → `POST /registration`.
+  - _Page 2 — team_: "Are you a team leader?" → leader `POST /registration/team`
+    (returns a 6-char join code) or member `POST /registration/team/join`; then a
+    status panel (`GET /registration/team`, leave / disband / remove-member).
+  Both `/register/participant` and `/register/challenger` funnel into this flow.
+  The `/registration/*` routes aren't wired on the backend yet — participant
+  calls no-op locally and the team flow uses a local-storage simulation. Set
+  `NEXT_PUBLIC_FEATURE_REGISTRATION_API=true` to switch to the live routes.
 - **Admin lists & moderation** — served from local seed data until
   `/registration/admin/*` lands (`NEXT_PUBLIC_FEATURE_ADMIN_API`). The admin
   password gate (`admin.service.ts`) is a placeholder for real admin auth.

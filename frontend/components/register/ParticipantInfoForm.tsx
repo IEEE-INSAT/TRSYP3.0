@@ -1,0 +1,195 @@
+'use client';
+
+import { useState, FormEvent } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { useRegistrationStore } from '@/lib/store';
+import { SB_OPTIONS, type Gender, type ParticipantType, type SB } from '@/lib/api/types';
+
+const PARTICIPANT_TYPES: { value: ParticipantType; label: string }[] = [
+  { value: 'NonIEEE', label: 'Non-IEEE' },
+  { value: 'Student', label: 'Student' },
+  { value: 'YoungProfessional', label: 'Young Professional' },
+];
+
+interface FormState {
+  participantType: ParticipantType | null;
+  gender: Gender | null;
+  phone: string;
+  ieeeId: string;
+  sb: SB | '';
+}
+
+const initial: FormState = {
+  participantType: null,
+  gender: null,
+  phone: '',
+  ieeeId: '',
+  sb: '',
+};
+
+/** Page 1 of the registration flow — participant info (POST /registration). */
+export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => void }) {
+  const registerParticipant = useRegistrationStore((s) => s.registerParticipant);
+  const submitting = useRegistrationStore((s) => s.submitting);
+
+  const [form, setForm] = useState<FormState>(initial);
+  const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const set = <K extends keyof FormState>(key: K, val: FormState[K]) =>
+    setForm((p) => ({ ...p, [key]: val }));
+
+  const isIeee = form.participantType === 'Student' || form.participantType === 'YoungProfessional';
+  const isStudent = form.participantType === 'Student';
+
+  const validate = (): boolean => {
+    const e: typeof errors = {};
+    if (!form.participantType) e.participantType = 'Select one';
+    if (!form.gender) e.gender = 'Select one';
+    if (!form.phone.trim()) e.phone = 'Required';
+    else if (!/^\+?[1-9]\d{1,14}$/.test(form.phone.replace(/[\s-]/g, '')))
+      e.phone = 'Use E.164 format, e.g. +21612345678';
+    if (isStudent && !form.sb) e.sb = 'Required for students';
+    if (form.ieeeId && !/^\d+$/.test(form.ieeeId.trim())) e.ieeeId = 'Digits only';
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleSubmit = async (ev: FormEvent) => {
+    ev.preventDefault();
+    if (!validate()) return;
+    setSubmitError(null);
+    try {
+      await registerParticipant({
+        participantType: form.participantType as ParticipantType,
+        gender: form.gender as Gender,
+        phone: form.phone.replace(/[\s-]/g, ''),
+        ieeeId: isIeee && form.ieeeId ? Number(form.ieeeId) : undefined,
+        sb: isStudent && form.sb ? (form.sb as SB) : undefined,
+      });
+      onSuccess();
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error ? err.message : 'Registration failed. Please try again.',
+      );
+    }
+  };
+
+  const complete =
+    !!form.participantType &&
+    !!form.gender &&
+    !!form.phone &&
+    (!isStudent || !!form.sb);
+
+  return (
+    <motion.form
+      className="reg-form"
+      onSubmit={handleSubmit}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      <div className="reg-section-label">Participant Information</div>
+
+      {/* Participant type */}
+      <div className="reg-field">
+        <label className="reg-label">Participant Type *</label>
+        <div className="reg-toggle-group">
+          {PARTICIPANT_TYPES.map((t) => (
+            <button
+              key={t.value}
+              type="button"
+              className={`reg-toggle ${form.participantType === t.value ? 'reg-toggle-active-green' : ''}`}
+              onClick={() => set('participantType', t.value)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        {errors.participantType && <span className="reg-error">{errors.participantType}</span>}
+      </div>
+
+      {/* Gender */}
+      <div className="reg-field">
+        <label className="reg-label">Gender *</label>
+        <div className="reg-toggle-group">
+          <button type="button" className={`reg-toggle ${form.gender === 'male' ? 'reg-toggle-active-green' : ''}`} onClick={() => set('gender', 'male')}>Male</button>
+          <button type="button" className={`reg-toggle ${form.gender === 'female' ? 'reg-toggle-active-pink' : ''}`} onClick={() => set('gender', 'female')}>Female</button>
+        </div>
+        {errors.gender && <span className="reg-error">{errors.gender}</span>}
+      </div>
+
+      {/* Phone */}
+      <div className="reg-field">
+        <label className="reg-label" htmlFor="phone">Phone Number *</label>
+        <input
+          id="phone"
+          className={`reg-input ${errors.phone ? 'reg-input-error' : ''}`}
+          type="tel"
+          placeholder="+216 12 345 678"
+          value={form.phone}
+          onChange={(e) => set('phone', e.target.value)}
+        />
+        {errors.phone && <span className="reg-error">{errors.phone}</span>}
+      </div>
+
+      {/* IEEE ID — IEEE members only */}
+      <AnimatePresence>
+        {isIeee && (
+          <motion.div
+            className="reg-field"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <label className="reg-label" htmlFor="ieeeId">IEEE Member ID</label>
+            <input
+              id="ieeeId"
+              className={`reg-input ${errors.ieeeId ? 'reg-input-error' : ''}`}
+              type="text"
+              inputMode="numeric"
+              placeholder="e.g. 12345678"
+              value={form.ieeeId}
+              onChange={(e) => set('ieeeId', e.target.value)}
+            />
+            {errors.ieeeId && <span className="reg-error">{errors.ieeeId}</span>}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Student branch — students only */}
+      <AnimatePresence>
+        {isStudent && (
+          <motion.div
+            className="reg-field"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <label className="reg-label" htmlFor="sb">Student Branch *</label>
+            <select
+              id="sb"
+              className={`reg-input ${errors.sb ? 'reg-input-error' : ''}`}
+              value={form.sb}
+              onChange={(e) => set('sb', e.target.value as SB)}
+            >
+              <option value="">Select your student branch…</option>
+              {SB_OPTIONS.map((sb) => (
+                <option key={sb} value={sb}>{sb}</option>
+              ))}
+            </select>
+            {errors.sb && <span className="reg-error">{errors.sb}</span>}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {submitError && <span className="reg-error">{submitError}</span>}
+
+      <button type="submit" className="reg-submit" disabled={!complete || submitting}>
+        {submitting ? 'Saving…' : 'Continue'}
+      </button>
+    </motion.form>
+  );
+}

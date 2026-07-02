@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Navbar from '@/components/Navbar';
-import ParticipantForm from '@/components/ParticipantForm';
+import RegisterFlow from '@/components/RegisterFlow';
 import Footer from '@/components/Footer';
 import GridBeam from '@/components/GridBeam';
 
@@ -15,7 +15,7 @@ export default function ParticipantPage() {
       <Navbar />
       <GridBeam>
         <main>
-          <ParticipantForm />
+          <RegisterFlow />
         </main>
         <Footer />
       </GridBeam>
