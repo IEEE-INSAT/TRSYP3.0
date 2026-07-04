@@ -72,8 +72,8 @@ model Admin {
 model Participant {
   id                String             @id @default(uuid())
   userId            String             @unique @map("user_id")
-  ieeeId            Int?               @map("ieee_id")
-  phone             String
+  ieeeId            Int?               @unique @map("ieee_id")
+  phone             String             @unique
   gender            String
   paid              Boolean            @default(false)
   isInternational   Boolean            @default(false) @map("is_international")
