@@ -1280,6 +1280,7 @@ export class RegistrationService {
       const fieldMessages: Record<string, string> = {
         ieee_id: 'This IEEE ID is already registered to another participant',
         phone: 'This phone number is already registered to another participant',
+        passport_number: 'This passport number is already registered to another participant',
         email: 'This email is already registered',
         code: 'This team code is already in use',
       };
