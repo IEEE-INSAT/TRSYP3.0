@@ -3,7 +3,14 @@
 import { useState, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useRegistrationStore } from '@/lib/store';
-import { SB_OPTIONS, type Gender, type ParticipantType, type SB } from '@/lib/api/types';
+import {
+  COUNTRY_OPTIONS,
+  SB_OPTIONS,
+  type Country,
+  type Gender,
+  type ParticipantType,
+  type SB,
+} from '@/lib/api/types';
 
 const PARTICIPANT_TYPES: { value: ParticipantType; label: string }[] = [
   { value: 'NonIEEE', label: 'Non-IEEE' },
@@ -17,6 +24,7 @@ interface FormState {
   phone: string;
   ieeeId: string;
   sb: SB | '';
+  country: Country | '';
 }
 
 const initial: FormState = {
@@ -25,6 +33,7 @@ const initial: FormState = {
   phone: '',
   ieeeId: '',
   sb: '',
+  country: '',
 };
 
 /** Page 1 of the registration flow — participant info (POST /registration). */
@@ -51,6 +60,9 @@ export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => vo
       e.phone = 'Use E.164 format, e.g. +21612345678';
     if (isStudent && !form.sb) e.sb = 'Required for students';
     if (form.ieeeId && !/^\d+$/.test(form.ieeeId.trim())) e.ieeeId = 'Digits only';
+    if (isStudent && !form.sb) e.sb = 'Required for students';
+    if (!form.country) e.country = 'Select your country';   // ← ADD
+    if (form.ieeeId && !/^\d+$/.test(form.ieeeId.trim())) e.ieeeId = 'Digits only';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -66,6 +78,7 @@ export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => vo
         phone: form.phone.replace(/[\s-]/g, ''),
         ieeeId: isIeee && form.ieeeId ? Number(form.ieeeId) : undefined,
         sb: isStudent && form.sb ? (form.sb as SB) : undefined,
+        country: form.country as Country,
       });
       onSuccess();
     } catch (err) {
@@ -79,6 +92,7 @@ export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => vo
     !!form.participantType &&
     !!form.gender &&
     !!form.phone &&
+    !!form.country &&
     (!isStudent || !!form.sb);
 
   return (
@@ -133,6 +147,23 @@ export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => vo
         {errors.phone && <span className="reg-error">{errors.phone}</span>}
       </div>
 
+      {/* Country */}
+      <div className="reg-field">
+        <label className="reg-label" htmlFor="country">Country *</label>
+        <select
+          id="country"
+          className={`reg-input ${errors.country ? 'reg-input-error' : ''}`}
+          value={form.country}
+          onChange={(e) => set('country', e.target.value as Country)}
+        >
+          <option value="">Select your country…</option>
+          {COUNTRY_OPTIONS.map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+        {errors.country && <span className="reg-error">{errors.country}</span>}
+      </div>
+      
       {/* IEEE ID — IEEE members only */}
       <AnimatePresence>
         {isIeee && (

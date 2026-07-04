@@ -86,8 +86,11 @@ export const registrationService = {
       name: payload.name,
       size: payload.size,
       code: randomCode(),
+      leaderId: 'me',
+      memberCount: 1,
+      spotsLeft: payload.size - 1,
       members: [
-        { participantId: 'me', fullName: 'You (leader)', isLeader: true },
+        { id: 'me', name: 'You', lastName: '(leader)', email: '', isLeader: true },
       ],
     };
     writeLocalTeam(team);
@@ -106,9 +109,12 @@ export const registrationService = {
     const team: Team = {
       id: 'local-team',
       name: `Team ${code}`,
-      size: 0,
-      // No `code` for non-leaders.
-      members: [{ participantId: 'me', fullName: 'You', isLeader: false }],
+      size: 1,
+      code,
+      leaderId: 'someone-else',
+      memberCount: 1,
+      spotsLeft: 0,
+      members: [{ id: 'me', name: 'You', lastName: '', email: '', isLeader: false }],
     };
     writeLocalTeam(team);
     return team;
@@ -155,7 +161,9 @@ export const registrationService = {
     }
     const team = readLocalTeam();
     if (!team) return null;
-    team.members = team.members.filter((m) => m.participantId !== participantId);
+    team.members = team.members.filter((m) => m.id !== participantId);
+    team.memberCount = team.members.length;
+    team.spotsLeft = team.size - team.members.length;
     writeLocalTeam(team);
     return team;
   },

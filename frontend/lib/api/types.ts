@@ -174,6 +174,23 @@ export const SB_OPTIONS: SB[] = [
   'Other',
 ];
 
+/** Country enum */
+export type Country =
+  | 'Tunisia' | 'Algeria' | 'Morocco' | 'Libya' | 'Egypt' | 'USA' | 'UK'
+  | 'Canada' | 'Germany' | 'France' | 'Italy' | 'Spain' | 'UAE'
+  | 'SaudiArabia' | 'Jordan' | 'Lebanon' | 'Palestine' | 'Syria' | 'Iraq'
+  | 'Sudan' | 'Turkey' | 'India' | 'Pakistan' | 'Bangladesh' | 'China'
+  | 'Japan' | 'SouthKorea' | 'Australia' | 'Brazil' | 'Argentina' | 'Mexico'
+  | 'Other';
+
+export const COUNTRY_OPTIONS: Country[] = [
+  'Tunisia', 'Algeria', 'Morocco', 'Libya', 'Egypt', 'USA', 'UK', 'Canada',
+  'Germany', 'France', 'Italy', 'Spain', 'UAE', 'SaudiArabia', 'Jordan',
+  'Lebanon', 'Palestine', 'Syria', 'Iraq', 'Sudan', 'Turkey', 'India',
+  'Pakistan', 'Bangladesh', 'China', 'Japan', 'SouthKorea', 'Australia',
+  'Brazil', 'Argentina', 'Mexico', 'Other',
+];
+
 /**
  * Body of POST /registration (Page 1 of the registration flow spec).
  *
@@ -186,31 +203,33 @@ export interface RegisterParticipantPayload {
   gender: Gender;
   participantType: ParticipantType;
   sb?: SB;
+  country: Country;
 }
 
 /** Participant row returned by /registration (Prisma `Participant`). */
 export interface BackendParticipant {
   id: string;
-  userId: string;
-  ieeeId: number | null;
+  ieeeId?: number;
   phone: string;
   gender: string;
   paid: boolean;
   isInternational: boolean;
   banned: boolean;
   participantType: ParticipantType;
-  sb: string | null;
-  country: string;
+  sb?: string;
+  country: Country;
   createdAt: string;
   updatedAt: string;
+  internationalInfo?: unknown;
 }
 
 // ── Teams (Page 2 of the registration flow spec) ─────────────────────────────
 
 export interface TeamMemberSummary {
-  participantId: string;
-  fullName: string;
-  email?: string;
+  id: string;
+  name: string;
+  lastName: string;
+  email: string;
   isLeader: boolean;
 }
 
@@ -219,7 +238,10 @@ export interface Team {
   id: string;
   name: string;
   size: number;
-  code?: string;
+  code: string; 
+  leaderId: string;
+  memberCount: number;
+  spotsLeft: number;
   members: TeamMemberSummary[];
 }
 

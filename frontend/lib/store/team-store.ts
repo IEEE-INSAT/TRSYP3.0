@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { useAuthStore } from './auth-store';
+import { useRegistrationStore } from './registration-store';
 import { registrationService } from '../api/registration.service';
 import type { Team } from '../api/types';
 
@@ -28,10 +29,9 @@ function msg(e: unknown): string {
 
 function roleFromTeam(team: Team | null): TeamRole | null {
   if (!team) return null;
-  // The leader is the only member who receives the join `code`.
-  if (team.code) return 'leader';
-  const me = team.members.find((m) => m.participantId === 'me');
-  return me?.isLeader ? 'leader' : 'member';
+  const myParticipantId = useRegistrationStore.getState().user?.participantId;
+  if (myParticipantId && myParticipantId === team.leaderId) return 'leader';
+  return 'member';
 }
 
 async function currentToken(): Promise<string> {
