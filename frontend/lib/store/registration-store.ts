@@ -4,6 +4,7 @@ import { useAuthStore } from './auth-store';
 import { registrationService } from '../api/registration.service';
 import { ApiError } from '../api/http';
 import type {
+  Country,
   Gender,
   ParticipantType,
   RegisterParticipantPayload,
@@ -43,7 +44,7 @@ export interface UserData {
   status: RegStatus;
   paymentProofSubmitted: boolean;
   paymentFileName: string;
-  // Team display (optional)
+  participantId?: string;
   teamName?: string;
   memberCount?: number;
   members?: TeamMember[];
@@ -56,6 +57,7 @@ export interface ParticipantRegistrationInput {
   phone: string;
   ieeeId?: number;
   sb?: SB;
+  country: Country;
 }
 
 interface RegistrationState {
@@ -78,6 +80,7 @@ function toPayload(input: ParticipantRegistrationInput): RegisterParticipantPayl
     participantType: input.participantType,
     ieeeId: isIeee ? input.ieeeId : undefined,
     sb: input.participantType === 'Student' ? input.sb : undefined,
+    country: input.country,
   };
 }
 
@@ -100,12 +103,15 @@ export const useRegistrationStore = create<RegistrationState>()(
           const auth = useAuthStore.getState();
           const token = await auth.getAccessToken();
 
-          // POST /registration — tolerate 409 (already registered).
+          let participantId: string | undefined;
           if (token) {
             try {
-              await registrationService.register(toPayload(input), token);
+              const participant = await registrationService.register(toPayload(input), token);
+              participantId = participant?.id;
             } catch (e) {
               if (!(e instanceof ApiError && e.status === 409)) throw e;
+              const existing = await registrationService.getProfile(token);
+              participantId = existing?.id;
             }
           }
 
@@ -130,6 +136,7 @@ export const useRegistrationStore = create<RegistrationState>()(
               status: 'waiting_for_payment',
               paymentProofSubmitted: false,
               paymentFileName: '',
+              participantId,
             },
             isRegistered: true,
             submitting: false,

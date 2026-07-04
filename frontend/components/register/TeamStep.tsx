@@ -108,19 +108,21 @@ export default function TeamStep() {
         {/* Members */}
         <div className="reg-section-label">Members ({team.members.length})</div>
         <div className="dash-members-list">
-          {team.members.map((m) => (
-            <div key={m.participantId} className="dash-member-mini">
+        {team.members.map((m) => {
+          const memberIsLeader = m.id === team.leaderId;
+          return (
+            <div key={m.id} className="dash-member-mini">
               <div className="dash-member-mini-header">
                 <span className="dash-member-mini-name">
-                  {m.fullName}{m.isLeader ? ' · Leader' : ''}
+                  {m.name} {m.lastName}{memberIsLeader ? ' · Leader' : ''}
                 </span>
-                {isLeader && !m.isLeader && (
+                {isLeader && !memberIsLeader && (
                   <button
                     type="button"
                     className="reg-toggle"
                     style={{ padding: '2px 10px' }}
                     disabled={submitting}
-                    onClick={() => void removeMember(m.participantId)}
+                    onClick={() => void removeMember(m.id)}
                   >
                     Remove
                   </button>
@@ -128,7 +130,8 @@ export default function TeamStep() {
               </div>
               {m.email && <div className="dash-member-mini-details"><span>{m.email}</span></div>}
             </div>
-          ))}
+          );
+        })}
         </div>
 
         {storeError && <span className="reg-error">{storeError}</span>}
