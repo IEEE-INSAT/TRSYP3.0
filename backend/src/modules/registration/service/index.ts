@@ -1274,7 +1274,23 @@ export class RegistrationService {
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === 'P2002'
     ) {
-      throw new ConflictException('A record with this data already exists');
+      const target = error.meta?.target;
+      const fields = Array.isArray(target) ? target.join(', ') : String(target ?? '');
+
+      const fieldMessages: Record<string, string> = {
+        ieee_id: 'This IEEE ID is already registered to another participant',
+        phone: 'This phone number is already registered to another participant',
+        email: 'This email is already registered',
+        code: 'This team code is already in use',
+      };
+
+      const matchedField = Object.keys(fieldMessages).find((f) => fields.includes(f));
+
+      throw new ConflictException(
+        matchedField
+          ? fieldMessages[matchedField]
+          : `A record with this data already exists (${fields || 'unknown field'})`,
+      );
     }
 
     // Edge case: Prisma record not found
