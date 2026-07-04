@@ -136,7 +136,7 @@ model InternationalInfo {
 model VisaApplication {
   id                      String     @id @default(uuid())
   internationalInfoId     String     @unique @map("international_info_id")
-  passportNumber          String     @map("passport_number")
+  passportNumber          String     @unique @map("passport_number")
   passportIssuanceCountry String     @map("passport_issuance_country")
   issuingOffice           String     @map("issuing_office")
   passportIssuanceDate    DateTime   @map("passport_issuance_date")
