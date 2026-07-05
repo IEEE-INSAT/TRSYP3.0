@@ -69,6 +69,7 @@ interface RegistrationState {
   registerParticipant: (input: ParticipantRegistrationInput) => Promise<void>;
   submitPayment: (fileName: string) => Promise<void>;
   updateStatus: (status: RegStatus) => void;
+  hydrateFromBackend: () => Promise<void>;
   reset: () => void;
 }
 
@@ -169,6 +170,45 @@ export const useRegistrationStore = create<RegistrationState>()(
         const { user } = get();
         if (!user) return;
         set({ user: { ...user, status } });
+      },
+
+      hydrateFromBackend: async () => {
+        try {
+          const auth = useAuthStore.getState();
+          const token = await auth.getAccessToken();
+          if (!token) return;
+
+          const participant = await registrationService.getProfile(token);
+          if (!participant) return;
+
+          const account = auth.account;
+          const email = account?.email ?? auth.email ?? '';
+          const fullName = account
+            ? `${account.name} ${account.lastName}`.trim()
+            : email
+              ? email.split('@')[0]
+              : 'Participant';
+
+          set({
+            user: {
+              userType: 'participant',
+              fullName,
+              email,
+              whatsapp: participant.phone,
+              university: participant.sb ?? '',
+              isIeee: participant.participantType !== 'NonIEEE',
+              ieeeId: participant.ieeeId ? String(participant.ieeeId) : '',
+              isRas: false,
+              status: participant.paid ? 'approved' : 'waiting_for_payment',
+              paymentProofSubmitted: false,
+              paymentFileName: '',
+              participantId: participant.id,
+            },
+            isRegistered: true,
+          });
+        } catch {
+          // Non-fatal: profile may not exist yet (404), or backend is down.
+        }
       },
 
       reset: () => set({ user: null, isRegistered: false, error: null }),

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { getSupabaseClient } from '../supabase/client';
 import { authService } from '../api/auth.service';
 import { isApiConfigured } from '../config';
+import { useRegistrationStore } from './registration-store';
 import type { BackendUser } from '../api/types';
 
 export interface SignUpInput {
@@ -59,6 +60,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         } catch (err) {
           console.error('[auth] getMe failed during init:', err);
         }
+        void useRegistrationStore.getState().hydrateFromBackend();
       }
       supabase.auth.onAuthStateChange(async (event, session) => {
         const token = session?.access_token ?? null;
@@ -86,6 +88,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           } catch (err) {
             console.error('[auth] syncUser failed in onAuthStateChange:', err);
           }
+          void useRegistrationStore.getState().hydrateFromBackend();
         }
       });
     }
@@ -191,6 +194,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           }
         }
       }
+      void useRegistrationStore.getState().hydrateFromBackend();
       set({ loading: false });
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Sign in failed';
