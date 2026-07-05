@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from './AuthContext';
+import { useTeamStore, useRegistrationStore } from '@/lib/store';
 
 const STATUS_MAP = {
   waiting_for_payment: { label: 'Waiting for Payment', color: '#f59e0b', icon: '🟡', msg: 'Your registration is pending. Please submit your payment proof to confirm your spot.' },
@@ -15,6 +16,18 @@ export default function Dashboard() {
   const [showMembers, setShowMembers] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
 
+  const team = useTeamStore((s) => s.team);
+  const role = useTeamStore((s) => s.role);
+  const updateTeam = useTeamStore((s) => s.updateTeam);
+  const fetchTeam = useTeamStore((s) => s.fetchTeam);
+  const hydrateFromBackend = useRegistrationStore((s) => s.hydrateFromBackend);
+
+  const [isEditingTeam, setIsEditingTeam] = useState(false);
+  const [editTeamName, setEditTeamName] = useState('');
+  const [editTeamSize, setEditTeamSize] = useState(1);
+  const [editTeamErr, setEditTeamErr] = useState('');
+  const [editTeamSubmitting, setEditTeamSubmitting] = useState(false);
+
   useEffect(() => {
     if (!user) {
       setRedirecting(true);
@@ -25,7 +38,45 @@ export default function Dashboard() {
   if (!user || redirecting) return null;
 
   const status = STATUS_MAP[user.status];
-  const isChallenger = user.userType === 'challenger';
+
+  useEffect(() => {
+    if (user && !team) {
+      void fetchTeam();
+    }
+  }, [user, team, fetchTeam]);
+
+  const isChallenger = user.userType === 'challenger' || !!team;
+
+  const handleEditTeam = () => {
+    setEditTeamName(team?.name || user?.teamName || '');
+    setEditTeamSize(team?.size || (user?.memberCount ? user.memberCount + 1 : 1));
+    setEditTeamErr('');
+    setIsEditingTeam(true);
+  };
+
+  const handleSaveTeam = async () => {
+    setEditTeamErr('');
+    if (editTeamName.trim().length < 2 || editTeamName.trim().length > 50) {
+      setEditTeamErr('Team name must be 2–50 characters.');
+      return;
+    }
+    const currentMemberCount = team?.members?.length || 1;
+    if (editTeamSize < currentMemberCount || editTeamSize > 6) {
+      setEditTeamErr(`Team size must be between ${currentMemberCount} and 6.`);
+      return;
+    }
+
+    setEditTeamSubmitting(true);
+    try {
+      await updateTeam(editTeamName.trim(), editTeamSize);
+      await hydrateFromBackend();
+      setIsEditingTeam(false);
+    } catch (e: any) {
+      setEditTeamErr(e.message || 'Failed to update team');
+    } finally {
+      setEditTeamSubmitting(false);
+    }
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -91,15 +142,49 @@ export default function Dashboard() {
           <div className="dash-card-title">Registration Details</div>
 
           {isChallenger && (
-            <div className="dash-detail-row dash-detail-highlight">
+            <div className="dash-detail-row dash-detail-highlight" style={{ alignItems: isEditingTeam ? 'center' : 'flex-start' }}>
               <span className="dash-detail-label">Team Name</span>
-              <span className="dash-detail-value">{user.teamName}</span>
+              {isEditingTeam ? (
+                <input className="dash-edit-input" value={editTeamName} onChange={(e) => setEditTeamName(e.target.value)} style={{ width: '100%', maxWidth: '250px' }} />
+              ) : (
+                <span className="dash-detail-value" style={{ display: 'flex', alignItems: 'center' }}>
+                  {team?.name || user.teamName}
+                  {role === 'leader' && (
+                    <button type="button" onClick={handleEditTeam} className="dash-edit-btn">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" /></svg>
+                      Edit
+                    </button>
+                  )}
+                </span>
+              )}
             </div>
           )}
           {isChallenger && (
             <div className="dash-detail-row">
               <span className="dash-detail-label">Team Size</span>
-              <span className="dash-detail-value">{user.memberCount} member{user.memberCount !== 1 ? 's' : ''} + leader</span>
+              {isEditingTeam ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, flexWrap: 'wrap' }}>
+                  <input type="number" min={team?.members?.length || 1} max="6" className="dash-edit-input" value={editTeamSize} onChange={(e) => setEditTeamSize(parseInt(e.target.value) || 1)} style={{ width: '70px', textAlign: 'center' }} />
+                  <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>members total</span>
+                  <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
+                    <button type="button" onClick={handleSaveTeam} disabled={editTeamSubmitting} className="dash-save-btn">
+                      {editTeamSubmitting ? 'Saving...' : 'Save'}
+                    </button>
+                    <button type="button" onClick={() => setIsEditingTeam(false)} disabled={editTeamSubmitting} className="dash-cancel-btn">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <span className="dash-detail-value">
+                  {team?.size ? `${team.members?.length || 1}/${team.size} spots filled` : `${user.memberCount} member${user.memberCount !== 1 ? 's' : ''} + leader`}
+                </span>
+              )}
+            </div>
+          )}
+          {isEditingTeam && editTeamErr && (
+            <div className="dash-detail-row">
+              <span className="reg-error" style={{ marginLeft: 'auto' }}>{editTeamErr}</span>
             </div>
           )}
 

@@ -97,6 +97,24 @@ export const registrationService = {
     return team;
   },
 
+  /** PATCH /registration/team — leader updates team name/size. */
+  async updateTeam(payload: { name?: string; size?: number }, token: string): Promise<Team> {
+    if (features.registrationApi) {
+      return apiFetch<Team>('/registration/team', {
+        method: 'PATCH',
+        body: payload,
+        token,
+      });
+    }
+    const team = readLocalTeam();
+    if (!team) throw new Error('Not in a team');
+    if (payload.name) team.name = payload.name;
+    if (payload.size) team.size = payload.size;
+    team.spotsLeft = team.size - team.memberCount;
+    writeLocalTeam(team);
+    return team;
+  },
+
   /** POST /registration/team/join — join a team by 6-char code. */
   async joinTeam(code: string, token: string): Promise<Team> {
     if (features.registrationApi) {

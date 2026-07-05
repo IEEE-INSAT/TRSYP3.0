@@ -41,6 +41,8 @@ import {
   ParticipantListResponseDto,
   CreateTeamDto,
   CreateTeamSchema,
+  UpdateTeamDto,
+  UpdateTeamSchema,
   JoinTeamDto,
   JoinTeamSchema,
   TeamResponseDto,
@@ -290,6 +292,39 @@ export class RegistrationController {
     @Body(new ZodValidationPipe(CreateTeamSchema)) dto: CreateTeamDto,
   ): Promise<TeamResponseDto> {
     const team = await this.registrationService.createTeam(userId, dto);
+    return plainToInstance(
+      TeamResponseDto,
+      {
+        ...team,
+        memberCount: team.members.length,
+        spotsLeft: team.size - team.members.length,
+        members: team.members.map((m: { id: string; user: { name: string; lastName: string; email: string } }) => ({
+          id: m.id,
+          name: m.user.name,
+          lastName: m.user.lastName,
+          email: m.user.email,
+        })),
+      },
+      { excludeExtraneousValues: true },
+    );
+  }
+
+  /**
+   * Update team name and/or size (leader path).
+   */
+  @Patch('team')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update your team (leader only)' })
+  @ApiResponse({ status: 200, description: 'Team updated successfully', type: TeamResponseDto })
+  @ApiResponse({ status: 400, description: 'Validation error or invalid size' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Participant is banned or already paid' })
+  @ApiResponse({ status: 404, description: 'Not a team leader' })
+  async updateTeam(
+    @CurrentUser('sub') userId: string,
+    @Body(new ZodValidationPipe(UpdateTeamSchema)) dto: UpdateTeamDto,
+  ): Promise<TeamResponseDto> {
+    const team = await this.registrationService.updateTeam(userId, dto);
     return plainToInstance(
       TeamResponseDto,
       {
