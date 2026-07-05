@@ -16,11 +16,13 @@ interface TeamState {
 
   fetchTeam: () => Promise<void>;
   createTeam: (name: string, size: number) => Promise<void>;
+  updateTeam: (name?: string, size?: number) => Promise<void>;
   joinTeam: (code: string) => Promise<void>;
   leaveTeam: () => Promise<void>;
   disbandTeam: () => Promise<void>;
   removeMember: (participantId: string) => Promise<void>;
   reset: () => void;
+  clearError: () => void;
 }
 
 function msg(e: unknown): string {
@@ -72,6 +74,17 @@ export const useTeamStore = create<TeamState>((set) => ({
     }
   },
 
+  updateTeam: async (name, size) => {
+    set({ submitting: true, error: null });
+    try {
+      const team = await registrationService.updateTeam({ name, size }, await currentToken());
+      set({ team, submitting: false });
+    } catch (e) {
+      set({ submitting: false, error: msg(e) });
+      throw e;
+    }
+  },
+
   joinTeam: async (code) => {
     set({ submitting: true, error: null });
     try {
@@ -117,4 +130,5 @@ export const useTeamStore = create<TeamState>((set) => ({
   },
 
   reset: () => set({ team: null, role: null, error: null, loaded: false }),
+  clearError: () => set({ error: null }),
 }));

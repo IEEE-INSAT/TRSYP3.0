@@ -15,6 +15,7 @@ import {
   RequestVisaDto,
   CreateTeamDto,
   JoinTeamDto,
+  UpdateTeamDto,
 } from '../dto';
 import {
   ParticipantRegisteredEvent,
@@ -865,6 +866,73 @@ export class RegistrationService {
         });
 
         return created;
+      });
+
+      return team;
+    } catch (error) {
+      this.handlePrismaError(error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update a team (leader path).
+   * 
+   * @param userId - JWT sub resolved to internal DB user ID
+   * @param dto - Optional new name and/or size
+   * @throws NotFoundException if the user doesn't lead a team
+   * @throws ForbiddenException if the user is banned or paid
+   * @throws BadRequestException if the new size is smaller than current member count
+   */
+  async updateTeam(userId: string, dto: UpdateTeamDto): Promise<TeamWithMembers> {
+    try {
+      const team = await this.prisma.$transaction(async (tx) => {
+        const participant = await tx.participant.findUnique({
+          where: { userId },
+          select: {
+            id: true,
+            paid: true,
+            banned: true,
+            ownedTeam: { 
+              select: { id: true, members: { select: { id: true } } } 
+            },
+          },
+        });
+
+        if (!participant) {
+          throw new NotFoundException('Participant profile not found.');
+        }
+
+        if (participant.banned) {
+          throw new ForbiddenException('Banned participants cannot update a team.');
+        }
+
+        if (participant.paid) {
+          throw new ForbiddenException('Your registration is paid and locked.');
+        }
+
+        if (!participant.ownedTeam) {
+          throw new NotFoundException('You do not lead a team.');
+        }
+
+        const currentMemberCount = participant.ownedTeam.members.length;
+
+        if (dto.size !== undefined && dto.size < currentMemberCount) {
+          throw new BadRequestException(
+            `Cannot reduce team size below current member count (${currentMemberCount}). Remove members first.`
+          );
+        }
+
+        return tx.team.update({
+          where: { id: participant.ownedTeam.id },
+          data: {
+            ...(dto.name !== undefined && { name: dto.name }),
+            ...(dto.size !== undefined && { size: dto.size }),
+          },
+          include: {
+            members: { include: { user: { select: { name: true, lastName: true, email: true } } } },
+          },
+        });
       });
 
       return team;

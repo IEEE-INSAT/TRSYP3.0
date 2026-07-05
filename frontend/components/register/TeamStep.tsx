@@ -18,6 +18,7 @@ export default function TeamStep() {
   const leaveTeam = useTeamStore((s) => s.leaveTeam);
   const disbandTeam = useTeamStore((s) => s.disbandTeam);
   const removeMember = useTeamStore((s) => s.removeMember);
+  const clearError = useTeamStore((s) => s.clearError);
 
   const [choice, setChoice] = useState<'leader' | 'member' | null>(null);
   const [teamName, setTeamName] = useState('');
@@ -162,13 +163,13 @@ export default function TeamStep() {
       <div className="reg-field">
         <label className="reg-label">Are you a team leader?</label>
         <div className="reg-toggle-group">
-          <button type="button" className={`reg-toggle ${choice === 'leader' ? 'reg-toggle-active-green' : ''}`} onClick={() => { setChoice('leader'); setFormErr(null); }}>Yes, I&apos;m the leader</button>
-          <button type="button" className={`reg-toggle ${choice === 'member' ? 'reg-toggle-active-pink' : ''}`} onClick={() => { setChoice('member'); setFormErr(null); }}>No, I&apos;m joining</button>
+          <button type="button" className={`reg-toggle ${choice === 'leader' ? 'reg-toggle-active-green' : ''}`} onClick={() => { setChoice('leader'); setFormErr(null); clearError(); }}>Yes, I&apos;m the leader</button>
+          <button type="button" className={`reg-toggle ${choice === 'member' ? 'reg-toggle-active-pink' : ''}`} onClick={() => { setChoice('member'); setFormErr(null); clearError(); }}>No, I&apos;m joining</button>
         </div>
       </div>
 
       {choice === 'leader' && (
-        <form onSubmit={handleCreate}>
+        <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '10px' }}>
           <div className="reg-field">
             <label className="reg-label" htmlFor="teamName">Team Name *</label>
             <input id="teamName" className="reg-input" type="text" placeholder="Your team name" maxLength={50} value={teamName} onChange={(e) => setTeamName(e.target.value)} />
@@ -189,7 +190,7 @@ export default function TeamStep() {
       )}
 
       {choice === 'member' && (
-        <form onSubmit={handleJoin}>
+        <form onSubmit={handleJoin} style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '10px' }}>
           <div className="reg-field">
             <label className="reg-label" htmlFor="code">Team Code *</label>
             <input

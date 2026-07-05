@@ -45,6 +45,38 @@ export class CreateTeamDto {
 }
 
 // ============================================================================
+// UPDATE TEAM
+// ============================================================================
+
+export const UpdateTeamSchema = CreateTeamSchema.partial();
+
+export type UpdateTeamInput = z.infer<typeof UpdateTeamSchema>;
+
+export class UpdateTeamDto {
+  @ApiProperty({
+    description: 'Team name (optional)',
+    example: 'RoboTeam Beta',
+    minLength: 2,
+    maxLength: 50,
+    required: false,
+  })
+  @IsString()
+  name?: string;
+
+  @ApiProperty({
+    description: 'Maximum number of members (including the leader). (optional)',
+    example: 5,
+    minimum: 1,
+    maximum: 6,
+    required: false,
+  })
+  @IsInt({ message: 'Team size must be an integer' })
+  @Min(1, { message: 'Team size must be at least 1' })
+  @Max(6, { message: 'Team size must be at most 6' })
+  size?: number;
+}
+
+// ============================================================================
 // JOIN TEAM
 // ============================================================================
 
