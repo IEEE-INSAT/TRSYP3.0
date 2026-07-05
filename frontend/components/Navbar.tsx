@@ -105,11 +105,18 @@ export default function Navbar() {
               </svg>
               My Dashboard
             </a>
-          ) : (
-            <button className="navbar-register" onClick={() => setShowRegister(true)}>
-              <span className="navbar-register-pulse" />
-              Register Now
-            </button>
+          ) : !pathname.startsWith('/register') && (
+            <>
+              {!isAuthenticated && (
+                <button className="navbar-login" onClick={() => { setPendingRoute(null); setShowAuthModal(true); }}>
+                  Log In
+                </button>
+              )}
+              <button className="navbar-register" onClick={() => setShowRegister(true)}>
+                <span className="navbar-register-pulse" />
+                Register Now
+              </button>
+            </>
           )}
           {/* <a className="navbar-admin-link" href="/admin">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -150,13 +157,23 @@ export default function Navbar() {
           <a className="navbar-mobile-register navbar-mobile-dashboard" href="/dashboard" onClick={() => setOpen(false)}>
             My Dashboard
           </a>
-        ) : (
-          <button
-            className="navbar-mobile-register"
-            onClick={() => { setOpen(false); setShowRegister(true); }}
-          >
-            Register Now
-          </button>
+        ) : !pathname.startsWith('/register') && (
+          <>
+            {!isAuthenticated && (
+              <button
+                className="navbar-mobile-register navbar-mobile-login"
+                onClick={() => { setOpen(false); setPendingRoute(null); setShowAuthModal(true); }}
+              >
+                Log In
+              </button>
+            )}
+            <button
+              className="navbar-mobile-register"
+              onClick={() => { setOpen(false); setShowRegister(true); }}
+            >
+              Register Now
+            </button>
+          </>
         )}
       </div>
 

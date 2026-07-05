@@ -108,10 +108,10 @@ export default function TeamStep() {
         {/* Members */}
         <div className="reg-section-label">Members ({team.members.length})</div>
         <div className="dash-members-list">
-        {team.members.map((m) => {
+        {team.members.map((m, index) => {
           const memberIsLeader = m.id === team.leaderId;
           return (
-            <div key={m.id} className="dash-member-mini">
+            <div key={m.id ?? index} className="dash-member-mini">
               <div className="dash-member-mini-header">
                 <span className="dash-member-mini-name">
                   {m.name} {m.lastName}{memberIsLeader ? ' · Leader' : ''}

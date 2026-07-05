@@ -55,10 +55,12 @@ export class AuthService {
       return user;
     } catch (error: any) {
       // P2002 = unique constraint violation.
-      // If the conflict is on `email`, a row already exists with this email
-      // but a different supabaseId (e.g. user re-registered in Supabase).
-      // Adopt the existing row by updating it with the new supabaseId.
-      if (error?.code === 'P2002' && error?.meta?.target?.includes('email')) {
+      // The upsert searches by `supabaseId`. If the supabaseId is new but the
+      // email already exists (e.g. user re-registered via a different provider),
+      // adopt the existing row by updating it with the new supabaseId.
+      // NOTE: we only check for P2002 (not meta.target) because the pg driver
+      // adapter may not populate meta.target reliably.
+      if (error?.code === 'P2002') {
         this.logger.warn(`Email ${dto.email} already exists — linking to new supabaseId=${supabaseId}`);
         const user = await this.prisma.user.update({
           where: { email: dto.email },
