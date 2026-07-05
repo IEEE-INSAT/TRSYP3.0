@@ -22,9 +22,12 @@ export default function Navbar() {
   const [pendingRoute, setPendingRoute] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
   const { isRegistered, logout } = useAuth();
-  const { accessToken } = useAuthStore();
+  const { accessToken, error: authError } = useAuthStore();
   const isAuthenticated = !!accessToken;
   const pathname = usePathname();
+
+  // Dismiss the global auth error (e.g. after OAuth 409)
+  const dismissAuthError = () => useAuthStore.setState({ error: null });
 
   const handleRegisterClick = (e: React.MouseEvent, route: string) => {
     e.preventDefault();
@@ -220,6 +223,20 @@ export default function Navbar() {
           }}
           pendingRoute={pendingRoute}
         />
+      )}
+
+      {authError && (
+        <div className="auth-error-toast">
+          <div className="auth-error-toast-content">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="20" height="20">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="15" y1="9" x2="9" y2="15" />
+              <line x1="9" y1="9" x2="15" y2="15" />
+            </svg>
+            <span>{authError}</span>
+            <button onClick={dismissAuthError} aria-label="Dismiss">&times;</button>
+          </div>
+        </div>
       )}
     </>
   );

@@ -28,4 +28,12 @@ export const authService = {
       body: { email },
     });
   },
+
+  /** POST /auth/check-email — checks if email is registered. */
+  checkEmail(email: string): Promise<{ message: string }> {
+    return apiFetch<{ message: string }>('/auth/check-email', {
+      method: 'POST',
+      body: { email },
+    });
+  },
 };

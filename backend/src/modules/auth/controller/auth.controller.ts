@@ -53,4 +53,17 @@ export class AuthController {
         const result = await this.authService.resetPassword(dto.email);
         return res.status(HttpStatus.OK).json(result);
     }
+
+    @Post('check-email')
+    @Throttle({ default: { ttl: 60000, limit: 10 } })
+    @ApiOperation({ summary: 'Check if an email is already registered' })
+    @ApiResponse({ status: 200, description: 'Email is available.' })
+    @ApiResponse({ status: 409, description: 'Email already exists.' })
+    async checkEmail(@Body() dto: ResetPasswordDto, @Res() res: Response) {
+        const user = await this.authService.findByEmail(dto.email);
+        if (user) {
+            return res.status(HttpStatus.CONFLICT).json({ message: 'An account with this email already exists.' });
+        }
+        return res.status(HttpStatus.OK).json({ message: 'Email available' });
+    }
 }
