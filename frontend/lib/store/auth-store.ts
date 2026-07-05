@@ -85,8 +85,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 token,
               ),
             });
-          } catch (err) {
+          } catch (err: any) {
             console.error('[auth] syncUser failed in onAuthStateChange:', err);
+            if (err.status === 409) {
+              set({ error: err.message || 'An account with this email already exists.' });
+              await getSupabaseClient()?.auth.signOut();
+            }
           }
           void useRegistrationStore.getState().hydrateFromBackend();
         }
@@ -98,6 +102,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signUp: async ({ email, password, name, lastName, provider = 'email' }) => {
     set({ loading: true, error: null });
     try {
+      if (isApiConfigured) {
+        try {
+          await authService.checkEmail(email);
+        } catch (err: any) {
+          if (err.status === 409) {
+            throw new Error('An account with this email already exists. Please sign in instead.');
+          }
+          // ignore other errors and proceed
+        }
+      }
+
       const supabase = getSupabaseClient();
       if (!supabase) {
         // Offline placeholder — no real account yet.
@@ -131,8 +146,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               token,
             ),
           });
-        } catch {
-          /* non-fatal: profile can be synced on next sign-in */
+        } catch (err: any) {
+          if (err.status === 409) {
+            await supabase.auth.signOut();
+            throw new Error('An account with this email already exists. Please sign in instead.');
+          }
+          console.error('[auth] syncUser failed during signUp:', err);
+          /* non-fatal for other errors: profile can be synced on next sign-in */
         }
       }
       set({ loading: false });
@@ -189,8 +209,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 token,
               ),
             });
-          } catch (syncErr) {
+          } catch (syncErr: any) {
             console.error('[auth] syncUser failed during signIn:', syncErr);
+            if (syncErr.status === 409) {
+              await supabase.auth.signOut();
+              throw new Error(syncErr.message || 'An account with this email already exists.');
+            }
           }
         }
       }

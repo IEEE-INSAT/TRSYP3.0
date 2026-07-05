@@ -331,6 +331,55 @@ button {
   color: var(--color-white) !important;
 }
 
+/* ─── Auth error toast ─── */
+.auth-error-toast {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  animation: authToastSlideDown 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.auth-error-toast-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  background: rgba(20, 0, 0, 0.92);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 30, 30, 0.3);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(255, 30, 30, 0.15), 0 0 0 1px rgba(255, 30, 30, 0.1);
+  color: #ff6b6b;
+  font-size: 13.5px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.auth-error-toast-content svg {
+  flex-shrink: 0;
+  stroke: #ff6b6b;
+}
+
+.auth-error-toast-content button {
+  margin-left: 8px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.auth-error-toast-content button:hover {
+  color: #fff;
+}
+
+@keyframes authToastSlideDown {
+  from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
 /* ─── Register button ─── */
 .navbar-register {
   position: relative;

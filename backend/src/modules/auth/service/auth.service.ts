@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, ConflictException } from "@nestjs/common";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { SyncUserDto } from "../dto/sync-user.dto";
 import { createClient, SupabaseClient } from "@supabase/supabase-js"
@@ -32,56 +32,51 @@ export class AuthService {
     const emailConfirmed = !!supaUser.user.email_confirmed_at;
 
     this.logger.log(`syncUser called — supabaseId=${supabaseId}, email=${dto.email}, name=${dto.name}, lastName=${dto.lastName}, provider=${dto.provider}, emailConfirmed=${emailConfirmed}`);
-    try {
-      const user = await this.prisma.user.upsert({
-        where: { supabaseId },
-        update: {
-          email: dto.email,
-          name: dto.name,
-          lastName: dto.lastName,
-          provider: dto.provider ?? 'email',
-          active: emailConfirmed,
-        },
-        create: {
-          supabaseId,
-          email: dto.email,
-          name: dto.name,
-          lastName: dto.lastName,
-          provider: dto.provider ?? 'email',
-          active: emailConfirmed,
-        },
-      });
-      this.logger.log(`syncUser success — userId=${user.id}`);
-      return user;
-    } catch (error: any) {
-      // P2002 = unique constraint violation.
-      // The upsert searches by `supabaseId`. If the supabaseId is new but the
-      // email already exists (e.g. user re-registered via a different provider),
-      // adopt the existing row by updating it with the new supabaseId.
-      // NOTE: we only check for P2002 (not meta.target) because the pg driver
-      // adapter may not populate meta.target reliably.
-      if (error?.code === 'P2002') {
-        this.logger.warn(`Email ${dto.email} already exists — linking to new supabaseId=${supabaseId}`);
-        const user = await this.prisma.user.update({
-          where: { email: dto.email },
-          data: {
-            supabaseId,
-            name: dto.name,
-            lastName: dto.lastName,
-            provider: dto.provider ?? 'email',
-            active: emailConfirmed,
-          },
-        });
-        this.logger.log(`syncUser (email fallback) success — userId=${user.id}`);
-        return user;
-      }
-      this.logger.error(`syncUser failed for supabaseId=${supabaseId}`, error instanceof Error ? error.stack : error);
-      throw error;
+    // ── Duplicate email guard ──────────────────────────────────────────
+    // Check if another account already uses this email. If so, reject.
+    const existingByEmail = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+    if (existingByEmail && existingByEmail.supabaseId !== supabaseId) {
+      this.logger.warn(
+        `Email ${dto.email} already belongs to userId=${existingByEmail.id} (supabaseId=${existingByEmail.supabaseId}). Rejecting new supabaseId=${supabaseId}.`,
+      );
+      throw new ConflictException(
+        'An account with this email already exists. Please sign in using your original method.',
+      );
     }
+
+    // Safe to upsert — either the supabaseId already exists, or the email is new.
+    const user = await this.prisma.user.upsert({
+      where: { supabaseId },
+      update: {
+        email: dto.email,
+        name: dto.name,
+        lastName: dto.lastName,
+        provider: dto.provider ?? 'email',
+        active: emailConfirmed,
+      },
+      create: {
+        supabaseId,
+        email: dto.email,
+        name: dto.name,
+        lastName: dto.lastName,
+        provider: dto.provider ?? 'email',
+        active: emailConfirmed,
+      },
+    });
+    this.logger.log(`syncUser success — userId=${user.id}`);
+    return user;
   }
   async findbySupabaseId(supabaseId: string) {
     return this.prisma.user.findUnique({
       where: { supabaseId },
+    });
+  }
+
+  async findByEmail(email: string) {
+    return this.prisma.user.findUnique({
+      where: { email },
     });
   }
   async resetPassword(email: string) {
