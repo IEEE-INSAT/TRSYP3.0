@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Req, Res, HttpStatus, Get, UnauthorizedException } from "@nestjs/common";
+import { Controller, Post, Body, UseGuards, Req, Res, HttpStatus, Get, UnauthorizedException, NotFoundException } from "@nestjs/common";
 import { AuthService } from "../service/auth.service";
 import { SupabaseAuthGuard } from "../guards/supabase-auth.guard";
 import { Response, Request } from "express";
@@ -6,6 +6,7 @@ import { SyncUserDto } from "../dto/sync-user.dto";
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from "@nestjs/swagger";
 import { ResetPasswordDto } from "../dto/Reset-password.dto";
 import { Throttle } from "@nestjs/throttler";
+import { JwtAuthGuard } from "@common/guards/jwt-auth.guard";
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -31,7 +32,7 @@ export class AuthController {
     }
 
     @Get('me')
-    @UseGuards(SupabaseAuthGuard)
+    @UseGuards(JwtAuthGuard)
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Get current user profile' })
     @ApiResponse({ status: 200, description: 'User profile retrieved successfully.' })
@@ -39,6 +40,9 @@ export class AuthController {
     @ApiResponse({ status: 429, description: 'Too many requests.' })
     async getMe(@Req() req: Request, @Res() res: Response) {
         const user = await this.authService.findbySupabaseId((req.user as any)._supabaseId);
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
         return res.status(HttpStatus.OK).json(user);
     }
 
@@ -52,18 +56,5 @@ export class AuthController {
     async Password_reset(@Body() dto:ResetPasswordDto, @Res() res:Response){
         const result = await this.authService.resetPassword(dto.email);
         return res.status(HttpStatus.OK).json(result);
-    }
-
-    @Post('check-email')
-    @Throttle({ default: { ttl: 60000, limit: 10 } })
-    @ApiOperation({ summary: 'Check if an email is already registered' })
-    @ApiResponse({ status: 200, description: 'Email is available.' })
-    @ApiResponse({ status: 409, description: 'Email already exists.' })
-    async checkEmail(@Body() dto: ResetPasswordDto, @Res() res: Response) {
-        const user = await this.authService.findByEmail(dto.email);
-        if (user) {
-            return res.status(HttpStatus.CONFLICT).json({ message: 'An account with this email already exists.' });
-        }
-        return res.status(HttpStatus.OK).json({ message: 'Email available' });
     }
 }
