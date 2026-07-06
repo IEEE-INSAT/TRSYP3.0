@@ -15,6 +15,7 @@ import { RoomingModule } from './modules/rooming/rooming.module';
 import { RegistrationModule } from './modules/registration/registration.module';
 // import { NotificationModule } from './modules/notification/notification.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { AppController } from './app.controller';
 @Module({
     imports:[ConfigModule.forRoot({
         isGlobal:true,
@@ -50,8 +51,9 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
         }),
         EventEmitterModule.forRoot(),
         PrismaModule, AuthModule, AdminModule, RoomingModule, RegistrationModule, /* NotificationModule */],
-    controllers: [],
+    controllers: [AppController],
     providers: [
+        AppService,
         AppService,
         // Apply ThrottlerGuard globally to all endpoints
         { provide: APP_GUARD, useClass: ThrottlerGuard },
