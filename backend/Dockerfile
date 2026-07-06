@@ -27,4 +27,4 @@ ENV NODE_ENV=production
 
 EXPOSE 3001
 
-CMD npx prisma migrate deploy && node dist/main
+CMD npx prisma migrate deploy && node dist/src/main
