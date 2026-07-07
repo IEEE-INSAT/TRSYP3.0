@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { getSupabaseClient } from '../supabase/client';
 import { authService } from '../api/auth.service';
 import { isApiConfigured } from '../config';
+import { useRegistrationStore } from './registration-store';
 import type { BackendUser } from '../api/types';
 
 export interface SignUpInput {
@@ -32,7 +33,7 @@ interface AuthState {
   error: string | null;
 
   initialize: () => Promise<void>;
-  signUp: (input: SignUpInput) => Promise<{ emailConfirmationPending: boolean }>;
+  signUp: (input: SignUpInput) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ message: string }>;
@@ -77,76 +78,61 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           email: session?.user.email ?? null,
         });
 
-        // After Google (or any OAuth) sign-in, sync the user to the backend.
         if (event === 'SIGNED_IN' && token && isApiConfigured) {
           set({ syncing: true });
           try {
-            const user = session?.user;
-            const meta = user?.user_metadata ?? {};
-            set({
-              account: await authService.syncUser(
-                {
-                  email: user?.email ?? '',
-                  name: meta.full_name?.split(' ')[0] ?? meta.name ?? '',
-                  lastName: meta.full_name?.split(' ').slice(1).join(' ') ?? meta.lastName ?? '',
-                  provider: user?.app_metadata?.provider ?? 'google',
-                },
-                token,
-              ),
-            });
-          } catch (err) {
-            console.error('[auth] syncUser failed in onAuthStateChange:', err);
-          } finally {
-            set({ syncing: false });
+            set({ account: await authService.getMe(token) });
+          } catch (err: any) {
+            console.error('[auth] getMe failed in onAuthStateChange:', err);
           }
+          void useRegistrationStore.getState().hydrateFromBackend();
         }
       });
     }
     set({ initialized: true });
   },
 
-  signUp: async ({ email, password, name, lastName, provider = 'email' }) => {
+  signUp: async ({ email, password, name, lastName }) => {
     set({ loading: true, error: null });
     try {
       const supabase = getSupabaseClient();
       if (!supabase) {
         // Offline placeholder — no real account yet.
         set({ accessToken: `offline:${email}`, email, loading: false });
-        return { emailConfirmationPending: false };
+        return;
       }
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: { data: { name, lastName } },
       });
-      if (error) throw new Error(error.message);
-
-      const token = data.session?.access_token ?? null;
-      set({ accessToken: token, email });
-
-      // If Supabase requires email confirmation, data.session will be null.
-      // The user must verify their email before they can sign in.
-      if (!token) {
-        set({ loading: false });
-        return { emailConfirmationPending: true };
+      if (error) {
+        // Supabase enforces email uniqueness — translate its error into a
+        // friendly, actionable message instead of a pre-flight check.
+        if (error.code === 'user_already_exists' || /already registered/i.test(error.message)) {
+          throw new Error('An account with this email already exists. Please sign in instead.');
+        }
+        throw new Error(error.message);
       }
 
-      // If the project doesn't require email confirmation we already have a
-      // session — sync the user into the backend immediately.
-      if (isApiConfigured) {
+      // Email confirmation is disabled, so signUp returns a session directly and
+      // the user is logged in immediately. Fall back to an explicit sign-in only
+      // if a session wasn't returned for some reason.
+      let token = data.session?.access_token ?? null;
+      if (!token) {
+        const { data: signInData } = await supabase.auth.signInWithPassword({ email, password });
+        token = signInData.session?.access_token ?? null;
+      }
+      set({ accessToken: token, email });
+
+      if (token && isApiConfigured) {
         try {
-          set({
-            account: await authService.syncUser(
-              { email, name, lastName, provider },
-              token,
-            ),
-          });
-        } catch {
-          /* non-fatal: profile can be synced on next sign-in */
+          set({ account: await authService.getMe(token) });
+        } catch (err: any) {
+          console.error('[auth] getMe failed during signUp:', err);
         }
       }
       set({ loading: false });
-      return { emailConfirmationPending: false };
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Sign up failed';
       set({ loading: false, error: message });
@@ -168,40 +154,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
       if (error) throw new Error(error.message);
 
-      // ── Email confirmation gate ──────────────────────────────────────
-      // Supabase may return a valid session even if the user hasn't
-      // confirmed their email. Block login and sign them back out.
-      const user = data.session?.user;
-      if (user && !user.email_confirmed_at) {
-        await supabase.auth.signOut();
-        throw new Error('Please confirm your email address before logging in. Check your inbox for the verification link.');
-      }
-
       const token = data.session?.access_token ?? null;
       set({ accessToken: token, email });
       if (token && isApiConfigured) {
         try {
-          // Try to fetch the existing user from the backend
           set({ account: await authService.getMe(token) });
         } catch (getErr) {
           console.error('[auth] getMe failed during signIn:', getErr);
-          // User not in DB yet (first login after email verification) — sync them
-          try {
-            const meta = data.session?.user?.user_metadata ?? {};
-            set({
-              account: await authService.syncUser(
-                {
-                  email,
-                  name: meta.name ?? meta.full_name?.split(' ')[0] ?? '',
-                  lastName: meta.lastName ?? meta.full_name?.split(' ').slice(1).join(' ') ?? '',
-                  provider: 'email',
-                },
-                token,
-              ),
-            });
-          } catch (syncErr) {
-            console.error('[auth] syncUser failed during signIn:', syncErr);
-          }
         }
       }
       set({ loading: false });

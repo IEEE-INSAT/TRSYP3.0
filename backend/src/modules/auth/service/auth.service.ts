@@ -1,8 +1,11 @@
-import { Injectable, Logger, ConflictException } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "../../../prisma/prisma.service";
-import { SyncUserDto } from "../dto/sync-user.dto";
 import { createClient, SupabaseClient } from "@supabase/supabase-js"
 import { ConfigService } from "@nestjs/config";
+import { resolveMx } from "dns/promises";
+
+// Reserved / documentation domains that can never receive email (RFC 2606).
+const RESERVED_DOMAINS = ['example.com', 'example.net', 'example.org', 'test.com', 'test.net', 'test.org', 'localhost', 'invalid'];
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -20,54 +23,7 @@ export class AuthService {
     });
   }
 
-  async syncUser(supabaseId: string, dto: SyncUserDto) {
-    // ── Secure Verification ──────────────────────────────────────────
-    // Fetch the user from Supabase to authoritatively check if they have
-    // verified their email. This prevents activating unverified users.
-    const { data: supaUser, error: supaErr } = await this.supabase.auth.admin.getUserById(supabaseId);
-    if (supaErr || !supaUser?.user) {
-      this.logger.error(`Failed to fetch user from Supabase: ${supaErr?.message}`);
-      throw new Error('Could not verify user in Supabase');
-    }
-    const emailConfirmed = !!supaUser.user.email_confirmed_at;
 
-    this.logger.log(`syncUser called — supabaseId=${supabaseId}, email=${dto.email}, name=${dto.name}, lastName=${dto.lastName}, provider=${dto.provider}, emailConfirmed=${emailConfirmed}`);
-    // ── Duplicate email guard ──────────────────────────────────────────
-    // Check if another account already uses this email. If so, reject.
-    const existingByEmail = await this.prisma.user.findUnique({
-      where: { email: dto.email },
-    });
-    if (existingByEmail && existingByEmail.supabaseId !== supabaseId) {
-      this.logger.warn(
-        `Email ${dto.email} already belongs to userId=${existingByEmail.id} (supabaseId=${existingByEmail.supabaseId}). Rejecting new supabaseId=${supabaseId}.`,
-      );
-      throw new ConflictException(
-        'An account with this email already exists. Please sign in using your original method.',
-      );
-    }
-
-    // Safe to upsert — either the supabaseId already exists, or the email is new.
-    const user = await this.prisma.user.upsert({
-      where: { supabaseId },
-      update: {
-        email: dto.email,
-        name: dto.name,
-        lastName: dto.lastName,
-        provider: dto.provider ?? 'email',
-        active: emailConfirmed,
-      },
-      create: {
-        supabaseId,
-        email: dto.email,
-        name: dto.name,
-        lastName: dto.lastName,
-        provider: dto.provider ?? 'email',
-        active: emailConfirmed,
-      },
-    });
-    this.logger.log(`syncUser success — userId=${user.id}`);
-    return user;
-  }
   async findbySupabaseId(supabaseId: string) {
     return this.prisma.user.findUnique({
       where: { supabaseId },
@@ -99,5 +55,42 @@ export class AuthService {
     }
 
     return { message: "If an account exists, a password reset email has been sent" };
+  }
+
+  /**
+   * Verify the domain part of an email can actually receive mail by checking
+   * for MX records. This lives on the backend (not the frontend) because the
+   * frontend is a static export with no Node runtime to do DNS lookups.
+   *
+   * Always resolves (never throws) so the caller can treat it as advisory and
+   * never hard-block signup on a transient DNS hiccup.
+   */
+  async validateEmailDomain(email: string): Promise<{ valid: boolean; reason?: string }> {
+    const parts = email.split('@');
+    if (parts.length !== 2 || !parts[1]) {
+      return { valid: false, reason: 'Invalid email format.' };
+    }
+
+    const domain = parts[1].toLowerCase();
+
+    if (RESERVED_DOMAINS.includes(domain)) {
+      return { valid: false, reason: `"${domain}" is a reserved domain and cannot receive email.` };
+    }
+
+    try {
+      const mxRecords = await resolveMx(domain);
+      if (!mxRecords || mxRecords.length === 0) {
+        return { valid: false, reason: `"${domain}" does not have any mail servers.` };
+      }
+      return { valid: true };
+    } catch (err: unknown) {
+      const code = err && typeof err === 'object' && 'code' in err ? (err as { code: string }).code : undefined;
+      if (code === 'ENOTFOUND' || code === 'ENODATA' || code === 'ESERVFAIL') {
+        return { valid: false, reason: 'This email domain does not exist.' };
+      }
+      // Unknown/transient DNS error — don't block the user.
+      this.logger.warn(`validateEmailDomain DNS error for ${domain}: ${String(err)}`);
+      return { valid: true };
+    }
   }
 }

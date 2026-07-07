@@ -7,14 +7,6 @@ import type { BackendUser, SyncUserPayload } from './types';
  * access token obtained from the auth store.
  */
 export const authService = {
-  /** POST /auth/sync-user — upsert the Prisma `User` from the Supabase identity. */
-  syncUser(payload: SyncUserPayload, token: string): Promise<BackendUser> {
-    return apiFetch<BackendUser>('/auth/sync-user', {
-      method: 'POST',
-      body: payload,
-      token,
-    });
-  },
 
   /** GET /auth/me — current user profile. */
   getMe(token: string): Promise<BackendUser> {
@@ -32,6 +24,18 @@ export const authService = {
   /** POST /auth/check-email — checks if email is registered. */
   checkEmail(email: string): Promise<{ message: string }> {
     return apiFetch<{ message: string }>('/auth/check-email', {
+      method: 'POST',
+      body: { email },
+    });
+  },
+
+  /**
+   * POST /auth/validate-email — verifies the domain has MX records.
+   * Runs on the backend because the static-export frontend has no Node runtime
+   * for DNS lookups. Returns `{ valid, reason? }`.
+   */
+  validateEmailDomain(email: string): Promise<{ valid: boolean; reason?: string }> {
+    return apiFetch<{ valid: boolean; reason?: string }>('/auth/validate-email', {
       method: 'POST',
       body: { email },
     });

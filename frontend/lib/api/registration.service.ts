@@ -1,4 +1,4 @@
-import { apiFetch } from './http';
+import { apiFetch, ApiError } from './http';
 import { features } from '../config';
 import type {
   BackendParticipant,
@@ -65,10 +65,16 @@ export const registrationService = {
     });
   },
 
-  /** GET /registration/profile — the current user's participant profile. */
+  /** GET /registration/profile — the current user's participant profile, or null if none yet. */
   async getProfile(token: string): Promise<BackendParticipant | null> {
     if (!features.registrationApi) return null;
-    return apiFetch<BackendParticipant>('/registration/profile', { token });
+    try {
+      return await apiFetch<BackendParticipant>('/registration/profile', { token });
+    } catch (e) {
+      // 404 = the user hasn't registered a profile yet — an expected state, not an error.
+      if (e instanceof ApiError && e.status === 404) return null;
+      throw e;
+    }
   },
 
   // ── Page 2: teams ────────────────────────────────────────────────────────

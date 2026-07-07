@@ -90,7 +90,7 @@ export default function Dashboard() {
         <motion.div className="dash-header" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
           <div className="dash-header-left">
             <h1 className="dash-welcome">
-              Welcome back, {isChallenger ? `Team ${user.teamName}` : user.fullName}!
+              Welcome back, {isChallenger ? `Team ${team?.name || user.teamName || 'Member'}` : user.fullName}!
             </h1>
             <span className={`dash-type-badge ${isChallenger ? 'dash-type-challenger' : 'dash-type-participant'}`}>
               {isChallenger ? 'Challenger' : 'Participant'}

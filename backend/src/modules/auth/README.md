@@ -1,6 +1,8 @@
 # Auth Module
 
-This directory contains the Authentication module for the NestJS backend, which integrates with **Supabase Authentication**. It leverages `@nestjs/passport` and `passport-jwt` to validate external tokens and synchronizes the authenticated user into the local database (via Prisma).
+This directory contains the Authentication module for the NestJS backend, which integrates with **Supabase Authentication**. It leverages `@nestjs/passport` and `passport-jwt` to validate external tokens.
+
+User provisioning into the local `public.users` table is handled by a **Postgres trigger on `auth.users`** (see [`backend/supabase_triggers.sql`](../../../supabase_triggers.sql)), which runs inside the signup transaction — so the row exists before the client ever receives a token. The strategy keeps a lazy-upsert fallback for the rare case the trigger did not run. There is **no** `/auth/sync-user` endpoint anymore.
 
 ## Architecture
 
@@ -15,29 +17,14 @@ This directory contains the Authentication module for the NestJS backend, which 
 
 3. **Service (`auth.service.ts`)**:
    - Manages communication with the `PrismaService`.
-   - `syncUser`: Creates or updates a local user record in the database using the unique `supabaseId`.
    - `findbySupabaseId`: Fetches a user record given their Supabase ID.
+   - `findByEmail`, `resetPassword`: profile lookup and password-reset email dispatch.
 
 ## Exposed Endpoints
 
 All endpoints are prefixed with `/auth`.
 
-### 1. Synchronize User
-- **Route**: `POST /auth/sync-user`
-- **Protection**: Requires Supabase authentication (`@UseGuards(SupabaseAuthGuard)`).
-- **Description**: Synchronizes the user profile (e.g., after logging in or signing up via the frontend) to the backend's local database. It extracts the `supabaseId` from the validated JWT instead of trusting the request body to prevent spoofing.
-- **Request Body** (`SyncUserDto`):
-  ```json
-  {
-    "email": "user@example.com",
-    "name": "First",
-    "lastName": "Last",
-    "provider": "google" // optional, defaults to "email"
-  }
-  ```
-- **Response**: The complete user object from the database (including `upsert` results).
-
-### 2. Get Current Validated User
+### 1. Get Current Validated User
 - **Route**: `GET /auth/me`
 - **Protection**: Requires Supabase authentication (`@UseGuards(SupabaseAuthGuard)`).
 - **Description**: Retrieves the currently authenticated user's profile from the local database using the validated `supabaseId` attached to the request.

@@ -14,6 +14,7 @@ import {
   ParseIntPipe,
   DefaultValuePipe,
   ParseBoolPipe,
+  NotFoundException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -126,7 +127,7 @@ export class RegistrationController {
   ): Promise<ParticipantResponseDto> {
     const participant = await this.registrationService.findByUserId(userId);
     if (!participant) {
-      throw new Error('Profile not found'); // Will be caught by exception filter
+      throw new NotFoundException('Profile not found'); // Will be caught by exception filter
     }
     return plainToInstance(ParticipantResponseDto, participant, {
       excludeExtraneousValues: true,
@@ -150,7 +151,7 @@ export class RegistrationController {
   ): Promise<ParticipantResponseDto> {
     const participant = await this.registrationService.findByUserId(userId);
     if (!participant) {
-      throw new Error('Profile not found');
+      throw new NotFoundException('Profile not found');
     }
     const updated = await this.registrationService.updateProfile(
       participant.id,
@@ -178,7 +179,7 @@ export class RegistrationController {
   async deleteMyProfile(@CurrentUser('sub') userId: string): Promise<void> {
     const participant = await this.registrationService.findByUserId(userId);
     if (!participant) {
-      throw new Error('Profile not found');
+      throw new NotFoundException('Profile not found');
     }
     await this.registrationService.deleteParticipant(participant.id);
   }
@@ -203,7 +204,7 @@ export class RegistrationController {
   ): Promise<VisaApplicationResponseDto> {
     const participant = await this.registrationService.findByUserId(userId);
     if (!participant) {
-      throw new Error('Profile not found');
+      throw new NotFoundException('Profile not found');
     }
     const visa = await this.registrationService.requestVisaLetter(
       participant.id,
@@ -227,11 +228,11 @@ export class RegistrationController {
   ): Promise<VisaApplicationResponseDto> {
     const participant = await this.registrationService.findByUserId(userId);
     if (!participant) {
-      throw new Error('Profile not found');
+      throw new NotFoundException('Profile not found');
     }
     const visa = await this.registrationService.getVisaApplication(participant.id);
     if (!visa) {
-      throw new Error('Visa application not found');
+      throw new NotFoundException('Visa application not found');
     }
     return plainToInstance(VisaApplicationResponseDto, visa, {
       excludeExtraneousValues: true,
@@ -254,11 +255,11 @@ export class RegistrationController {
   ): Promise<VisaApplicationResponseDto> {
     const participant = await this.registrationService.findByUserId(userId);
     if (!participant) {
-      throw new Error('Profile not found');
+      throw new NotFoundException('Profile not found');
     }
     const visa = await this.registrationService.getVisaApplication(participant.id);
     if (!visa) {
-      throw new Error('Visa application not found');
+      throw new NotFoundException('Visa application not found');
     }
     const updated = await this.registrationService.updateVisaApplication(
       visa.id,

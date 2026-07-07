@@ -3,6 +3,8 @@
 import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { useAuthStore } from '@/lib/store/auth-store';
 import { getSupabaseClient } from '@/lib/supabase/client';
+import { authService } from '@/lib/api/auth.service';
+import { isApiConfigured } from '@/lib/config';
 
 // ── Validation helpers ──────────────────────────────────────────────────────
 
@@ -83,19 +85,15 @@ function validateEmailFormat(value: string): string | null {
   return null;
 }
 
-/** Async server-side check — verifies the domain has real MX records via DNS. */
+/** Async check — verifies the domain has real MX records via the backend (DNS). */
 async function validateEmailDomain(email: string): Promise<string | null> {
+  if (!isApiConfigured) return null; // backend not wired — don't block signup
   try {
-    const res = await fetch('/api/validate-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
-    });
-    const data = await res.json();
+    const data = await authService.validateEmailDomain(email);
     if (!data.valid) return data.reason || 'This email domain is not valid.';
     return null;
   } catch {
-    // Network error — don't block the user, let the backend handle it
+    // Network / backend error — don't block the user.
     return null;
   }
 }
@@ -151,7 +149,6 @@ export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute
   const [emailChecking, setEmailChecking] = useState(false);
   const lastCheckedEmail = useRef('');
 
-  const [emailConfirmationSent, setEmailConfirmationSent] = useState(false);
 
   // Instant (synchronous) checks
   const emailFormatError = useMemo(() => validateEmailFormat(email), [email]);
@@ -186,7 +183,6 @@ export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute
     setPasswordTouched(false);
     setEmailDomainError(null);
     setEmailChecking(false);
-    setEmailConfirmationSent(false);
     lastCheckedEmail.current = '';
     setError(null);
   };
@@ -271,7 +267,7 @@ export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute
     setLoading(true);
     setError(null);
     try {
-      const result = await signUp({
+      await signUp({
         email,
         password,
         name: firstName.trim(),
@@ -279,12 +275,8 @@ export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute
         provider: 'email',
       });
 
-      if (result.emailConfirmationPending) {
-        // Supabase requires email verification — show confirmation message
-        setEmailConfirmationSent(true);
-      } else {
-        onSuccess();
-      }
+      // Email verification is disabled — the user is signed in immediately.
+      onSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign up failed');
     } finally {
@@ -300,29 +292,8 @@ export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-        {emailConfirmationSent ? (
-          /* ── Email confirmation sent — success view ── */
-          <div className="trsyp-confirmation">
-            <div className="trsyp-confirmation-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="48" height="48">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-              </svg>
-            </div>
-            <h3 className="trsyp-popup-title" style={{ textAlign: 'center' }}>Check your email</h3>
-            <p className="trsyp-confirmation-text">
-              We&apos;ve sent a verification link to <strong>{email}</strong>. Please click the link to activate your account before logging in.
-            </p>
-            <button
-              type="button"
-              className="trsyp-btn-login"
-              onClick={() => switchMode(true)}
-              style={{ width: '100%' }}
-            >
-              Go to Login
-            </button>
-          </div>
-        ) : (
-          /* ── Normal auth forms ── */
+        {/* ── Auth forms ── */}
+        {(
           <>
             <div className="trsyp-popup-header">
               <h3 className="trsyp-popup-title">{isLogin ? 'Authenticate' : 'Create Account'}</h3>

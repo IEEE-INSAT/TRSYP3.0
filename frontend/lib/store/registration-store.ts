@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { useAuthStore } from './auth-store';
 import { registrationService } from '../api/registration.service';
 import { ApiError } from '../api/http';
+import { features } from '../config';
 import type {
   Country,
   Gender,
@@ -179,7 +180,14 @@ export const useRegistrationStore = create<RegistrationState>()(
           if (!token) return;
 
           const participant = await registrationService.getProfile(token);
-          if (!participant) return;
+          if (!participant) {
+            // When the registration API is live, the backend is the source of
+            // truth: no profile means the user is NOT registered. Clear any
+            // stale persisted flag so RegisterFlow doesn't skip Step 1 and drop
+            // the user at "create team" with no backend participant.
+            if (features.registrationApi) set({ user: null, isRegistered: false });
+            return;
+          }
 
           const account = auth.account;
           const email = account?.email ?? auth.email ?? '';

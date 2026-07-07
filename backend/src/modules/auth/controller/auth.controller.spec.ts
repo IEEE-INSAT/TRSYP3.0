@@ -10,7 +10,6 @@ describe('AuthController', () => {
   let authService: AuthService;
 
   const mockAuthService = {
-    syncUser: jest.fn<any>(),
     findbySupabaseId: jest.fn<any>(),
     resetPassword: jest.fn<any>(),
   };
@@ -40,31 +39,6 @@ describe('AuthController', () => {
     expect(controller).toBeDefined();
   });
 
-  describe('syncUser', () => {
-    it('should throw UnauthorizedException if supabaseId is missing from req.user', async () => {
-      const req = { user: {} } as Request;
-      const res = mockResponse();
-      const dto = { email: 'test@test.com', name: 'Test', lastName: 'User', provider: 'google' } as any;
-
-      await expect(controller.syncUser(dto, res, req)).rejects.toThrow(UnauthorizedException);
-      await expect(controller.syncUser(dto, res, req)).rejects.toThrow('User not found');
-    });
-
-    it('should sync user and return 200 OK', async () => {
-      const req = { user: { _supabaseId: 'supa-123', email_confirmed_at: '2026-01-01' } } as unknown as Request;
-      const res = mockResponse();
-      const dto = { email: 'test@test.com', name: 'Test', lastName: 'User', provider: 'google' } as any;
-      const expectedUser = { id: '1', email: 'test@test.com' };
-
-      mockAuthService.syncUser.mockResolvedValue(expectedUser);
-
-      await controller.syncUser(dto, res, req);
-
-      expect(authService.syncUser).toHaveBeenCalledWith('supa-123', dto);
-      expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
-      expect(res.json).toHaveBeenCalledWith(expectedUser);
-    });
-  });
 
   describe('getMe', () => {
     it('should return the current user profile with 200 OK', async () => {
