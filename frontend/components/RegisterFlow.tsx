@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useAuthStore, useRegistrationStore } from '@/lib/store';
 import AuthModal from './AuthModal';
@@ -33,6 +33,18 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
   const [step, setStep] = useState<Step>(() =>
     isRegistered ? (initialChallenge ? 'team' : 'choosePath') : 'participant',
   );
+
+  // Keep the step in sync with the backend-reconciled `isRegistered` flag:
+  //  - true while on Step 1  → advance past it
+  //  - false while past Step 1 → a stale persisted flag was revoked by backend
+  //    reconciliation, so send the user back to Step 1.
+  useEffect(() => {
+    if (isRegistered && step === 'participant') {
+      setStep(initialChallenge ? 'team' : 'choosePath');
+    } else if (!isRegistered && step !== 'participant') {
+      setStep('participant');
+    }
+  }, [isRegistered, step, initialChallenge]);
 
   // Wait for auth state before deciding anything (avoids a flash).
   if (!initialized) return null;

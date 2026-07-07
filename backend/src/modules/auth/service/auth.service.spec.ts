@@ -57,41 +57,6 @@ describe('AuthService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('syncUser', () => {
-    it('should upsert the user into the database', async () => {
-      const dto = { email: 'test@test.com', name: 'Test', lastName: 'User', provider: 'google' };
-      const supabaseId = 'supa-123';
-      const expectedUser = { id: '1', supabaseId, ...dto };
-      
-      mockPrismaService.user.upsert.mockResolvedValue(expectedUser);
-
-      const getUserByIdMock = service['supabase'].auth.admin.getUserById as jest.Mock<any>;
-      getUserByIdMock.mockResolvedValue({ data: { user: { email_confirmed_at: '2026-01-01' } }, error: null });
-
-      const result = await service.syncUser(supabaseId, dto as any);
-
-      expect(prisma.user.upsert).toHaveBeenCalledWith({
-        where: { supabaseId },
-        update: {
-          email: dto.email,
-          name: dto.name,
-          lastName: dto.lastName,
-          provider: dto.provider,
-          active: true,
-        },
-        create: {
-          supabaseId,
-          email: dto.email,
-          name: dto.name,
-          lastName: dto.lastName,
-          provider: dto.provider,
-          active: true,
-        },
-      });
-      expect(result).toEqual(expectedUser);
-    });
-  });
-
   describe('findbySupabaseId', () => {
     it('should return the user if found', async () => {
       const supabaseId = 'supa-123';

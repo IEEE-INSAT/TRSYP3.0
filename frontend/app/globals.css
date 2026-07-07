@@ -5443,11 +5443,7 @@ select.reg-input option {
 /* ═══════════════════════════════════════════════════════
    NAVBAR — Admin link
 ═══════════════════════════════════════════════════════ */
-.navbar-right-group {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
+
 
 .navbar-admin-link {
   display: flex;

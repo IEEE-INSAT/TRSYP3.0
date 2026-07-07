@@ -1,4 +1,4 @@
-import { ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 
 /**
@@ -10,17 +10,15 @@ import { AuthGuard } from '@nestjs/passport';
  */
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('supabase-jwt') {
-    handleRequest(err: any, user: any, info: any, context: ExecutionContext) {
-        if (err || !user) {
-            throw err || new UnauthorizedException();
-        }
-        if (user._noDbUser) {
-            throw new UnauthorizedException(
-                'Account not fully set up. Please call /auth/sync-user before accessing this resource.',
-            );
-        }
-        return user;
+  handleRequest(err: any, user: any, info: any) {
+    if (err || !user) {
+      throw err || new UnauthorizedException('Authentication failed');
     }
+    
+    // The SupabaseJwtStrategy always resolves (or lazily provisions) a DB user,
+    // so a successful validation guarantees a synced profile here.
+    return user;
+  }
 }
 
 /**
