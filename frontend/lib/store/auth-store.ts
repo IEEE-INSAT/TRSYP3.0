@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { getSupabaseClient } from '../supabase/client';
 import { authService } from '../api/auth.service';
 import { isApiConfigured } from '../config';
-import { useRegistrationStore } from './registration-store';
 import type { BackendUser } from '../api/types';
 
 export interface SignUpInput {
@@ -18,6 +17,15 @@ interface AuthState {
   accessToken: string | null;
   /** Backend user row from /auth/me or /auth/sync-user. */
   account: BackendUser | null;
+  /**
+   * True while a sync-user/getMe call triggered by onAuthStateChange (e.g.
+   * right after a Google OAuth redirect) is in flight. accessToken is set
+   * synchronously as soon as Supabase confirms the session, but the backend
+   * User row is only guaranteed to exist once this flips back to false.
+   * UI that gates on being "logged in" should also check !syncing to avoid
+   * hitting endpoints before the DB user is ready.
+   */
+  syncing: boolean;
   email: string | null;
   initialized: boolean;
   loading: boolean;
@@ -42,6 +50,7 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set, get) => ({
   accessToken: null,
   account: null,
+  syncing: false,
   email: null,
   initialized: false,
   loading: false,
@@ -60,7 +69,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         } catch (err) {
           console.error('[auth] getMe failed during init:', err);
         }
-        void useRegistrationStore.getState().hydrateFromBackend();
       }
       supabase.auth.onAuthStateChange(async (event, session) => {
         const token = session?.access_token ?? null;
@@ -71,6 +79,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
         // After Google (or any OAuth) sign-in, sync the user to the backend.
         if (event === 'SIGNED_IN' && token && isApiConfigured) {
+          set({ syncing: true });
           try {
             const user = session?.user;
             const meta = user?.user_metadata ?? {};
@@ -85,14 +94,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 token,
               ),
             });
-          } catch (err: any) {
+          } catch (err) {
             console.error('[auth] syncUser failed in onAuthStateChange:', err);
-            if (err.status === 409) {
-              set({ error: err.message || 'An account with this email already exists.' });
-              await getSupabaseClient()?.auth.signOut();
-            }
+          } finally {
+            set({ syncing: false });
           }
-          void useRegistrationStore.getState().hydrateFromBackend();
         }
       });
     }
@@ -102,17 +108,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signUp: async ({ email, password, name, lastName, provider = 'email' }) => {
     set({ loading: true, error: null });
     try {
-      if (isApiConfigured) {
-        try {
-          await authService.checkEmail(email);
-        } catch (err: any) {
-          if (err.status === 409) {
-            throw new Error('An account with this email already exists. Please sign in instead.');
-          }
-          // ignore other errors and proceed
-        }
-      }
-
       const supabase = getSupabaseClient();
       if (!supabase) {
         // Offline placeholder — no real account yet.
@@ -146,13 +141,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               token,
             ),
           });
-        } catch (err: any) {
-          if (err.status === 409) {
-            await supabase.auth.signOut();
-            throw new Error('An account with this email already exists. Please sign in instead.');
-          }
-          console.error('[auth] syncUser failed during signUp:', err);
-          /* non-fatal for other errors: profile can be synced on next sign-in */
+        } catch {
+          /* non-fatal: profile can be synced on next sign-in */
         }
       }
       set({ loading: false });
@@ -209,16 +199,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 token,
               ),
             });
-          } catch (syncErr: any) {
+          } catch (syncErr) {
             console.error('[auth] syncUser failed during signIn:', syncErr);
-            if (syncErr.status === 409) {
-              await supabase.auth.signOut();
-              throw new Error(syncErr.message || 'An account with this email already exists.');
-            }
           }
         }
       }
-      void useRegistrationStore.getState().hydrateFromBackend();
       set({ loading: false });
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Sign in failed';
