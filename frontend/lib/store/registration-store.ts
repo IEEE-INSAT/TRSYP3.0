@@ -117,6 +117,15 @@ export const useRegistrationStore = create<RegistrationState>()(
             }
           }
 
+          // When the backend API is live, "registered" must be backed by a real
+          // participant row. Otherwise local state drifts from the server and
+          // the user appears unregistered after signing back in (the backend is
+          // the source of truth on the next hydrate).
+          if (features.registrationApi) {
+            if (!token) throw new Error('You must be signed in to register.');
+            if (!participantId) throw new Error('Registration could not be saved. Please try again.');
+          }
+
           const account = auth.account;
           const email = account?.email ?? auth.email ?? '';
           const fullName = account

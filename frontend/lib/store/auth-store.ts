@@ -18,15 +18,6 @@ interface AuthState {
   accessToken: string | null;
   /** Backend user row from /auth/me or /auth/sync-user. */
   account: BackendUser | null;
-  /**
-   * True while a sync-user/getMe call triggered by onAuthStateChange (e.g.
-   * right after a Google OAuth redirect) is in flight. accessToken is set
-   * synchronously as soon as Supabase confirms the session, but the backend
-   * User row is only guaranteed to exist once this flips back to false.
-   * UI that gates on being "logged in" should also check !syncing to avoid
-   * hitting endpoints before the DB user is ready.
-   */
-  syncing: boolean;
   email: string | null;
   initialized: boolean;
   loading: boolean;
@@ -51,7 +42,6 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set, get) => ({
   accessToken: null,
   account: null,
-  syncing: false,
   email: null,
   initialized: false,
   loading: false,
@@ -70,6 +60,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         } catch (err) {
           console.error('[auth] getMe failed during init:', err);
         }
+        // Re-derive registration state from the backend on every authenticated
+        // load (reloads fire INITIAL_SESSION, not SIGNED_IN, so the listener
+        // below wouldn't cover this path).
+        void useRegistrationStore.getState().hydrateFromBackend();
       }
       supabase.auth.onAuthStateChange(async (event, session) => {
         const token = session?.access_token ?? null;
@@ -79,7 +73,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         });
 
         if (event === 'SIGNED_IN' && token && isApiConfigured) {
-          set({ syncing: true });
           try {
             set({ account: await authService.getMe(token) });
           } catch (err: any) {
