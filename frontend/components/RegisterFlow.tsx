@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'motion/react';
 import { useAuthStore, useRegistrationStore } from '@/lib/store';
 import AuthModal from './AuthModal';
@@ -25,6 +25,7 @@ const SUBTITLES: Record<Step, string> = {
 export default function RegisterFlow({ initialChallenge = false }: { initialChallenge?: boolean }) {
   const accessToken = useAuthStore((s) => s.accessToken);
   const initialized = useAuthStore((s) => s.initialized);
+  const syncing = useAuthStore((s) => s.syncing);
   const isAuthenticated = !!accessToken;
   const isRegistered = useRegistrationStore((s) => s.isRegistered);
 
@@ -32,14 +33,6 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
   const [step, setStep] = useState<Step>(() =>
     isRegistered ? (initialChallenge ? 'team' : 'choosePath') : 'participant',
   );
-
-  // When hydration from the backend flips isRegistered to true,
-  // advance past the participant step automatically.
-  useEffect(() => {
-    if (isRegistered && step === 'participant') {
-      setStep(initialChallenge ? 'team' : 'choosePath');
-    }
-  }, [isRegistered, step, initialChallenge]);
 
   // Wait for auth state before deciding anything (avoids a flash).
   if (!initialized) return null;
@@ -58,6 +51,20 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
     );
   }
   if (!isAuthenticated) return null;
+
+  // Signed in, but the backend User row from sync-user isn't confirmed yet
+  // (e.g. right after a Google OAuth redirect). Submitting the registration
+  // form during this window causes a "not fully set up" error, so hold here
+  // briefly instead of rendering a clickable form.
+  if (syncing) {
+    return (
+      <div className="reg-page">
+        <div className="reg-container">
+          <p className="reg-info-subtitle">Setting up your account…</p>
+        </div>
+      </div>
+    );
+  }
 
   const onParticipantDone = () => setStep(initialChallenge ? 'team' : 'choosePath');
 
