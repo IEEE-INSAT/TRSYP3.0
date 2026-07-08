@@ -1,0 +1,28 @@
+# .github/workflows/load-test-multi-ip.yml
+name: multi-ip-capacity-test
+on: workflow_dispatch
+jobs:
+  simulated-user:
+    strategy:
+      matrix:
+        user: [1, 2, 3, 4, 5, 6, 7, 8]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update && sudo apt-get install k6
+      - name: Run this "user"'s traffic (read-only, respects rate limit)
+        run: |
+          k6 run -e BASE_URL="https://trsyp3-0.onrender.com" - <<'EOF'
+          import http from "k6/http";
+          import { check, sleep } from "k6";
+          export const options = { vus: 1, duration: "60s" };
+          export default function () {
+            const res = http.get(`${__ENV.BASE_URL}/health`);
+            check(res, { "200 or 429": (r) => r.status === 200 || r.status === 429 });
+            sleep(3); // ~20 req/min, exactly at one user's budget
+          }
+          EOF
