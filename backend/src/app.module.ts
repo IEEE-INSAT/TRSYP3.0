@@ -41,12 +41,12 @@ import { AppController } from './app.controller';
                 signOptions: { expiresIn: configService.get<string>('JWT_EXPIRES_IN') as any },
             }),
         }),
-        // Global rate limiting: 20 requests per 60 seconds per IP.
+        // Global rate limiting: 50 requests per 60 seconds per IP.
         // Individual endpoints can override with @Throttle() for stricter limits.
         ThrottlerModule.forRoot({
             throttlers: [{
                 ttl: 60000,
-                limit: 20,
+                limit: 50,
             }],
         }),
         EventEmitterModule.forRoot(),
