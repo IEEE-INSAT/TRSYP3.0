@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { useAuthStore } from './auth-store';
 import { useRegistrationStore } from './registration-store';
 import { registrationService } from '../api/registration.service';
@@ -45,7 +46,9 @@ async function currentToken(): Promise<string> {
  * Backed by the registration service (real `/registration/team*` routes once
  * `features.registrationApi` is on, local placeholder otherwise).
  */
-export const useTeamStore = create<TeamState>((set) => ({
+export const useTeamStore = create<TeamState>()(
+  persist(
+    (set) => ({
   team: null,
   role: null,
   loaded: false,
@@ -131,4 +134,13 @@ export const useTeamStore = create<TeamState>((set) => ({
 
   reset: () => set({ team: null, role: null, error: null, loaded: false }),
   clearError: () => set({ error: null }),
-}));
+    }),
+    {
+      // Cache the team so the dashboard renders instantly on reload and merely
+      // refreshes in the background — avoids the "info pops in / takes time to
+      // change" flash. `loaded`/`loading` stay transient so a refetch still runs.
+      name: 'trsyp_team_store',
+      partialize: (state) => ({ team: state.team, role: state.role }),
+    },
+  ),
+);

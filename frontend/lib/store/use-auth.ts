@@ -2,6 +2,7 @@
 
 import { useAuthStore } from './auth-store';
 import { useRegistrationStore } from './registration-store';
+import { useTeamStore } from './team-store';
 
 /**
  * Convenience hook composing the auth + registration stores into the shape the
@@ -21,6 +22,7 @@ export function useAuth() {
 
   const logout = async () => {
     resetRegistration();
+    useTeamStore.getState().reset();
     await signOut();
   };
 
