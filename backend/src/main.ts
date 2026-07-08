@@ -2,11 +2,17 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Render sits behind a reverse proxy; without this, req.ip resolves to
+  // Render's proxy address for every request, and ThrottlerGuard ends up
+  // rate-limiting all users as if they were one client.
+  app.set('trust proxy', 1);
 
   // Security headers — sets X-Content-Type-Options, Strict-Transport-Security,
   // X-Frame-Options, X-XSS-Protection, Referrer-Policy, and more.
