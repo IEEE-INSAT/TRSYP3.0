@@ -3,7 +3,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import helmet from 'helmet';
+import { Request, Response, NextFunction } from 'express';import helmet from 'helmet';
 
 
 async function bootstrap() {
@@ -17,6 +17,11 @@ async function bootstrap() {
   // Security headers — sets X-Content-Type-Options, Strict-Transport-Security,
   // X-Frame-Options, X-XSS-Protection, Referrer-Policy, and more.
   app.use(helmet());
+
+  app.use((req: Request, _res: Response, next: NextFunction) => {
+    console.log(`[ip-debug] req.ip=${req.ip} xff=${req.headers['x-forwarded-for']}`);
+    next();
+  });
 
   // CORS — allow the frontend origin (from env) to call the backend.
   app.enableCors({
