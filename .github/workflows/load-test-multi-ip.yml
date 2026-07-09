@@ -1,9 +1,28 @@
 # .github/workflows/load-test-multi-ip.yml
+#
+# Proves per-IP rate limiting. Each matrix job runs on a separate GitHub runner
+# with its OWN public IP, and deliberately fires OVER the 20-req/60s budget.
+#
+#   - If buckets are per-IP (correct): every job independently gets ~20 * 200
+#     then 429s  → status_200 threshold passes on all 8 jobs.
+#   - If buckets are shared (trust proxy wrong): 8 jobs share one 20/min budget,
+#     each gets only ~2-3 * 200  → status_200 threshold FAILS → job goes red.
+#
+# IMPORTANT: base_url must be the hostname real users hit (the Cloudflare-fronted
+# domain), NOT the raw *.onrender.com URL — otherwise the proxy hop count differs
+# from production and `trust proxy: 3` is exercised on the wrong path.
 name: multi-ip-capacity-test
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'Public base URL to test (Cloudflare-fronted production host)'
+        required: true
+        default: 'https://api.your-domain.tld'
 jobs:
   simulated-user:
     strategy:
+      fail-fast: false
       matrix:
         user: [1, 2, 3, 4, 5, 6, 7, 8]
     runs-on: ubuntu-latest
@@ -14,15 +33,32 @@ jobs:
           sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
           echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
           sudo apt-get update && sudo apt-get install k6
-      - name: Run this "user"'s traffic (read-only, respects rate limit)
+      - name: Run this IP's over-budget traffic and assert its own bucket
         run: |
-          k6 run -e BASE_URL="https://trsyp3-0.onrender.com" - <<'EOF'
+          k6 run -e BASE_URL="${{ github.event.inputs.base_url }}" - <<'EOF'
           import http from "k6/http";
-          import { check, sleep } from "k6";
-          export const options = { vus: 1, duration: "60s" };
+          import { sleep } from "k6";
+          import { Counter } from "k6/metrics";
+
+          const ok = new Counter("status_200");
+          const limited = new Counter("status_429");
+
+          export const options = {
+            vus: 1,
+            duration: "70s",
+            thresholds: {
+              // This IP got its own ~20/min budget even while 7 other IPs hammer
+              // concurrently → isolation holds. < 15 means buckets are shared.
+              status_200: ["count>=15"],
+              // Over-budget traffic is actually being limited → guard is live.
+              status_429: ["count>=1"],
+            },
+          };
+
           export default function () {
             const res = http.get(`${__ENV.BASE_URL}/health`);
-            check(res, { "200 or 429": (r) => r.status === 200 || r.status === 429 });
-            sleep(3); // ~20 req/min, exactly at one user's budget
+            if (res.status === 200) ok.add(1);
+            else if (res.status === 429) limited.add(1);
+            sleep(0.5); // ~120 req/min — deliberately over the 20/min budget
           }
           EOF

@@ -65,6 +65,9 @@ interface RegistrationState {
   user: UserData | null;
   isRegistered: boolean;
   submitting: boolean;
+  /** True while the first backend profile sync is in flight — lets the UI avoid
+   *  flashing a "not registered" state before we actually know. */
+  hydrating: boolean;
   error: string | null;
 
   registerParticipant: (input: ParticipantRegistrationInput) => Promise<void>;
@@ -97,6 +100,7 @@ export const useRegistrationStore = create<RegistrationState>()(
       user: null,
       isRegistered: false,
       submitting: false,
+      hydrating: false,
       error: null,
 
       registerParticipant: async (input) => {
@@ -183,6 +187,7 @@ export const useRegistrationStore = create<RegistrationState>()(
       },
 
       hydrateFromBackend: async () => {
+        set({ hydrating: true });
         try {
           const auth = useAuthStore.getState();
           const token = await auth.getAccessToken();
@@ -225,6 +230,8 @@ export const useRegistrationStore = create<RegistrationState>()(
           });
         } catch {
           // Non-fatal: profile may not exist yet (404), or backend is down.
+        } finally {
+          set({ hydrating: false });
         }
       },
 
