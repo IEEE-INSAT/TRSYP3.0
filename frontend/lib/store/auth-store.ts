@@ -21,6 +21,9 @@ interface AuthState {
   email: string | null;
   initialized: boolean;
   loading: boolean;
+  /** True from the moment sign-out starts until the redirect. Lets route-guarded
+   *  pages skip their own redirect so they don't race signOut's navigation. */
+  signingOut: boolean;
   error: string | null;
 
   initialize: () => Promise<void>;
@@ -45,6 +48,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   email: null,
   initialized: false,
   loading: false,
+  signingOut: false,
   error: null,
 
   initialize: async () => {
@@ -165,7 +169,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   signOut: async () => {
-    set({ accessToken: null, account: null, email: null });
+    // Mark sign-out in progress FIRST so route-guarded pages (e.g. the
+    // dashboard) don't fire their own redirect and race the one below —
+    // two competing navigations abort each other ("this page couldn't load").
+    set({ signingOut: true, accessToken: null, account: null, email: null });
     const supabase = getSupabaseClient();
     if (supabase) {
       try {
