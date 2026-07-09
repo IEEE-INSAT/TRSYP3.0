@@ -12,7 +12,7 @@ async function bootstrap() {
   // Trust the reverse proxy in front of the app so Express can use
   // X-Forwarded-For to determine the real client IP. This prevents all users
   // from appearing as the same proxy IP to IP-based rate limiters.
-  app.set("trust proxy", true);
+  app.set("trust proxy", 2);
 
   // CORS — allow the frontend origin (from env) to call the backend.
   app.enableCors({
