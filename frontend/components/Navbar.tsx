@@ -1,11 +1,22 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from './AuthContext';
 import AuthModal from './AuthModal';
 import { useAuthStore } from '@/lib/store/auth-store';
+import { useRegistrationStore } from '@/lib/store/registration-store';
+
+// Shared fade/slide used to crossfade the auth actions so state changes
+// (login → dashboard, etc.) don't pop.
+const AUTH_FADE = {
+  initial: { opacity: 0, y: -4 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: 4 },
+  transition: { duration: 0.18, ease: [0.4, 0, 0.2, 1] as const },
+};
 
 const NAV_LINKS = [
   { label: 'Home', href: '/' },
@@ -23,8 +34,15 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const { isRegistered, logout } = useAuth();
   const { accessToken, error: authError } = useAuthStore();
+  const hydrating = useRegistrationStore((s) => s.hydrating);
   const isAuthenticated = !!accessToken;
   const pathname = usePathname();
+
+  // Just after login we're authenticated but the profile sync hasn't resolved
+  // yet — hold a neutral state instead of flashing "Register Now" before the
+  // dashboard link appears.
+  const authResolving = isAuthenticated && !isRegistered && hydrating;
+  const showGuestActions = !isRegistered && !authResolving && !pathname.startsWith('/register');
 
   // Dismiss the global auth error (e.g. after OAuth 409)
   const dismissAuthError = () => useAuthStore.setState({ error: null });
@@ -90,37 +108,50 @@ export default function Navbar() {
         </ul>
 
         <div className="navbar-right-group">
-          {isAuthenticated && (
-            <button className="navbar-signout" onClick={() => logout()} aria-label="Sign out">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
-              <span>Sign Out</span>
-            </button>
-          )}
-          {isRegistered ? (
-            <a className="navbar-dashboard" href="/dashboard">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-              My Dashboard
-            </a>
-          ) : !pathname.startsWith('/register') && (
-            <>
-              {!isAuthenticated && (
-                <button className="navbar-login" onClick={() => { setPendingRoute(null); setShowAuthModal(true); }}>
-                  Log In
+          <AnimatePresence initial={false}>
+            {isAuthenticated && (
+              <motion.button
+                key="signout"
+                className="navbar-signout"
+                onClick={() => logout()}
+                aria-label="Sign out"
+                {...AUTH_FADE}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                <span>Sign Out</span>
+              </motion.button>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence mode="wait" initial={false}>
+            {authResolving ? (
+              <motion.span key="resolving" className="navbar-auth-loading" aria-hidden {...AUTH_FADE} />
+            ) : isRegistered ? (
+              <motion.a key="dashboard" className="navbar-dashboard" href="/dashboard" {...AUTH_FADE}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                My Dashboard
+              </motion.a>
+            ) : showGuestActions ? (
+              <motion.div key="guest" className="navbar-guest-actions" {...AUTH_FADE}>
+                {!isAuthenticated && (
+                  <button className="navbar-login" onClick={() => { setPendingRoute(null); setShowAuthModal(true); }}>
+                    Log In
+                  </button>
+                )}
+                <button className="navbar-register" onClick={() => setShowRegister(true)}>
+                  <span className="navbar-register-pulse" />
+                  Register Now
                 </button>
-              )}
-              <button className="navbar-register" onClick={() => setShowRegister(true)}>
-                <span className="navbar-register-pulse" />
-                Register Now
-              </button>
-            </>
-          )}
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
           {/* <a className="navbar-admin-link" href="/admin">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="3" />
@@ -165,7 +196,7 @@ export default function Navbar() {
           <a className="navbar-mobile-register navbar-mobile-dashboard" href="/dashboard" onClick={() => setOpen(false)}>
             My Dashboard
           </a>
-        ) : !pathname.startsWith('/register') && (
+        ) : showGuestActions && (
           <>
             {!isAuthenticated && (
               <button

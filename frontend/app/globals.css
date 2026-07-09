@@ -248,6 +248,33 @@ button {
   gap: 12px;
 }
 
+.navbar-guest-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Neutral placeholder shown while the auth/profile state resolves after login */
+.navbar-auth-loading {
+  display: inline-block;
+  width: 166px;
+  height: 44px;
+  border-radius: 8px;
+  background: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0.04) 30%,
+    rgba(255, 255, 255, 0.09) 50%,
+    rgba(255, 255, 255, 0.04) 70%
+  );
+  background-size: 200% 100%;
+  animation: navAuthShimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes navAuthShimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
 .navbar-dashboard {
   display: inline-flex;
   align-items: center;
