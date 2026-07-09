@@ -227,6 +227,7 @@ export default function Dashboard() {
         </motion.div>
 
         {/* Status Card */}
+        {PAYMENT_ENABLED && (
         <motion.div className="dash-card dash-status-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }} style={{ borderColor: `${status.color}22` }}>
           <div className="dash-card-title">Registration Status</div>
           <div className="dash-status-row">
@@ -261,7 +262,8 @@ export default function Dashboard() {
           {PAYMENT_ENABLED && user.status === 'approved' && (
             <div className="dash-pay-approved">Registration Confirmed</div>
           )}
-        </motion.div>
+          </motion.div>
+        )}
 
         {/* No team yet — (re)join or create one */}
         {needsTeam && (
