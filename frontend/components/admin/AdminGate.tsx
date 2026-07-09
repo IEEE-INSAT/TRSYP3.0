@@ -5,6 +5,7 @@ import { motion } from 'motion/react';
 import { useAdminStore } from '@/lib/store';
 import { useAuthStore } from '@/lib/store/auth-store';
 import AuthModal from '../AuthModal';
+import LoadingScreen from '../LoadingScreen';
 
 /**
  * AdminGate — protects admin pages with real Supabase + backend authentication.
@@ -34,7 +35,7 @@ export default function AdminGate({ children }: { children: ReactNode }) {
   }, [initialized, isAuthenticated, authed, verifyAdmin]);
 
   // Still loading auth state
-  if (!initialized) return null;
+  if (!initialized) return <LoadingScreen />;
 
   // Not logged in — show auth modal
   if (!isAuthenticated) {

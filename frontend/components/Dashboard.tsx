@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from './AuthContext';
 import { useTeamStore, useRegistrationStore } from '@/lib/store';
+import LoadingScreen from './LoadingScreen';
 
 // TEMP: payment step disabled for now — flip back to true to re-enable.
 // (Keeps the "Submit Payment Proof" button/code intact, just hidden.)
@@ -61,7 +62,7 @@ export default function Dashboard() {
     }
   }, [user]);
 
-  if (!user || redirecting) return null;
+  if (!user || redirecting) return <LoadingScreen />;
 
   const status = STATUS_MAP[user.status];
 
