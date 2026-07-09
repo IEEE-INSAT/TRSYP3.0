@@ -6,6 +6,7 @@ import { useAuthStore, useRegistrationStore } from '@/lib/store';
 import AuthModal from './AuthModal';
 import ParticipantInfoForm from './register/ParticipantInfoForm';
 import TeamStep from './register/TeamStep';
+import LoadingScreen from './LoadingScreen';
 
 type Step = 'participant' | 'choosePath' | 'team' | 'done';
 
@@ -46,7 +47,7 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
   }, [isRegistered, step, initialChallenge]);
 
   // Wait for auth state before deciding anything (avoids a flash).
-  if (!initialized) return null;
+  if (!initialized) return <LoadingScreen />;
 
   // Not authenticated → gate behind the auth modal (spec prerequisite).
   if (!isAuthenticated && showAuthGate) {
