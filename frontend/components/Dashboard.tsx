@@ -5,6 +5,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from './AuthContext';
 import { useTeamStore, useRegistrationStore } from '@/lib/store';
 
+// TEMP: payment step disabled for now — flip back to true to re-enable.
+// (Keeps the "Submit Payment Proof" button/code intact, just hidden.)
+const PAYMENT_ENABLED = false;
+
 const STATUS_MAP = {
   waiting_for_payment: { label: 'Waiting for Payment', color: '#f59e0b', icon: '🟡', msg: 'Your registration is pending. Please submit your payment proof to confirm your spot.' },
   waiting_for_verification: { label: 'Waiting for Verification', color: '#3b82f6', icon: '🔵', msg: 'Your payment proof has been submitted and is under review. We\'ll notify you once verified.' },
@@ -231,21 +235,20 @@ export default function Dashboard() {
           </div>
           <p className="dash-status-msg">{status.msg}</p>
 
-          {/* Payment Action — gated behind team membership: a team-less
-              challenger must (re)join or create a team before paying. */}
-          {user.status === 'waiting_for_payment' && !needsTeam && (
+          {/* Payment Action (TEMP: hidden while PAYMENT_ENABLED = false) */}
+          {PAYMENT_ENABLED && user.status === 'waiting_for_payment' && (
             <a href="/dashboard/payment" className="dash-pay-btn">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>
               Submit Payment Proof
             </a>
           )}
-          {user.status === 'waiting_for_payment' && needsTeam && (
+          {PAYMENT_ENABLED && user.status === 'waiting_for_payment' && needsTeam && (
             <div className="dash-pay-locked">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
               Join or create a team to unlock payment.
             </div>
           )}
-          {user.status === 'waiting_for_verification' && (
+          {PAYMENT_ENABLED && user.status === 'waiting_for_verification' && (
             <div className="dash-pay-submitted">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
               <div>
@@ -254,7 +257,7 @@ export default function Dashboard() {
               </div>
             </div>
           )}
-          {user.status === 'approved' && (
+          {PAYMENT_ENABLED && user.status === 'approved' && (
             <div className="dash-pay-approved">Registration Confirmed</div>
           )}
         </motion.div>
