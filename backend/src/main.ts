@@ -9,10 +9,24 @@ import { Request, Response, NextFunction } from 'express';import helmet from 'he
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // Trust the reverse proxy in front of the app so Express can use
-  // X-Forwarded-For to determine the real client IP. This prevents all users
-  // from appearing as the same proxy IP to IP-based rate limiters.
-  app.set("trust proxy", 2);
+  // The request path is: client → Cloudflare → Render proxy → app, so
+  // X-Forwarded-For carries 3 hops (client, CF, Render). Trust 3 hops from the
+  // server side so req.ip resolves to the real client (the left-most XFF entry)
+  // instead of Render's internal 10.x address — otherwise ThrottlerGuard would
+  // rate-limit every user as if they were one client.
+  app.set('trust proxy', 3);
+
+  // Security headers — sets X-Content-Type-Options, Strict-Transport-Security,
+  // X-Frame-Options, X-XSS-Protection, Referrer-Policy, and more.
+  app.use(helmet());
+
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    console.log(`[ip-debug] req.ip=${req.ip} xff=${req.headers['x-forwarded-for']}`);
+    // Echo the resolved client IP so a k6 check can assert it equals the
+    // caller's real public IP (i.e. that `trust proxy` is set correctly).
+    res.setHeader('X-Debug-Ip', req.ip ?? '');
+    next();
+  });
 
   // CORS — allow the frontend origin (from env) to call the backend.
   app.enableCors({
