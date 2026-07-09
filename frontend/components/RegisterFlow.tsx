@@ -121,8 +121,10 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
               </svg>
             </div>
             <h2 className="reg-success-popup-title">You&apos;re registered!</h2>
+            {/* TEMP: payment mention removed while PAYMENT_ENABLED = false in Dashboard.tsx.
+              Original text: "Your spot for TRSYP 3.0 is reserved. Track your status and submit your payment from your dashboard." */}
             <p className="reg-success-popup-text">
-              Your spot for TRSYP 3.0 is reserved. Track your status and submit your payment from your dashboard.
+              Your spot for TRSYP 3.0 is reserved. Track your status from your dashboard.
             </p>
             <a href="/dashboard" className="reg-success-popup-btn">Go to My Dashboard</a>
           </motion.div>
