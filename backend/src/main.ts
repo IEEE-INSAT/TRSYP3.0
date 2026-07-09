@@ -3,7 +3,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { Request, Response, NextFunction } from 'express';import helmet from 'helmet';
+import helmet from 'helmet';
 
 
 async function bootstrap() {
@@ -19,14 +19,6 @@ async function bootstrap() {
   // Security headers — sets X-Content-Type-Options, Strict-Transport-Security,
   // X-Frame-Options, X-XSS-Protection, Referrer-Policy, and more.
   app.use(helmet());
-
-  app.use((req: Request, res: Response, next: NextFunction) => {
-    console.log(`[ip-debug] req.ip=${req.ip} xff=${req.headers['x-forwarded-for']}`);
-    // Echo the resolved client IP so a k6 check can assert it equals the
-    // caller's real public IP (i.e. that `trust proxy` is set correctly).
-    res.setHeader('X-Debug-Ip', req.ip ?? '');
-    next();
-  });
 
   // CORS — allow the frontend origin (from env) to call the backend.
   app.enableCors({

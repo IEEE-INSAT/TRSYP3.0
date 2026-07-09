@@ -1,7 +1,13 @@
 // Verifies `app.set('trust proxy', N)` is correct — i.e. the server resolves
 // req.ip to the REAL client, not to a Cloudflare/Render proxy address.
 //
-// Requires the `GET /debug/ip` endpoint in app.controller.ts (returns req.ip).
+// NOTE: needs a temporary debug endpoint that echoes the resolved IP. It was
+// removed after the setup was confirmed — re-add it to app.controller.ts to
+// reuse this check:
+//   @Get('debug/ip')
+//   getDebugIp(@Req() req: Request) {
+//     return { ip: req.ip, xff: req.headers['x-forwarded-for'] ?? null };
+//   }
 //
 //   k6 run -e BASE_URL="https://YOUR-CLOUDFLARE-DOMAIN" backend/test/load/trust-proxy.check.js
 //
