@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from './AuthContext';
-import { useTeamStore, useRegistrationStore } from '@/lib/store';
+import { useTeamStore, useRegistrationStore, useAuthStore } from '@/lib/store';
 import LoadingScreen from './LoadingScreen';
 
 // TEMP: payment step disabled for now — flip back to true to re-enable.
@@ -56,7 +56,10 @@ export default function Dashboard() {
   const [codeCopied, setCodeCopied] = useState(false);
 
   useEffect(() => {
-    if (!user) {
+    // During an explicit sign-out, let auth-store's signOut() own the single
+    // redirect — issuing our own here would race it and abort the navigation
+    // ("this page couldn't load"). Only redirect for genuine no-session access.
+    if (!user && !useAuthStore.getState().signingOut) {
       setRedirecting(true);
       window.location.href = '/';
     }
