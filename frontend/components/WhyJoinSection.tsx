@@ -7,7 +7,7 @@ const REASONS = [
     num: '01',
     tag: 'COMPETE',
     title: 'Battle-Test Your Robots',
-    desc: 'Enter real-world robotics challenges — autonomous navigation, line-following, sumo bots, and more. Prove your engineering under pressure.',
+    desc: 'Enter real-world robotics challenges : autonomous navigation, line-following, sumo bots, and more. Prove your engineering under pressure.',
     accent: 'green',
     icon: (
       <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
@@ -53,7 +53,7 @@ const REASONS = [
     num: '04',
     tag: 'LAUNCH',
     title: 'Your Project. Their Eyes.',
-    desc: 'Showcase your prototypes, pitch to industry mentors, and get real feedback. The best ideas get noticed — and funded.',
+    desc: 'Showcase your prototypes, pitch to industry mentors, and get real feedback. The best ideas get noticed (and funded).',
     accent: 'pink',
     icon: (
       <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">

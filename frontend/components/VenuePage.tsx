@@ -184,7 +184,7 @@ export default function VenuePage() {
             </div>
             <h2 className="venue-section-title">Beyond the Conference</h2>
             <p className="venue-tunisia-sub">
-              Tunisia sits at the crossroads of Africa and Europe — ancient ruins, Mediterranean
+              Tunisia sits at the crossroads of Africa and Europe; ancient ruins, Mediterranean
               coastline, Saharan dunes, and vibrant culture, all within a few hours of Tunis.
             </p>
           </div>

@@ -23,7 +23,7 @@ const GAMES = [
     accent: 'pink' as const,
     tag: 'Strategy · Adaptation',
     title: 'The Polygame',
-    desc: 'In another zone of the simulation, stability has collapsed. Structures must be rebuilt, patterns must be understood, and every move can shift the balance between the two teams. Robots enter a strategic construction battlefield where speed alone is not enough — teams must adapt, make smart decisions, and rebuild order from chaos before their opponent takes control.',
+    desc: 'In another zone of the simulation, stability has collapsed. Structures must be rebuilt, patterns must be understood, and every move can shift the balance between the two teams. Robots enter a strategic construction battlefield where speed alone is not enough : teams must adapt, make smart decisions, and rebuild order from chaos before their opponent takes control.',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5" />
@@ -89,7 +89,7 @@ export default function ChallengePage() {
             </h2>
             <p className="challenge-story-p">
               Following the success of our previous editions, we are proud to announce the 3rd edition of the
-              Tunisian RAS Student and Young Professional Congress — a story set inside a simulation where humans
+              Tunisian RAS Student and Young Professional Congress : A story set inside a simulation where humans
               and robots must learn to trust each other, complete missions together, and survive challenges that
               neither side could overcome alone.
             </p>
@@ -136,7 +136,7 @@ export default function ChallengePage() {
             Each game is designed to test more than technical performance. It will test strategy, trust, teamwork,
             creativity, and the ability to build a real connection between human thinking and robotic action.
             <br />
-            This is not just about building the fastest robot — it is about building the strongest partnership
+            This is not just about building the fastest robot. It is about building the strongest partnership
             between human and machine. Welcome to <strong>TRSYP 3.0</strong>. Welcome to the arena of{' '}
             <span className="prog-hl">Human-Robot Symbiosis</span>.
           </motion.p>
@@ -158,7 +158,7 @@ export default function ChallengePage() {
             </h2>
             <p className="prog-cta-p">
               All rules, technical details, scoring systems, and participation guidelines for the Garden Game,
-              Polygame, and Mine Game — published soon.
+              Polygame, and Mine Game will be published soon.
             </p>
             <a
               href="/docs/TRSYP3.0-Specification-Book.pdf"
@@ -198,8 +198,8 @@ export default function ChallengePage() {
             </div>
             <h2 className="challenge-coming-title">Technical Challenge</h2>
             <p className="challenge-coming-desc">
-              Our dedicated technical challenge — autonomous navigation, embedded systems, and hands-on engineering
-              tasks separate from the Human-Robot Symbiosis competition — is being finalized.
+              Our dedicated technical challenge (autonomous navigation, embedded systems, and hands-on engineering
+              tasks separate from the Human-Robot Symbiosis competition) is being finalized.
             </p>
             <div className="challenge-coming-badge">
               <span className="challenge-coming-dot" />

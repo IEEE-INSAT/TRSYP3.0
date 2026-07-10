@@ -78,10 +78,10 @@ export default function AboutSection() {
               TRSYP
               <span className="ab-title-accent">3.0</span>
             </h2>
-            <p className="ab-edition">Third Edition &mdash; 2025</p>
+            <p className="ab-edition">Third Edition : 2026</p>
             <p className="ab-tagline">
               Where <span className="ab-tagline-hl">human intuition</span> meets{' '}
-              <span className="ab-tagline-hl">machine precision</span> &mdash;
+              <span className="ab-tagline-hl">machine precision</span>,
               shaping the future of robotics, together.
             </p>
           </div>
@@ -95,25 +95,25 @@ export default function AboutSection() {
               enthusiasts from across Tunisia and beyond.
               <br /><br />
               This edition explores <strong>Human&ndash;Robot Symbiosis</strong> as a
-              foundational paradigm &mdash; the co-design of next-generation solutions
+              foundational paradigm : the co-design of next-generation solutions
               that fuse robotic capabilities with human strengths like decision-making,
               ethics, and adaptability.
             </p>
 
-            <div className="ab-pillars">
-              {PILLARS.map((pillar) => (
-                <div key={pillar.title} className="ab-pillar">
-                  <div className="ab-pillar-icon">
-                    <PillarIcon type={pillar.icon} />
-                  </div>
-                  <div>
-                    <h3 className="ab-pillar-title">{pillar.title}</h3>
-                    <p className="ab-pillar-desc">{pillar.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
+        </div>
+        <div className="ab-pillars">
+          {PILLARS.map((pillar) => (
+            <div key={pillar.title} className="ab-pillar">
+              <div className="ab-pillar-icon">
+                <PillarIcon type={pillar.icon} />
+              </div>
+              <div>
+                <h3 className="ab-pillar-title">{pillar.title}</h3>
+                <p className="ab-pillar-desc">{pillar.desc}</p>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Divider */}

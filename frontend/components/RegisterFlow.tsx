@@ -12,7 +12,7 @@ type Step = 'participant' | 'choosePath' | 'team' | 'done';
 
 const SUBTITLES: Record<Step, string> = {
   participant: 'Tell us about yourself to complete your registration.',
-  choosePath: 'Almost done — one more choice.',
+  choosePath: 'Almost done. One more choice.',
   team: 'Create or join a team for the robotics challenge.',
   done: 'You are all set!',
 };
