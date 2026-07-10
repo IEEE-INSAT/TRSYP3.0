@@ -163,7 +163,7 @@ export default function AboutPage() {
             <h2 className="team-title">Meet the Team</h2>
             <p className="team-sub">
               The operators, architects, and engineers making TRSYP 3.0 happen.
-              Each card is a unit ID — tap to reveal clearance details.
+              Each card is a unit ID. Tap to reveal clearance details.
             </p>
           </div>
 
