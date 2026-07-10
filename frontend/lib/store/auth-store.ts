@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { getSupabaseClient } from '../supabase/client';
 import { authService } from '../api/auth.service';
+import { ApiError } from '../api/http';
 import { isApiConfigured } from '../config';
 import { useRegistrationStore } from './registration-store';
 import type { BackendUser } from '../api/types';
@@ -59,15 +60,29 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const token = data.session?.access_token ?? null;
       set({ accessToken: token, email: data.session?.user.email ?? null });
       if (token && isApiConfigured) {
+        let tokenValid = true;
         try {
           set({ account: await authService.getMe(token) });
         } catch (err) {
-          console.error('[auth] getMe failed during init:', err);
+          // A 401 here means the token is dead (e.g. an expired session that
+          // survived a failed sign-out). Clear it so the UI shows guest actions
+          // instead of a phantom logged-in state.
+          if (err instanceof ApiError && err.status === 401) {
+            tokenValid = false;
+            set({ accessToken: null, account: null, email: null });
+            try {
+              await supabase.auth.signOut({ scope: 'local' });
+            } catch {
+              /* storage already inconsistent — nothing more to do */
+            }
+          } else {
+            console.error('[auth] getMe failed during init:', err);
+          }
         }
         // Re-derive registration state from the backend on every authenticated
         // load (reloads fire INITIAL_SESSION, not SIGNED_IN, so the listener
         // below wouldn't cover this path).
-        void useRegistrationStore.getState().hydrateFromBackend();
+        if (tokenValid) void useRegistrationStore.getState().hydrateFromBackend();
       }
       supabase.auth.onAuthStateChange(async (event, session) => {
         const token = session?.access_token ?? null;
@@ -176,7 +191,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const supabase = getSupabaseClient();
     if (supabase) {
       try {
-        await supabase.auth.signOut();
+        // `scope: 'local'` wipes the persisted browser session without the
+        // network POST to GoTrue that the default 'global' scope performs. For a
+        // long-lived session the access token is already expired, so that POST
+        // can hang or reject — and on rejection supabase-js may leave the session
+        // in localStorage. The redirect below then reloads into a stale session
+        // that reads back as "still logged in". Local scope clears storage
+        // reliably; the timeout guarantees a hung call can never block the
+        // redirect.
+        await Promise.race([
+          supabase.auth.signOut({ scope: 'local' }),
+          new Promise((resolve) => setTimeout(resolve, 2000)),
+        ]);
       } catch (err) {
         console.error('[auth] Supabase sign out error:', err);
       }
