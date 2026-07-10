@@ -11,7 +11,7 @@ const TUNISIA_PLACES = [
   { name: 'Djerba Island', desc: 'Mediterranean island paradise' },
   { name: 'Sahara Desert', desc: 'Endless dunes, starlit nights' },
   { name: 'El Jem Amphitheatre', desc: 'Roman colosseum, remarkably preserved' },
-  { name: 'Hammamet', desc: 'Coastal resort town, golden beaches' },
+  { name: 'Yasmine Hammamet', desc: 'Coastal resort town, golden beaches' },
   { name: 'Douz', desc: 'Gateway to the Sahara' },
 ];
 
@@ -151,9 +151,9 @@ export default function VenuePage() {
             </div>
             <div className="venue-hotel-info">
               <span className="venue-hotel-badge">TRSYP 3.0 HOST VENUE</span>
-              <h3 className="venue-hotel-name">Le Royal, Hammamet</h3>
+              <h3 className="venue-hotel-name">Le Royal, Yasmine Hammamet</h3>
               <p className="venue-hotel-desc">
-                Le Royal Hammamet is a prestigious 5-star hotel located directly on the beautiful Yasmine Hammamet beach. It features luxurious rooms with panoramic Mediterranean views, multiple refined dining options, four outdoor pools, a modern spa, and fully equipped conference centers to perfectly host our event.
+                Le Royal Yasmine Hammamet is a prestigious 5-star hotel located directly on the beautiful Yasmine Hammamet beach. It features luxurious rooms with panoramic Mediterranean views, multiple refined dining options, four outdoor pools, a modern spa, and fully equipped conference centers to perfectly host our event.
               </p>
               <div className="venue-hotel-details">
                 <div className="venue-detail">
@@ -162,7 +162,7 @@ export default function VenuePage() {
                 </div>
                 <div className="venue-detail">
                   <span className="venue-detail-label">Location</span>
-                  <b>Hammamet, Tunisia</b>
+                  <b>Yasmine Hammamet, Tunisia</b>
                 </div>
                 <div className="venue-detail">
                   <span className="venue-detail-label">Capacity</span>

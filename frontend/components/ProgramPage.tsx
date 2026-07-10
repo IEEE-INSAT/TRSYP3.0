@@ -20,7 +20,7 @@ const PROGRAM = [
     id: "d1",
     label: "Day 01 : Innovation & Networking",
     date: "17 October 2026",
-    venue: "Le Royal, Hammamet",
+    venue: "Le Royal, Yasmine Hammamet",
     items: [
       {
         time: "08:00 – 12:00",
@@ -85,7 +85,7 @@ const PROGRAM = [
     id: "d2",
     label: "Day 02 : Learning & Celebration",
     date: "18 October 2026",
-    venue: "Le Royal, Hammamet",
+    venue: "Le Royal, Yasmine Hammamet",
     items: [
       {
         time: "07:00 – 08:30",
@@ -175,7 +175,7 @@ export default function ProgramPage() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
             <div className="prog-eyebrow">
               <span className="prog-eyebrow-line" />
-              <span className="prog-eyebrow-text">17–18 October 2026 · Le Royal, Hammamet</span>
+              <span className="prog-eyebrow-text">17–18 October 2026 · Le Royal, Yasmine Hammamet</span>
               <span className="prog-eyebrow-line" />
             </div>
             <h1 className="prog-hero-h">PROGRAM</h1>
