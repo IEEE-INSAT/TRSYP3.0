@@ -4,7 +4,7 @@ import { getHeapCodeStatistics } from 'node:v8';
 const HOSTS = [
   { id: 1, src: "/partners/RASINSAT.webp", label: "IEEE RAS INSAT Student Branch Chapter", scale: 0.7 },
   { id: 2, src: "/partners/IEEEINSATSB.webp", label: "IEEE INSAT Student Branch", scale: 0.85 },
-  { id: 3, src: "/partners/ras-tunisia.webp", label: "IEEE RAS Tunisia Section", scale: 1 },
+  { id: 3, src: "/partners/ras-tunisia.svg", label: "IEEE RAS Tunisia Section", scale: 1 },
   { id: 4, src: "/partners/tn-section.webp", label: "IEEE Tunisia Section", scale: 0.7 },
   { id: 5, src: "/partners/IEEE-Region-8.png", label: "IEEE Region 8", scale: 0.75 },
 ];
