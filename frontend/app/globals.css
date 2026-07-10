@@ -7124,7 +7124,7 @@ select.reg-input option {
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.15);
   color: rgba(255, 255, 255, 0.7);
-  border-radius: 30px;
+  border-radius: 8px;
   padding: 10px 20px;
   cursor: pointer;
   transition: all 0.2s ease;
