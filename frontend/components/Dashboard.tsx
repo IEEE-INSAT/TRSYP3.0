@@ -65,17 +65,23 @@ export default function Dashboard() {
     }
   }, [user]);
 
-  if (!user || redirecting) return <LoadingScreen />;
-
-  const status = STATUS_MAP[user.status];
-
   // Fetch (and refresh) the team whenever the signed-in participant is known.
   // Re-running when `participantId` resolves also re-syncs `role`, which is what
   // makes the leader-only Edit button appear reliably instead of racing the
   // profile hydration.
+  //
+  // ⚠️ This hook MUST stay above the `!user` early return below. When the user
+  // signs out `user` becomes null; if the return sat before this hook, the
+  // render would call fewer hooks than the previous one and React would crash
+  // the tree ("rendered fewer hooks than expected"), surfacing a black
+  // "page couldn't load" error screen until signOut's navigation recovers it.
   useEffect(() => {
     if (user) void fetchTeam();
   }, [user?.participantId, fetchTeam]);
+
+  if (!user || redirecting) return <LoadingScreen />;
+
+  const status = STATUS_MAP[user.status];
 
   const isChallenger = user.userType === 'challenger' || !!team;
 
