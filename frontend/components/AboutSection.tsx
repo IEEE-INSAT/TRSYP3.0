@@ -129,6 +129,8 @@ export default function AboutSection() {
             </div>
           ))}
         </div>
+        {/* Divider */}
+        <div className="ab-divider" aria-hidden="true" />
       </div>
     </section>
   );

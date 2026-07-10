@@ -931,7 +931,7 @@ button {
 
 .ab-pillar-title {
   font-family: var(--font-heading);
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -941,7 +941,7 @@ button {
 
 .ab-pillar-desc {
   font-family: var(--font-body);
-  font-size: 12.5px;
+  font-size: 14px;
   line-height: 1.65;
   color: rgba(255, 255, 255, 0.35);
 }
