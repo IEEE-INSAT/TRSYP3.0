@@ -1,9 +1,12 @@
 import Image from 'next/image';
+import { getHeapCodeStatistics } from 'node:v8';
 
-const PARTNERS = [
-  { id: 1, src: '/partners/IEEEINSATSB.webp', label: 'IEEE INSAT Student Branch' },
-  { id: 2, src: '/partners/RASINSAT.webp', label: 'RAS INSAT' },
-  { id: 3, src: '/partners/tn-section.webp', label: 'IEEE Tunisia Section' },
+const HOSTS = [
+  { id: 1, src: "/partners/RASINSAT.webp", label: "IEEE RAS INSAT Student Branch Chapter", scale: 0.7 },
+  { id: 2, src: "/partners/IEEEINSATSB.webp", label: "IEEE INSAT Student Branch", scale: 0.85 },
+  { id: 3, src: "/partners/ras-tunisia.webp", label: "IEEE RAS Tunisia Section", scale: 1 },
+  { id: 4, src: "/partners/tn-section.webp", label: "IEEE Tunisia Section", scale: 0.7 },
+  { id: 5, src: "/partners/IEEE-Region-8.png", label: "IEEE Region 8", scale: 0.75 },
 ];
 
 export default function PartnersSection() {
@@ -13,21 +16,20 @@ export default function PartnersSection() {
         <div className="partners-header">
           <div className="partners-eyebrow">
             <span className="partners-eyebrow-line" />
-            <span className="partners-eyebrow-text">Backed By</span>
+            <span className="partners-eyebrow-text">Organized By</span>
             <span className="partners-eyebrow-line" />
           </div>
-          <h2 className="partners-title">Our Partners</h2>
+          <h2 className="partners-title">Our Hosts</h2>
         </div>
 
         <div className="partners-grid">
-          {PARTNERS.map((p) => (
+          {HOSTS.map((p) => (
             <div key={p.id} className="partners-slot">
               <Image
                 src={p.src}
                 alt={p.label}
-                width={320}
-                height={180}
-                style={{ width: '70%', height: 'auto', objectFit: 'contain' }}
+                fill
+                style={{ objectFit: "contain", transform: `scale(${p.scale})` }}
               />
             </div>
           ))}

@@ -1423,26 +1423,43 @@ button {
 
 .partners-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 16px;
   max-width: 70%;
   margin: 0 auto;
 }
 
 .partners-slot {
+  grid-column: span 2;
   aspect-ratio: 16 / 9;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: #ffffff;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  overflow: hidden;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.35s ease,
+    box-shadow 0.35s ease,
+    background 0.35s ease;
 }
 
 .partners-slot:hover {
-  border-color: rgba(0, 232, 122, 0.25);
-  box-shadow: 0 4px 20px rgba(0, 232, 122, 0.08);
+  transform: translateY(-6px);
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+}
+
+.partners-slot:nth-last-child(2) {
+  grid-column: 2 / span 2;
+}
+
+.partners-slot:last-child {
+  grid-column: 4 / span 2;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1911,6 +1928,15 @@ button {
     max-width: 85%;
   }
 
+  .partners-slot {
+    grid-column: span 1;
+  }
+
+  .partners-slot:nth-last-child(2),
+  .partners-slot:last-child {
+    grid-column: auto;
+  }
+
   .partners-header {
     margin-bottom: 40px;
   }
@@ -2051,6 +2077,15 @@ button {
     max-width: 100%;
   }
 
+  .partners-slot {
+    grid-column: span 1;
+  }
+
+  .partners-slot:nth-last-child(2),
+  .partners-slot:last-child {
+    grid-column: auto;
+  }
+
   .partners-header {
     margin-bottom: 32px;
   }
@@ -2155,6 +2190,12 @@ button {
 
   .partners-grid {
     grid-template-columns: 1fr;
+  }
+
+  .partners-slot,
+  .partners-slot:nth-last-child(2),
+  .partners-slot:last-child {
+    grid-column: auto;
   }
 
   .footer-inner {
