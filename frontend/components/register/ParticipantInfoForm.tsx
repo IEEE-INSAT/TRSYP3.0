@@ -48,6 +48,7 @@ export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => vo
   const set = <K extends keyof FormState>(key: K, val: FormState[K]) =>
     setForm((p) => ({ ...p, [key]: val }));
 
+  const [isIeeeMember, setIsIeeeMember] = useState<boolean | null>(null);
   const isIeee = form.participantType === 'Student' || form.participantType === 'YoungProfessional';
   const isStudent = form.participantType === 'Student';
 
@@ -105,20 +106,32 @@ export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => vo
     >
       <div className="reg-section-label">Participant Information</div>
 
-      {/* Participant type */}
+      {/* IEEE Membership */}
       <div className="reg-field">
-        <label className="reg-label">Participant Type *</label>
+        <label className="reg-label">Are you an IEEE member? *</label>
         <div className="reg-toggle-group">
-          {PARTICIPANT_TYPES.map((t) => (
-            <button
-              key={t.value}
-              type="button"
-              className={`reg-toggle ${form.participantType === t.value ? 'reg-toggle-active-green' : ''}`}
-              onClick={() => set('participantType', t.value)}
-            >
-              {t.label}
-            </button>
-          ))}
+          <button
+            type="button"
+            className={`reg-toggle ${isIeeeMember === true ? 'reg-toggle-active-green' : ''}`}
+            onClick={() => {
+              setIsIeeeMember(true);
+              set('participantType', null);
+            }}
+          >
+            Yes
+          </button>
+          <button
+            type="button"
+            className={`reg-toggle ${isIeeeMember === false ? 'reg-toggle-active-green' : ''}`}
+            onClick={() => {
+              setIsIeeeMember(false);
+              set('participantType', 'NonIEEE');
+              set('ieeeId', '');
+              set('sb', '');
+            }}
+          >
+            No
+          </button>
         </div>
         {errors.participantType && <span className="reg-error">{errors.participantType}</span>}
       </div>
@@ -164,6 +177,38 @@ export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => vo
         {errors.country && <span className="reg-error">{errors.country}</span>}
       </div>
       
+      {/* Student vs Young Professional — IEEE members only */}
+      <AnimatePresence>
+        {isIeeeMember === true && (
+          <motion.div
+            className="reg-field"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <label className="reg-label">Membership Type *</label>
+            <div className="reg-toggle-group">
+              <button
+                type="button"
+                className={`reg-toggle ${form.participantType === 'Student' ? 'reg-toggle-active-green' : ''}`}
+                onClick={() => set('participantType', 'Student')}
+              >
+                Student
+              </button>
+              <button
+                type="button"
+                className={`reg-toggle ${form.participantType === 'YoungProfessional' ? 'reg-toggle-active-green' : ''}`}
+                onClick={() => set('participantType', 'YoungProfessional')}
+              >
+                Young Professional
+              </button>
+            </div>
+            {errors.participantType && <span className="reg-error">{errors.participantType}</span>}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* IEEE ID — IEEE members only */}
       <AnimatePresence>
         {isIeee && (
