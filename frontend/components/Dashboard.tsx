@@ -316,29 +316,32 @@ export default function Dashboard() {
 
             {teamMode === 'create' && (
               <div className="dash-noteam-form">
-                <input
-                  className="dash-edit-input"
-                  placeholder="Team name"
-                  value={newTeamName}
-                  onChange={(e) => setNewTeamName(e.target.value)}
-                />
+                <div className="reg-field">
+                  <label className="reg-label">Team Name *</label>
+                  <input
+                    className="dash-edit-input"
+                    placeholder="Team name"
+                    value={newTeamName}
+                    onChange={(e) => setNewTeamName(e.target.value)}
+                  />
+                </div>
+
+                <div className="reg-field">
+                  <label className="reg-label">Team Size (including you) *</label>
+                  <div className="reg-count-group">
+                    {[2, 3, 4, 5, 6].map((n) => (
+                      <button key={n} type="button" className={`reg-count-btn ${newTeamSize === n ? 'reg-count-btn-active' : ''}`} onClick={() => setNewTeamSize(n)}>{n}</button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="dash-noteam-form-actions">
-                  <div className="reg-field">
-                    <label className="reg-label">Team Size (including you) *</label>
-                    <div className="reg-count-group">
-                      {[2, 3, 4, 5, 6].map((n) => (
-                        <button key={n} type="button" className={`reg-count-btn ${newTeamSize === n ? 'reg-count-btn-active' : ''}`} onClick={() => setNewTeamSize(n)}>{n}</button>
-                      ))}
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
-                    <button type="button" className="dash-save-btn" onClick={handleCreateTeam} disabled={noTeamSubmitting}>
-                      {noTeamSubmitting ? 'Creating…' : 'Create'}
-                    </button>
-                    <button type="button" className="dash-cancel-btn" onClick={() => { setTeamMode('none'); setNoTeamErr(''); }} disabled={noTeamSubmitting}>
-                      Cancel
-                    </button>
-                  </div>
+                  <button type="button" className="dash-save-btn" onClick={handleCreateTeam} disabled={noTeamSubmitting}>
+                    {noTeamSubmitting ? 'Creating…' : 'Create'}
+                  </button>
+                  <button type="button" className="dash-cancel-btn" onClick={() => { setTeamMode('none'); setNoTeamErr(''); }} disabled={noTeamSubmitting}>
+                    Cancel
+                  </button>
                 </div>
               </div>
             )}
