@@ -63,6 +63,9 @@ export default function Navbar() {
     setScrolled(window.scrollY > 50);
   }, []);
 
+  const isActiveLink = (href: string) =>
+  href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`);
+
   useEffect(() => {
     handleScroll(); // check on mount
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -99,7 +102,7 @@ export default function Navbar() {
             <li key={l.label}>
               <a
                 href={l.href}
-                className={pathname === l.href ? 'active' : ''}
+                className={isActiveLink(l.href) ? 'active' : ''}
               >
                 {l.label}
               </a>
@@ -176,7 +179,7 @@ export default function Navbar() {
           <a
             key={l.label}
             href={l.href}
-            className={pathname === l.href ? 'active' : ''}
+            className={isActiveLink(l.href) ? 'active' : ''}
             onClick={() => setOpen(false)}
           >
             {l.label}
