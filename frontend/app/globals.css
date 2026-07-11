@@ -4452,6 +4452,7 @@ select.reg-input option {
 .prog-cta-p {
   font-size: 15px;
   color: rgba(255, 255, 255, 0.5);
+  margin-top: 16px;
 }
 
 .prog-cta-btn {
@@ -5501,13 +5502,14 @@ select.reg-input option {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
+  padding: 15px 20px;
   border: 1px solid rgba(0, 232, 122, 0.25);
-  border-radius: 100px;
+  border-radius: 14px;
   font-size: 12px;
   letter-spacing: 0.12em;
   color: var(--color-green);
   font-weight: 500;
+  margin-top: 16px;
 }
 
 .challenge-coming-dot {
@@ -7671,4 +7673,63 @@ select.reg-input option {
 .navbar--scrolled .navbar-signout svg {
   width: 16px;
   height: 16px;
+}
+
+
+.challenge-manifesto {
+  max-width: 780px;
+  margin: 64px auto 0;
+  text-align: center;
+}
+
+.challenge-manifesto-tags {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 32px;
+  font-family: var(--font-mono, monospace);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted, rgba(255, 255, 255, 0.55));
+}
+
+.challenge-manifesto-tag {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.challenge-manifesto-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.4;
+}
+
+.challenge-manifesto-line {
+  font-size: clamp(22px, 3.2vw, 34px);
+  line-height: 1.35;
+  font-weight: 500;
+  color: var(--muted, rgba(255, 255, 255, 0.65));
+  margin: 0;
+}
+
+.challenge-manifesto-line--hl {
+  color: #fff;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.challenge-manifesto-tagline {
+  margin-top: 28px;
+  font-size: 15px;
+  color: var(--muted, rgba(255, 255, 255, 0.55));
+}
+
+.challenge-specbook-tags {
+  margin-top: 18px;
+  margin-bottom: 8px;
 }
