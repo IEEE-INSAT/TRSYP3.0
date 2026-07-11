@@ -194,8 +194,8 @@ export default function Dashboard() {
       setNoTeamErr('Team name must be 2–50 characters.');
       return;
     }
-    if (newTeamSize < 1 || newTeamSize > 6) {
-      setNoTeamErr('Team size must be between 1 and 6.');
+    if (newTeamSize < 2 || newTeamSize > 6) {
+      setNoTeamErr('Team size must be between 2 and 6.');
       return;
     }
     setNoTeamSubmitting(true);
@@ -323,10 +323,14 @@ export default function Dashboard() {
                   onChange={(e) => setNewTeamName(e.target.value)}
                 />
                 <div className="dash-noteam-form-actions">
-                  <label className="dash-noteam-size">
-                    Team size
-                    <input type="number" min={1} max={6} className="dash-edit-input" value={newTeamSize} onChange={(e) => setNewTeamSize(parseInt(e.target.value) || 1)} style={{ width: '70px', textAlign: 'center' }} />
-                  </label>
+                  <div className="reg-field">
+                    <label className="reg-label">Team Size (including you) *</label>
+                    <div className="reg-count-group">
+                      {[2, 3, 4, 5, 6].map((n) => (
+                        <button key={n} type="button" className={`reg-count-btn ${newTeamSize === n ? 'reg-count-btn-active' : ''}`} onClick={() => setNewTeamSize(n)}>{n}</button>
+                      ))}
+                    </div>
+                  </div>
                   <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
                     <button type="button" className="dash-save-btn" onClick={handleCreateTeam} disabled={noTeamSubmitting}>
                       {noTeamSubmitting ? 'Creating…' : 'Create'}

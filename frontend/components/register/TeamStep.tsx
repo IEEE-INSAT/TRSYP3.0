@@ -38,8 +38,8 @@ export default function TeamStep() {
       setFormErr('Team name must be 2–50 characters.');
       return;
     }
-    if (size < 1 || size > 6) {
-      setFormErr('Team size must be between 1 and 6.');
+    if (size < 2 || size > 6) {
+      setFormErr('Team size must be between 2 and 6.');
       return;
     }
     try {
@@ -177,7 +177,7 @@ export default function TeamStep() {
           <div className="reg-field">
             <label className="reg-label">Team Size (including you) *</label>
             <div className="reg-count-group">
-              {[1, 2, 3, 4, 5, 6].map((n) => (
+              {[2, 3, 4, 5, 6].map((n) => (
                 <button key={n} type="button" className={`reg-count-btn ${size === n ? 'reg-count-btn-active' : ''}`} onClick={() => setSize(n)}>{n}</button>
               ))}
             </div>
