@@ -2,21 +2,19 @@
 
 import { useEffect, type ReactNode } from 'react';
 import { useAuthStore } from './auth-store';
-import { useHydrated } from './use-hydrated';
 
 /**
- * Initializes auth state on mount and gates rendering until the client has
- * hydrated. Returning `null` on the first paint keeps the server markup and the
- * first client render identical (both empty), which avoids hydration mismatches
- * for components that read the persisted registration store.
+ * Initializes auth state on mount. Does NOT gate rendering — the page renders
+ * immediately with its static/prerendered content, and auth state resolves in
+ * the background. Components that read persisted, client-only state (e.g. the
+ * registration store) are responsible for guarding their own hydration
+ * mismatch locally with `useHydrated()`, instead of the whole app paying for
+ * a blank first paint on every single page.
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const hydrated = useHydrated();
-
   useEffect(() => {
     void useAuthStore.getState().initialize();
   }, []);
 
-  if (!hydrated) return null;
   return <>{children}</>;
 }
