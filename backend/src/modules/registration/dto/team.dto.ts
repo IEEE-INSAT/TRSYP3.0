@@ -16,7 +16,7 @@ export const CreateTeamSchema = z.object({
   size: z
     .number()
     .int({ message: 'Team size must be an integer' })
-    .min(1, { message: 'Team size must be at least 1' })
+    .min(2, { message: 'Team size must be at least 2' })
     .max(6, { message: 'Team size must be at most 6' }),
 });
 
@@ -39,7 +39,7 @@ export class CreateTeamDto {
     maximum: 6,
   })
   @IsInt({ message: 'Team size must be an integer' })
-  @Min(1, { message: 'Team size must be at least 1' })
+  @Min(2, { message: 'Team size must be at least 2' })
   @Max(6, { message: 'Team size must be at most 6' })
   size!: number;
 }
@@ -71,7 +71,7 @@ export class UpdateTeamDto {
     required: false,
   })
   @IsInt({ message: 'Team size must be an integer' })
-  @Min(1, { message: 'Team size must be at least 1' })
+  @Min(2, { message: 'Team size must be at least 2' })
   @Max(6, { message: 'Team size must be at most 6' })
   size?: number;
 }
