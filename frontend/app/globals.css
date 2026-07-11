@@ -125,11 +125,16 @@ button {
   left: 50%;
   right: auto;
   transform: translateX(-50%);
-  width: fit-content;
-  max-width: calc(100% - 48px);
+  width: max-content;
+  max-width: calc(100% - 24px);
   height: 84px;
-  padding: 0 56px;
-  gap: 40px;
+  /* The base navbar uses justify-content:space-between to spread items across
+     the full-width header. In the scrolled pill the width is fit-content, and
+     space-between there mis-sizes the box so the last item (Register) overflows
+     the rounded edge — pack the items with the gap instead. */
+  justify-content: center;
+  padding: 0 clamp(22px, 3vw, 56px);
+  gap: clamp(16px, 2.2vw, 40px);
   border-radius: 9999px;
   background: rgba(1, 0, 8, 0.65);
   backdrop-filter: blur(28px) saturate(1.8);
@@ -164,9 +169,16 @@ button {
   opacity: 0;
 }
 
-/* Shrink the logo image when scrolled */
+/* Shrink the logo image when scrolled — fluid so the pill's content stays
+   inside its max-width on narrower laptops (full 84px on wide screens). */
 .navbar--scrolled .navbar-logo img {
-  height: 84px !important;
+  height: clamp(50px, 6vw, 84px) !important;
+}
+
+/* Tighten the link spacing on narrower laptops so the scrolled pill's content
+   fits within its max-width (full 40px gap is kept on wide screens). */
+.navbar--scrolled .navbar-links {
+  gap: clamp(16px, 2.2vw, 40px);
 }
 
 .navbar-logo {
@@ -246,6 +258,10 @@ button {
   display: flex;
   align-items: center;
   gap: 12px;
+  /* Never let the actions group be squeezed narrower than its buttons: the
+     scrolled pill is width:fit-content, and if this group shrinks below its
+     content the non-shrinkable Register button spills out past the pill edge. */
+  flex-shrink: 0;
 }
 
 .navbar-dashboard {
@@ -303,7 +319,7 @@ button {
   position: relative;
   display: inline-flex;
   align-items: center;
-  padding: 12px 28px;
+  padding: 12px 22px;
   background: linear-gradient(135deg, var(--color-green), #00cc6a);
   color: #000;
   font-size: 12.5px;
@@ -346,6 +362,53 @@ button {
     opacity: 1;
     transform: scale(1.02);
   }
+}
+
+/* ─── Guest actions (Log In + Register) ─── */
+.navbar-guest-actions {
+  /* Two equal columns so Log In and Register Now are the exact same size even
+     though their labels differ in length. */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: stretch;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+/* Both auth buttons share size: full column width + matched height. */
+.navbar-guest-actions .navbar-login,
+.navbar-guest-actions .navbar-register {
+  width: 100%;
+  min-height: 44px;
+  justify-content: center;
+}
+
+/* ─── Log In button (secondary / ghost) ─── */
+.navbar-login {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 22px;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-family: var(--font-body, sans-serif);
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.navbar-login:hover {
+  color: var(--color-green);
+  background: rgba(0, 232, 122, 0.06);
+  border-color: rgba(0, 232, 122, 0.35);
+  box-shadow: 0 0 16px rgba(0, 232, 122, 0.1);
+  transform: translateY(-1px);
 }
 
 .navbar-hamburger {
@@ -426,6 +489,21 @@ button {
 .navbar-mobile-register:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 24px rgba(0, 232, 122, 0.6);
+}
+
+/* Log In on mobile: ghost variant so Register Now stays the primary CTA */
+.navbar-mobile-login {
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: none;
+}
+
+.navbar-mobile-login:hover {
+  color: var(--color-green);
+  background: rgba(0, 232, 122, 0.06);
+  border-color: rgba(0, 232, 122, 0.35);
+  box-shadow: none;
 }
 
 /* ─── REGISTER POPUP ─────────────────────────────────── */
@@ -1584,89 +1662,181 @@ button {
 ═══════════════════════════════════════════════════════ */
 .footer {
   position: relative;
-  background: var(--color-bg);
-  border-top: 1px solid rgba(0, 232, 122, 0.06);
+  background: linear-gradient(180deg, #06000f 0%, var(--color-bg) 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
   overflow: hidden;
+}
+
+/* Brand accent line along the top edge */
+.footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 232, 122, 0.55), rgba(255, 29, 120, 0.35), transparent);
+  pointer-events: none;
 }
 
 .footer-glow {
   position: absolute;
-  width: 600px;
-  height: 300px;
+  width: 520px;
+  height: 220px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(0, 232, 122, 0.03) 0%, transparent 70%);
-  top: -150px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.03) 0%, transparent 70%);
+  top: -120px;
   left: 50%;
   transform: translateX(-50%);
   pointer-events: none;
 }
 
 .footer-inner {
-  max-width: 100%;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 100px clamp(40px, 8vw, 120px) 60px;
+  padding: 48px clamp(28px, 6vw, 72px) 28px;
 }
 
-.footer-top {
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 96px;
-  margin-bottom: 72px;
-}
-
-.footer-brand {
+/* Centered footer: big logo, tagline, follow-us, socials */
+.footer-inner--center {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  align-items: center;
+  text-align: center;
+  gap: 18px;
+  padding-top: 0px;
+  padding-bottom: 40px;
 }
 
-.footer-brand-sub {
-  font-family: var(--font-body);
+.footer-logo {
+  height: clamp(220px, 28vw, 360px);
+  margin-top: -48px;
+  margin-bottom: -92px;
+}
+
+.footer-inner--center .footer-brand-sub {
+  max-width: 520px;
   font-size: 15px;
-  font-weight: 400;
-  line-height: 1.6;
-  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
 }
 
-.footer-links-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 32px;
-}
-
-.footer-col-title {
+.footer-follow {
   font-family: var(--font-heading);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.7);
-  margin-bottom: 24px;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 10px 0 0;
+}
+
+.footer-inner--center .footer-socials {
+  justify-content: center;
+}
+
+.footer-top {
+  display: grid;
+  grid-template-columns: 1.2fr 2fr;
+  gap: 56px;
+  margin-bottom: 36px;
+}
+
+.footer-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.footer-brand-sub {
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.45);
+  max-width: 340px;
+}
+
+.footer-links-grid {
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  justify-content: space-between;
+  gap: 28px 64px;
+}
+
+.footer-col-title {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 16px;
 }
 
 .footer-col {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
 }
 
 .footer-link {
   font-family: var(--font-body);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 400;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.5);
   transition: color 0.2s ease;
+  width: fit-content;
 }
 
 .footer-link:hover {
   color: var(--color-green);
 }
 
+.footer-contact {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.5);
+  transition: color 0.2s ease;
+  width: fit-content;
+}
+
+.footer-contact:hover {
+  color: var(--color-green);
+}
+
+.footer-contact-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--color-green);
+  transition: all 0.25s ease;
+}
+
+.footer-contact:hover .footer-contact-icon {
+  border-color: rgba(0, 232, 122, 0.3);
+  background: rgba(0, 232, 122, 0.06);
+}
+
+.footer-contact-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
 .footer-divider {
   width: 100%;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(0, 232, 122, 0.1), rgba(255, 29, 120, 0.06), transparent);
-  margin-bottom: 28px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+  margin-bottom: 20px;
 }
 
 .footer-bottom {
@@ -1674,20 +1844,20 @@ button {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 14px;
 }
 
 .footer-copy {
   font-family: var(--font-body);
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.3);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.32);
 }
 
 .footer-date {
   font-family: var(--font-heading);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--color-green);
   opacity: 0.7;
@@ -1695,31 +1865,33 @@ button {
 
 .footer-socials {
   display: flex;
-  gap: 16px;
+  gap: 12px;
 }
 
 .footer-social {
-  width: 44px;
-  height: 44px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.4);
   transition: all 0.25s ease;
 }
 
 .footer-social:hover {
   color: var(--color-green);
-  border-color: rgba(0, 232, 122, 0.25);
+  border-color: rgba(0, 232, 122, 0.3);
+  background: rgba(0, 232, 122, 0.06);
   box-shadow: 0 0 16px rgba(0, 232, 122, 0.12);
   transform: translateY(-2px);
 }
 
 .footer-social svg {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1952,16 +2124,17 @@ button {
 
   /* Footer */
   .footer-inner {
-    padding: 56px 24px 32px;
+    padding: 40px 24px 24px;
   }
 
   .footer-top {
     grid-template-columns: 1fr;
-    gap: 40px;
+    gap: 32px;
   }
 
   .footer-links-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: 1fr 1fr;
+    justify-content: stretch;
   }
 }
 
@@ -2113,11 +2286,11 @@ button {
 
   /* Footer */
   .footer-inner {
-    padding: 48px 20px 28px;
+    padding: 36px 20px 24px;
   }
 
   .footer-top {
-    gap: 32px;
+    gap: 28px;
   }
 
   .footer-links-grid {
@@ -3104,6 +3277,118 @@ select.reg-input option {
   letter-spacing: 0.1em;
 }
 
+/* ─── No team yet: join / create ─── */
+.dash-noteam-msg {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.65;
+  margin: 0 0 20px;
+}
+
+.dash-noteam-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.dash-noteam-btn,
+.dash-save-btn,
+.dash-cancel-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.85);
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+
+.dash-noteam-btn:hover,
+.dash-save-btn:hover,
+.dash-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.dash-noteam-btn-primary,
+.dash-save-btn {
+  background: var(--color-green);
+  border-color: transparent;
+  color: #000;
+  font-weight: 800;
+}
+
+.dash-noteam-btn-primary:hover,
+.dash-save-btn:hover {
+  background: #00cc6a;
+  border-color: transparent;
+  transform: translateY(-1px);
+}
+
+.dash-save-btn:disabled,
+.dash-noteam-btn:disabled,
+.dash-cancel-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.dash-noteam-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.dash-noteam-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dash-noteam-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.dash-edit-input {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 14px;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.dash-edit-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.dash-edit-input:focus {
+  outline: none;
+  border-color: rgba(0, 232, 122, 0.5);
+  background: rgba(255, 255, 255, 0.05);
+}
+
 /* Details */
 .dash-details-grid {
   display: grid;
@@ -3125,7 +3410,7 @@ select.reg-input option {
 
 .dash-detail-label {
   font-family: var(--font-heading);
-  font-size: 9px;
+  font-size: 10.5px;
   font-weight: 600;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -3134,13 +3419,13 @@ select.reg-input option {
 
 .dash-detail-value {
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: 15px;
   color: rgba(255, 255, 255, 0.8);
 }
 
 .dash-detail-divider {
   font-family: var(--font-heading);
-  font-size: 9px;
+  font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -3218,7 +3503,7 @@ select.reg-input option {
 
 .dash-member-mini-name {
   font-family: var(--font-body);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.8);
 }
@@ -3228,8 +3513,203 @@ select.reg-input option {
   flex-wrap: wrap;
   gap: 8px 16px;
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: 13px;
   color: rgba(255, 255, 255, 0.4);
+}
+
+/* ─── Inline "Edit" (next to team name) ─── */
+.dash-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 10px;
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.6);
+  font-family: var(--font-heading);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dash-edit-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
+.dash-edit-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* ─── Invite code ─── */
+.dash-detail-code-row {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.dash-code-wrap {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dash-code {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 18px;
+  background: rgba(0, 232, 122, 0.06);
+  border: 1px solid rgba(0, 232, 122, 0.25);
+  border-radius: 10px;
+  color: var(--color-green);
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.35em;
+  padding-right: calc(18px - 0.35em);
+}
+
+.dash-code-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.85);
+  font-family: var(--font-heading);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dash-code-copy svg {
+  width: 16px;
+  height: 16px;
+}
+
+.dash-code-copy:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.dash-code-hint {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.4);
+  line-height: 1.6;
+  margin: 8px 0 0;
+}
+
+/* ─── Member leader badge + remove ─── */
+.dash-member-leader-badge {
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-green);
+  background: rgba(0, 232, 122, 0.1);
+  border: 1px solid rgba(0, 232, 122, 0.25);
+  border-radius: 6px;
+  padding: 3px 8px;
+}
+
+.dash-member-remove {
+  margin-left: auto;
+  padding: 6px 13px;
+  border: 1px solid rgba(255, 29, 120, 0.25);
+  border-radius: 7px;
+  background: rgba(255, 29, 120, 0.06);
+  color: var(--color-pink);
+  font-family: var(--font-heading);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dash-member-remove:hover:not(:disabled) {
+  background: rgba(255, 29, 120, 0.14);
+  border-color: rgba(255, 29, 120, 0.4);
+}
+
+.dash-member-remove:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─── Disband / leave team ─── */
+.dash-disband-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.dash-disband-confirm-text {
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+}
+
+.dash-disband-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.dash-disband-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 22px;
+  border: 1px solid rgba(255, 29, 120, 0.3);
+  border-radius: 10px;
+  background: rgba(255, 29, 120, 0.06);
+  color: var(--color-pink);
+  font-family: var(--font-heading);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dash-disband-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.dash-disband-btn:hover:not(:disabled) {
+  background: rgba(255, 29, 120, 0.14);
+  border-color: rgba(255, 29, 120, 0.5);
+}
+
+.dash-disband-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -5426,13 +5906,11 @@ select.reg-input option {
 
 /* ═══════════════════════════════════════════════════════
    NAVBAR — Admin link
+   (Note: .navbar-right-group is defined earlier — do NOT re-declare it
+   here. A duplicate `display: flex` after the 900px media query would
+   override the mobile `display: none` and leak the auth buttons into the
+   mobile top bar next to the hamburger.)
 ═══════════════════════════════════════════════════════ */
-.navbar-right-group {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
 .navbar-admin-link {
   display: flex;
   align-items: center;
