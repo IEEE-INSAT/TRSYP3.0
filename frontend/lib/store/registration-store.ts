@@ -104,6 +104,7 @@ export const useRegistrationStore = create<RegistrationState>()(
       error: null,
 
       registerParticipant: async (input) => {
+        if (get().submitting) return;
         set({ submitting: true, error: null });
         try {
           const auth = useAuthStore.getState();
@@ -166,18 +167,25 @@ export const useRegistrationStore = create<RegistrationState>()(
       },
 
       submitPayment: async (fileName) => {
-        const { user } = get();
-        if (!user) return;
-        const token = await useAuthStore.getState().getAccessToken();
-        await registrationService.submitPayment(fileName, token ?? '');
-        set({
-          user: {
-            ...user,
-            status: 'waiting_for_verification',
-            paymentProofSubmitted: true,
-            paymentFileName: fileName,
-          },
-        });
+        const { user, submitting } = get();
+        if (!user || submitting) return;
+        set({ submitting: true });
+        try {
+          const token = await useAuthStore.getState().getAccessToken();
+          await registrationService.submitPayment(fileName, token ?? '');
+          set({
+            user: {
+              ...user,
+              status: 'waiting_for_verification',
+              paymentProofSubmitted: true,
+              paymentFileName: fileName,
+            },
+            submitting: false,
+          });
+        } catch (e) {
+          set({ submitting: false, error: e instanceof Error ? e.message : 'Payment failed' });
+          throw e;
+        }
       },
 
       updateStatus: (status) => {
