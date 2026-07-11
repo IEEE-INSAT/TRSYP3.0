@@ -16,11 +16,11 @@ const TUNISIA_PLACES = [
 ];
 
 const RATES: Record<string, number> = {
-  USD: 3.12, EUR: 3.42, GBP: 3.95, CAD: 2.30, AUD: 2.05,
-  JPY: 0.021, CNY: 0.43, INR: 0.037, MAD: 0.31, EGP: 0.064,
-  SAR: 0.83, AED: 0.85, KWD: 10.18, QAR: 0.86, TRY: 0.096,
-  BRL: 0.61, KRW: 0.0023, CHF: 3.58, SEK: 0.30, DKK: 0.46,
-};
+  USD: 2.95, EUR: 3.37, GBP: 3.90, CAD: 2.15, AUD: 1.96,
+  JPY: 0.0183, CNY: 0.41, INR: 0.0350, MAD: 0.295, EGP: 0.061,
+  SAR: 0.786, AED: 0.803, KWD: 9.60, QAR: 0.809, TRY: 0.091,
+  BRL: 0.53, KRW: 0.00212, CHF: 3.66, SEK: 0.294, DKK: 0.452,
+}; // vs TND, approx. as of July 2026
 
 function CurrencyConverter() {
   const [amount, setAmount] = useState('100');
