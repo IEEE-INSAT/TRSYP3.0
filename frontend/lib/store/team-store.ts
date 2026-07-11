@@ -48,7 +48,7 @@ async function currentToken(): Promise<string> {
  */
 export const useTeamStore = create<TeamState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
   team: null,
   role: null,
   loaded: false,
@@ -57,6 +57,7 @@ export const useTeamStore = create<TeamState>()(
   error: null,
 
   fetchTeam: async () => {
+    if (get().loading) return;
     set({ loading: true, error: null });
     try {
       const team = await registrationService.getTeam(await currentToken());
@@ -67,6 +68,7 @@ export const useTeamStore = create<TeamState>()(
   },
 
   createTeam: async (name, size) => {
+    if (get().submitting) return;
     set({ submitting: true, error: null });
     try {
       const team = await registrationService.createTeam({ name, size }, await currentToken());
@@ -78,6 +80,7 @@ export const useTeamStore = create<TeamState>()(
   },
 
   updateTeam: async (name, size) => {
+    if (get().submitting) return;
     set({ submitting: true, error: null });
     try {
       const team = await registrationService.updateTeam({ name, size }, await currentToken());
@@ -89,6 +92,7 @@ export const useTeamStore = create<TeamState>()(
   },
 
   joinTeam: async (code) => {
+    if (get().submitting) return;
     set({ submitting: true, error: null });
     try {
       const team = await registrationService.joinTeam(code, await currentToken());
@@ -100,6 +104,7 @@ export const useTeamStore = create<TeamState>()(
   },
 
   leaveTeam: async () => {
+    if (get().submitting) return;
     set({ submitting: true, error: null });
     try {
       await registrationService.leaveTeam(await currentToken());
@@ -111,6 +116,7 @@ export const useTeamStore = create<TeamState>()(
   },
 
   disbandTeam: async () => {
+    if (get().submitting) return;
     set({ submitting: true, error: null });
     try {
       await registrationService.disbandTeam(await currentToken());
@@ -122,6 +128,7 @@ export const useTeamStore = create<TeamState>()(
   },
 
   removeMember: async (participantId) => {
+    if (get().submitting) return;
     set({ submitting: true, error: null });
     try {
       const team = await registrationService.removeMember(participantId, await currentToken());
