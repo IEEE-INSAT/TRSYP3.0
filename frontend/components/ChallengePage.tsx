@@ -126,20 +126,34 @@ export default function ChallengePage() {
             ))}
           </div>
 
-          <motion.p
-            className="challenge-games-footer"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
+          <motion.div
+            className="challenge-manifesto"
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
           >
-            Each game is designed to test more than technical performance. It will test strategy, trust, teamwork,
-            creativity, and the ability to build a real connection between human thinking and robotic action.
-            <br />
-            This is not just about building the fastest robot. It is about building the strongest partnership
-            between human and machine. Welcome to <strong>TRSYP 3.0</strong>. Welcome to the arena of{' '}
-            <span className="prog-hl">Human-Robot Symbiosis</span>.
-          </motion.p>
+            <div className="challenge-manifesto-tags">
+              {['Strategy', 'Trust', 'Teamwork', 'Creativity'].map((word, i) => (
+                <span key={word} className="challenge-manifesto-tag">
+                  {word}
+                  {i < 3 && <span className="challenge-manifesto-dot" aria-hidden="true" />}
+                </span>
+              ))}
+            </div>
+
+            <p className="challenge-manifesto-line">
+              This isn&apos;t about building the fastest robot.
+            </p>
+            <p className="challenge-manifesto-line challenge-manifesto-line--hl">
+              It&apos;s about building the strongest <span className="prog-hl">partnership</span> between human and machine.
+            </p>
+
+            <div className="challenge-manifesto-tagline">
+              Welcome to <strong>TRSYP 3.0</strong>. Welcome to the arena of{' '}
+              <span className="prog-hl">Human-Robot Symbiosis</span>.
+            </div>
+          </motion.div>
         </div>
       </section>
 
@@ -157,17 +171,28 @@ export default function ChallengePage() {
               The Full <span className="prog-hl">Specification Book</span>
             </h2>
             <p className="prog-cta-p">
-              All rules, technical details, scoring systems, and participation guidelines for the Garden Game,
-              Polygame, and Mine Game will be published soon.
+              Everything you need for the Garden Game, Polygame, and Mine Game — published soon.
             </p>
-            <a
+            <div className="challenge-manifesto-tags challenge-specbook-tags">
+              {['Rules', 'Technical Details', 'Scoring Systems', 'Participation Guidelines'].map((word, i, arr) => (
+                <span key={word} className="challenge-manifesto-tag">
+                  {word}
+                  {i < arr.length - 1 && <span className="challenge-manifesto-dot" aria-hidden="true" />}
+                </span>
+              ))}
+            </div>
+            <div className="challenge-coming-badge">
+              <span className="challenge-coming-dot" />
+              Coming Soon
+            </div>
+            {/* <a
               href="/docs/TRSYP3.0-Specification-Book.pdf"
               target="_blank"
               rel="noopener noreferrer"
               className="prog-cta-btn"
             >
               DOWNLOAD SPECIFICATION BOOK
-            </a>
+            </a> */}
           </div>
         </div>
       </section>
