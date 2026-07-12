@@ -7733,3 +7733,254 @@ select.reg-input option {
   margin-top: 18px;
   margin-bottom: 8px;
 }
+
+/* ── Visa page ── */
+.visa-overview,
+.visa-free,
+.visa-apply {
+  padding-top: 72px;
+  padding-bottom: 72px;
+}
+
+.visa-note {
+  font-size: 13px;
+  font-style: italic;
+  color: var(--muted, rgba(255, 255, 255, 0.5));
+  margin-top: 16px;
+}
+
+.visa-flag-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px 32px;
+  margin-top: 40px;
+}
+
+@media (max-width: 900px) {
+  .visa-flag-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .visa-flag-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+.visa-flag-list--compact {
+  grid-template-columns: repeat(4, 1fr);
+  margin-bottom: 48px;
+}
+
+@media (max-width: 900px) {
+  .visa-flag-list--compact {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.visa-flag-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 14.5px;
+  line-height: 1.4;
+  color: #fff;
+  padding: 6px 0;
+}
+
+.visa-flag-item--muted {
+  color: var(--muted, rgba(255, 255, 255, 0.5));
+  font-style: italic;
+}
+
+/* Fixed-size box so every flag lines up regardless of its native aspect
+   ratio (the EU flag, for instance, isn't the same shape as a 3:2 flag). */
+.visa-flag-box {
+  flex-shrink: 0;
+  width: 32px;
+  height: 24px;
+  border-radius: 3px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.visa-flag {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.visa-extended {
+  margin-top: 56px;
+  padding-top: 40px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.visa-extended-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 20px;
+  margin-top: 28px;
+}
+
+@media (max-width: 900px) {
+  .visa-extended-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.visa-extended-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 24px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.visa-extended-card .visa-flag-box {
+  width: 56px;
+  height: 42px;
+}
+
+.visa-extended-card h4 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+  color: #fff;
+}
+
+.visa-extended-card p {
+  font-size: 12px;
+  color: var(--muted, rgba(255, 255, 255, 0.6));
+  margin: 0;
+}
+
+.visa-subheading {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 48px 0 0;
+  color: #fff;
+}
+
+.visa-option2 {
+  margin-top: 64px;
+}
+
+.visa-embassy-cta {
+  margin-top: 48px;
+  padding: 40px 32px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  text-align: center;
+}
+
+.visa-embassy-cta .visa-flag-box {
+  width: 56px;
+  height: 42px;
+  margin: 0 auto;
+}
+
+.visa-embassy-cta h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 16px 0 8px;
+  color: #fff;
+}
+
+.visa-embassy-cta p {
+  font-size: 14px;
+  color: var(--muted, rgba(255, 255, 255, 0.6));
+  margin: 0 0 20px;
+}
+
+.visa-steps--notes {
+  max-width: 640px;
+  margin: 32px auto 28px;
+  text-align: left;
+}
+
+.visa-docs-grid {
+  margin-top: 32px;
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 900px) {
+  .visa-docs-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .visa-docs-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.visa-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 640px;
+  margin: 32px auto 0;
+}
+
+.visa-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.visa-step-num {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.visa-step-title {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0 0 4px;
+  color: #fff;
+}
+
+.visa-step-desc {
+  font-size: 14px;
+  color: var(--muted, rgba(255, 255, 255, 0.6));
+  margin: 0;
+}
+
+.visa-embassy-link {
+  display: inline-block;
+  margin-top: 28px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-green, #00E87A);
+  text-decoration: none;
+}
+
+.visa-embassy-link:hover {
+  text-decoration: underline;
+}
+
+.challenge-story-lead {
+  font-size: clamp(17px, 1.6vw, 20px);
+  line-height: 1.6;
+  color: var(--muted, rgba(255, 255, 255, 0.7));
+  margin: 16px 0 0;
+}
