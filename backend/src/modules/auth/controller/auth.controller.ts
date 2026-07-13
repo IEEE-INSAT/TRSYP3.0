@@ -4,7 +4,6 @@ import { SupabaseAuthGuard } from "../guards/supabase-auth.guard";
 import { Response, Request } from "express";
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from "@nestjs/swagger";
 import { ResetPasswordDto } from "../dto/Reset-password.dto";
-import { Throttle } from "@nestjs/throttler";
 import { JwtAuthGuard } from "@common/guards/jwt-auth.guard";
 
 @ApiTags('Auth')
@@ -30,19 +29,14 @@ export class AuthController {
     }
 
     @Post('reset-password')
-    // Strict rate limit: 3 requests per 15 minutes per IP.
-    // Prevents brute-force user enumeration and Supabase API abuse.
-    @Throttle({ default: { ttl: 900000, limit: 3 } })
     @ApiOperation({ summary: 'Request a password reset email' })
     @ApiResponse({ status: 200, description: 'Password reset email sent.' })
-    @ApiResponse({ status: 429, description: 'Too many requests. Try again later.' })
     async Password_reset(@Body() dto:ResetPasswordDto, @Res() res:Response){
         const result = await this.authService.resetPassword(dto.email);
         return res.status(HttpStatus.OK).json(result);
     }
 
     @Post('check-email')
-    @Throttle({ default: { ttl: 60000, limit: 10 } })
     @ApiOperation({ summary: 'Check if an email is already registered' })
     @ApiResponse({ status: 200, description: 'Email is available.' })
     @ApiResponse({ status: 409, description: 'Email already exists.' })
@@ -55,8 +49,6 @@ export class AuthController {
     }
 
     @Post('validate-email')
-    // DNS lookups are relatively expensive — cap abuse.
-    @Throttle({ default: { ttl: 60000, limit: 10 } })
     @ApiOperation({ summary: 'Validate that an email domain can receive mail (MX records)' })
     @ApiResponse({ status: 200, description: 'Validation result: { valid, reason? }.' })
     async validateEmail(@Body() dto: ResetPasswordDto, @Res() res: Response) {
