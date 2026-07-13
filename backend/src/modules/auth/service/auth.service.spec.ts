@@ -3,13 +3,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
+import { EmailService } from '../../email/service';
 
 // Mock the supabase module
 jest.mock('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => ({
     auth: {
-      resetPasswordForEmail: jest.fn(),
       admin: {
+        generateLink: jest.fn(),
         getUserById: jest.fn(),
       },
     },
@@ -18,7 +19,7 @@ jest.mock('@supabase/supabase-js', () => ({
 
 describe('AuthService', () => {
   let service: AuthService;
-  let prisma: PrismaService;
+  let prisma: any;
   let configService: ConfigService;
 
   const mockPrismaService = {
@@ -37,12 +38,17 @@ describe('AuthService', () => {
     }),
   };
 
+  const mockEmailService = {
+    sendPasswordResetEmail: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: ConfigService, useValue: mockConfigService },
+        { provide: EmailService, useValue: mockEmailService },
       ],
     }).compile();
 
@@ -85,20 +91,31 @@ describe('AuthService', () => {
     it('should send a password reset email if the user exists', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue({ id: '1', email: 'test@test.com' });
       
-      const resetMock = service['supabase'].auth.resetPasswordForEmail as jest.Mock<any>;
-      resetMock.mockResolvedValue({ data: {}, error: null });
+      const generateLinkMock = service['supabase'].auth.admin.generateLink as jest.Mock<any>;
+      generateLinkMock.mockResolvedValue({
+        data: { properties: { action_link: 'https://supabase.test/reset-link' } },
+        error: null,
+      });
 
       const result = await service.resetPassword('test@test.com');
 
-      expect(resetMock).toHaveBeenCalledWith('test@test.com', { redirectTo: 'https://rtc.ieee.tn' });
+      expect(generateLinkMock).toHaveBeenCalledWith({
+        type: 'recovery',
+        email: 'test@test.com',
+        options: { redirectTo: 'https://rtc.ieee.tn' },
+      });
+      expect(mockEmailService.sendPasswordResetEmail).toHaveBeenCalledWith(
+        'test@test.com',
+        'https://supabase.test/reset-link',
+      );
       expect(result).toEqual(genericResponse);
     });
 
     it('should return the generic message even if supabase fails (no error leakage)', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue({ id: '1', email: 'test@test.com' });
       
-      const resetMock = service['supabase'].auth.resetPasswordForEmail as jest.Mock<any>;
-      resetMock.mockResolvedValue({ data: null, error: { message: 'Supabase error' } });
+      const generateLinkMock = service['supabase'].auth.admin.generateLink as jest.Mock<any>;
+      generateLinkMock.mockResolvedValue({ data: { properties: null }, error: { message: 'Supabase error' } });
 
       const result = await service.resetPassword('test@test.com');
 

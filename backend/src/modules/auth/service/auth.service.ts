@@ -3,6 +3,7 @@ import { PrismaService } from "../../../prisma/prisma.service";
 import { createClient, SupabaseClient } from "@supabase/supabase-js"
 import { ConfigService } from "@nestjs/config";
 import { resolveMx } from "dns/promises";
+import { EmailService } from '../../email/service';
 
 // Reserved / documentation domains that can never receive email (RFC 2606).
 const RESERVED_DOMAINS = ['example.com', 'example.net', 'example.org', 'test.com', 'test.net', 'test.org', 'localhost', 'invalid'];
@@ -11,7 +12,8 @@ export class AuthService {
   private readonly logger = new Logger(AuthService.name);
   private supabase: SupabaseClient;
   constructor(private readonly prisma: PrismaService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    private readonly emailService: EmailService,
   ) {
     const supabaseUrl = this.configService.get<string>('SUPABASE_URL');
     const supabaseKey = this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY');
@@ -45,12 +47,26 @@ export class AuthService {
     // user is missing — doing so would let an attacker enumerate registered
     // emails by comparing HTTP status codes (200 vs 500).
     if (user) {
-      const redirectTo = this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
-      const { error } = await this.supabase.auth.resetPasswordForEmail(email, { redirectTo });
-      if (error) {
-        this.logger.error(`resetPassword Supabase error for email=${email}: ${error.message}`);
-        // Swallow the error — still return the generic message so the
-        // response is indistinguishable from success.
+      try {
+        const redirectTo = this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
+        const { data, error } = await this.supabase.auth.admin.generateLink({
+          type: 'recovery',
+          email,
+          options: { redirectTo },
+        });
+        const resetUrl = data.properties?.action_link;
+
+        if (error || !resetUrl) {
+          throw new Error(error?.message ?? 'Supabase did not return a password reset link');
+        }
+
+        await this.emailService.sendPasswordResetEmail(email, resetUrl);
+      } catch (error) {
+        this.logger.error(
+          `Unable to send password reset email: ${error instanceof Error ? error.message : String(error)}`,
+        );
+        // Keep the same generic response so a failed delivery cannot be used
+        // to enumerate accounts.
       }
     }
 
