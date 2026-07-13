@@ -82,7 +82,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         // Re-derive registration state from the backend on every authenticated
         // load (reloads fire INITIAL_SESSION, not SIGNED_IN, so the listener
         // below wouldn't cover this path).
-        if (tokenValid) void useRegistrationStore.getState().hydrateFromBackend();
+        if (tokenValid)
+          void useRegistrationStore.getState().hydrateFromBackend();
       }
       supabase.auth.onAuthStateChange(async (event, session) => {
         const token = session?.access_token ?? null;
@@ -107,6 +108,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signUp: async ({ email, password, name, lastName }) => {
     set({ loading: true, error: null });
     try {
+      if (isApiConfigured) {
+        await authService.signUp({ email, password, name, lastName });
+        set({ loading: false });
+        return;
+      }
+
       const supabase = getSupabaseClient();
       if (!supabase) {
         // Offline placeholder — no real account yet.
@@ -121,20 +128,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (error) {
         // Supabase enforces email uniqueness — translate its error into a
         // friendly, actionable message instead of a pre-flight check.
-        if (error.code === 'user_already_exists' || /already registered/i.test(error.message)) {
-          throw new Error('An account with this email already exists. Please sign in instead.');
+        if (
+          error.code === 'user_already_exists' ||
+          /already registered/i.test(error.message)
+        ) {
+          throw new Error(
+            'An account with this email already exists. Please sign in instead.',
+          );
         }
         throw new Error(error.message);
       }
 
-      // Email confirmation is disabled, so signUp returns a session directly and
-      // the user is logged in immediately. Fall back to an explicit sign-in only
-      // if a session wasn't returned for some reason.
-      let token = data.session?.access_token ?? null;
-      if (!token) {
-        const { data: signInData } = await supabase.auth.signInWithPassword({ email, password });
-        token = signInData.session?.access_token ?? null;
-      }
+      const token = data.session?.access_token ?? null;
       set({ accessToken: token, email });
 
       if (token && isApiConfigured) {
@@ -215,7 +220,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   resetPassword: async (email) => {
     if (isApiConfigured) return authService.resetPassword(email);
     // Offline placeholder: mirror the backend's privacy-preserving response.
-    return { message: 'If an account exists, a password reset email has been sent' };
+    return {
+      message: 'If an account exists, a password reset email has been sent',
+    };
   },
 
   getAccessToken: async () => {

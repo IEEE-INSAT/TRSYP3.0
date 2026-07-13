@@ -70,7 +70,7 @@ begin
       last_name,
       new.id::text,                                               -- supabaseId
       coalesce(new.raw_app_meta_data->>'provider', 'email'),
-      true,                                                       -- active immediately (email verification disabled)
+      (new.email_confirmed_at is not null or provider <> 'email'), -- email accounts activate after verification
       now()                                                       -- @updatedAt has no DB default
       -- "createdAt" omitted on purpose: it has a DB default (now())
     )
@@ -93,7 +93,25 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
--- Note: email verification is disabled, so there is no unconfirmed -> confirmed
--- transition to react to. The previous on_auth_user_updated trigger is dropped.
+-- Activate email accounts when Supabase records a successful verification.
+create or replace function public.handle_user_update()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  if old.email_confirmed_at is null and new.email_confirmed_at is not null then
+    update public.users
+    set "active" = true,
+        "updatedAt" = now()
+    where "supabaseId" = new.id::text;
+  end if;
+
+  return new;
+end;
+$$;
+
 drop trigger if exists on_auth_user_updated on auth.users;
-drop function if exists public.handle_user_update();
+create trigger on_auth_user_updated
+  after update of email_confirmed_at on auth.users
+  for each row execute procedure public.handle_user_update();

@@ -1,12 +1,26 @@
 import { apiFetch } from './http';
 import type { BackendUser, SyncUserPayload } from './types';
 
+export interface SignUpPayload {
+  email: string;
+  password: string;
+  name: string;
+  lastName: string;
+}
+
 /**
  * Auth service — wired to the backend routes that already exist
  * (`backend/src/modules/auth`). All token-protected calls expect the Supabase
  * access token obtained from the auth store.
  */
 export const authService = {
+  /** POST /auth/sign-up — creates an unverified account and sends a TRSYP verification email. */
+  signUp(payload: SignUpPayload): Promise<{ message: string }> {
+    return apiFetch<{ message: string }>('/auth/sign-up', {
+      method: 'POST',
+      body: payload,
+    });
+  },
 
   /** GET /auth/me — current user profile. */
   getMe(token: string): Promise<BackendUser> {
@@ -34,10 +48,15 @@ export const authService = {
    * Runs on the backend because the static-export frontend has no Node runtime
    * for DNS lookups. Returns `{ valid, reason? }`.
    */
-  validateEmailDomain(email: string): Promise<{ valid: boolean; reason?: string }> {
-    return apiFetch<{ valid: boolean; reason?: string }>('/auth/validate-email', {
-      method: 'POST',
-      body: { email },
-    });
+  validateEmailDomain(
+    email: string,
+  ): Promise<{ valid: boolean; reason?: string }> {
+    return apiFetch<{ valid: boolean; reason?: string }>(
+      '/auth/validate-email',
+      {
+        method: 'POST',
+        body: { email },
+      },
+    );
   },
 };
