@@ -171,7 +171,7 @@ export default function ChallengePage() {
               The Full <span className="prog-hl">Specification Book</span>
             </h2>
             <p className="prog-cta-p">
-              Everything you need for the Garden Game, Polygame, and Mine Game — published soon.
+              Everything you need for the Garden Game, Polygame, and Mine Game.
             </p>
             <div className="challenge-manifesto-tags challenge-specbook-tags">
               {['Rules', 'Technical Details', 'Scoring Systems', 'Participation Guidelines'].map((word, i, arr) => (
