@@ -74,6 +74,12 @@ export class SupabaseJwtStrategy extends PassportStrategy(Strategy, 'supabase-jw
             });
         }
 
+        if (!user.active) {
+            throw new UnauthorizedException(
+                'Verify your email address before accessing TRSYP 3.0.',
+            );
+        }
+
         // Replace the Supabase ID with the real internal database ID.
         // This means @CurrentUser('sub') will now correctly return the DB ID across the entire app.
         return { ...payload, sub: user.id, _supabaseId: supabaseId };
