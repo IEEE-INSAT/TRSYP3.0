@@ -181,18 +181,14 @@ export default function ChallengePage() {
                 </span>
               ))}
             </div>
-            <div className="challenge-coming-badge">
-              <span className="challenge-coming-dot" />
-              Coming Soon
-            </div>
-            {/* <a
+            <a
               href="/docs/TRSYP3.0-Specification-Book.pdf"
               target="_blank"
               rel="noopener noreferrer"
               className="prog-cta-btn"
             >
               DOWNLOAD SPECIFICATION BOOK
-            </a> */}
+            </a>
           </div>
         </div>
       </section>
