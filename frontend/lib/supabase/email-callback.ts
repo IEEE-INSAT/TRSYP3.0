@@ -1,4 +1,8 @@
-import type { EmailOtpType, SupabaseClient } from '@supabase/supabase-js';
+import type {
+  EmailOtpType,
+  Session,
+  SupabaseClient,
+} from '@supabase/supabase-js';
 
 /**
  * Consumes every Supabase confirmation/recovery callback format before pages
@@ -41,4 +45,23 @@ export async function consumeEmailCallback(
   }
 
   return null;
+}
+
+/**
+ * Supabase processes detected URL callbacks asynchronously. Wait briefly for
+ * that work (or our explicit callback handling) before declaring a link bad.
+ */
+export async function waitForEmailCallbackSession(
+  supabase: SupabaseClient,
+): Promise<{ session: Session | null; error: string | null }> {
+  const callbackError = await consumeEmailCallback(supabase);
+
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const { data, error } = await supabase.auth.getSession();
+    if (data.session) return { session: data.session, error: null };
+    if (error) return { session: null, error: error.message };
+    await new Promise((resolve) => setTimeout(resolve, 150));
+  }
+
+  return { session: null, error: callbackError };
 }

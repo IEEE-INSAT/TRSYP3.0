@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import { consumeEmailCallback } from '@/lib/supabase/email-callback';
+import { waitForEmailCallbackSession } from '@/lib/supabase/email-callback';
 
 function validatePassword(password: string): string | null {
   if (password.length < 8) return 'Use at least 8 characters.';
@@ -30,20 +30,11 @@ export default function ResetPasswordPage() {
 
     let mounted = true;
     const checkSession = async () => {
-      const callbackError = await consumeEmailCallback(supabase);
-      if (callbackError) {
-        if (mounted) {
-          setError(
-            'This password-reset link is invalid or expired. Request a new one from Log In.',
-          );
-        }
-        return;
-      }
-
-      const { data, error: sessionError } = await supabase.auth.getSession();
+      const { session, error: sessionError } =
+        await waitForEmailCallbackSession(supabase);
       if (!mounted) return;
 
-      if (sessionError || !data.session) {
+      if (sessionError || !session) {
         setError(
           'This password-reset link is invalid or expired. Request a new one from Log In.',
         );
