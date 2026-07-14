@@ -192,6 +192,50 @@ export const COUNTRY_OPTIONS: Country[] = [
 ];
 
 /**
+ * International dialling codes for the phone-number country prefix.
+ * `label` is what the user sees; `dial` is prepended to the local number to
+ * build the E.164 value sent to the backend. Tunisia leads as the default.
+ */
+export interface DialCode {
+  label: string;
+  dial: string;
+}
+
+export const DIAL_CODES: DialCode[] = [
+  { label: 'Tunisia', dial: '+216' },
+  { label: 'Algeria', dial: '+213' },
+  { label: 'Morocco', dial: '+212' },
+  { label: 'Libya', dial: '+218' },
+  { label: 'Egypt', dial: '+20' },
+  { label: 'USA', dial: '+1' },
+  { label: 'UK', dial: '+44' },
+  { label: 'Canada', dial: '+1' },
+  { label: 'Germany', dial: '+49' },
+  { label: 'France', dial: '+33' },
+  { label: 'Italy', dial: '+39' },
+  { label: 'Spain', dial: '+34' },
+  { label: 'UAE', dial: '+971' },
+  { label: 'Saudi Arabia', dial: '+966' },
+  { label: 'Jordan', dial: '+962' },
+  { label: 'Lebanon', dial: '+961' },
+  { label: 'Palestine', dial: '+970' },
+  { label: 'Syria', dial: '+963' },
+  { label: 'Iraq', dial: '+964' },
+  { label: 'Sudan', dial: '+249' },
+  { label: 'Turkey', dial: '+90' },
+  { label: 'India', dial: '+91' },
+  { label: 'Pakistan', dial: '+92' },
+  { label: 'Bangladesh', dial: '+880' },
+  { label: 'China', dial: '+86' },
+  { label: 'Japan', dial: '+81' },
+  { label: 'South Korea', dial: '+82' },
+  { label: 'Australia', dial: '+61' },
+  { label: 'Brazil', dial: '+55' },
+  { label: 'Argentina', dial: '+54' },
+  { label: 'Mexico', dial: '+52' },
+];
+
+/**
  * Body of POST /registration (Page 1 of the registration flow spec).
  *
  * `sb` is only sent for Students; `ieeeId` only for IEEE members

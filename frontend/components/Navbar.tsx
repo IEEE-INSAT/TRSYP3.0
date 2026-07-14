@@ -3,11 +3,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from './AuthContext';
 import AuthModal from './AuthModal';
 import { useAuthStore } from '@/lib/store/auth-store';
 import { useRegistrationStore } from '@/lib/store/registration-store';
+import { REGISTRATION_OPEN, LOGIN_OPEN } from '@/lib/config';
 
 // Shared fade/slide used to crossfade the auth actions so state changes
 // (login → dashboard, etc.) don't pop.
@@ -17,6 +19,9 @@ const AUTH_FADE = {
   exit: { opacity: 0, y: 4 },
   transition: { duration: 0.18, ease: [0.4, 0, 0.2, 1] as const },
 };
+
+// Client-side navigable dashboard link that still crossfades via motion.
+const MotionLink = motion.create(Link);
 
 const NAV_LINKS = [
   { label: 'Home', href: '/' },
@@ -71,7 +76,7 @@ export default function Navbar() {
     handleScroll(); // check on mount
     window.addEventListener('scroll', handleScroll, { passive: true });
 
-    const handleOpenModal = () => setShowRegister(true);
+    const handleOpenModal = () => { if (REGISTRATION_OPEN) setShowRegister(true); };
     window.addEventListener('open-register-modal', handleOpenModal);
 
     return () => {
@@ -86,7 +91,7 @@ export default function Navbar() {
         {/* Animated bottom border glow */}
         <div className="navbar-glow-line" />
 
-        <a className="navbar-logo" href="/">
+        <Link className="navbar-logo" href="/">
           <Image
             src="/trsyp-logo.png"
             loading="eager"
@@ -96,17 +101,17 @@ export default function Navbar() {
             priority
             style={{ height: '146px', width: 'auto', objectFit: 'contain' }}
           />
-        </a>
+        </Link>
 
         <ul className="navbar-links">
           {NAV_LINKS.map((l) => (
             <li key={l.label}>
-              <a
+              <Link
                 href={l.href}
                 className={isActiveLink(l.href) ? 'active' : ''}
               >
                 {l.label}
-              </a>
+              </Link>
             </li>
           ))}
         </ul>
@@ -135,23 +140,35 @@ export default function Navbar() {
             {authResolving ? (
               <motion.span key="resolving" className="navbar-auth-loading" aria-hidden {...AUTH_FADE} />
             ) : isRegistered ? (
-              <motion.a key="dashboard" className="navbar-dashboard" href="/dashboard" {...AUTH_FADE}>
+              <MotionLink key="dashboard" className="navbar-dashboard" href="/dashboard" {...AUTH_FADE}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                   <circle cx="12" cy="7" r="4" />
                 </svg>
                 My Dashboard
-              </motion.a>
+              </MotionLink>
             ) : showGuestActions ? (
               <motion.div key="guest" className="navbar-guest-actions" {...AUTH_FADE}>
                 {!isAuthenticated && (
-                  <button className="navbar-login" onClick={() => { setPendingRoute(null); setShowAuthModal(true); }}>
+                  <button
+                    className="navbar-login"
+                    onClick={() => { setPendingRoute(null); setShowAuthModal(true); }}
+                    disabled={!LOGIN_OPEN}
+                    title={LOGIN_OPEN ? undefined : 'Log in opens soon'}
+                    style={LOGIN_OPEN ? undefined : { opacity: 0.5, cursor: 'not-allowed' }}
+                  >
                     Log In
                   </button>
                 )}
-                <button className="navbar-register" onClick={() => setShowRegister(true)}>
-                  <span className="navbar-register-pulse" />
-                  Register Now
+                <button
+                  className="navbar-register"
+                  onClick={() => setShowRegister(true)}
+                  disabled={!REGISTRATION_OPEN}
+                  title={REGISTRATION_OPEN ? undefined : 'Registration opens soon'}
+                  style={REGISTRATION_OPEN ? undefined : { opacity: 0.5, cursor: 'not-allowed' }}
+                >
+                  {REGISTRATION_OPEN && <span className="navbar-register-pulse" />}
+                  {REGISTRATION_OPEN ? 'Register Now' : 'Registration Soon'}
                 </button>
               </motion.div>
             ) : null}
@@ -177,35 +194,46 @@ export default function Navbar() {
 
       <div className={`navbar-mobile-menu ${open ? 'open' : ''}`}>
         {NAV_LINKS.map((l) => (
-          <a
+          <Link
             key={l.label}
             href={l.href}
             className={isActiveLink(l.href) ? 'active' : ''}
             onClick={() => setOpen(false)}
           >
             {l.label}
-          </a>
+          </Link>
         ))}
-        {isAuthenticated && (
-          <button className="navbar-mobile-signout" onClick={() => { setOpen(false); logout(); }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
-            Sign Out
-          </button>
-        )}
-        {isRegistered ? (
-          <a className="navbar-mobile-register navbar-mobile-dashboard" href="/dashboard" onClick={() => setOpen(false)}>
-            My Dashboard
-          </a>
+        {authResolving ? (
+          <div className="ld-spinner navbar-mobile-loading" aria-label="Loading" role="status">
+            <span className="ld-spinner-dot ld-spinner-dot--green" />
+            <span className="ld-spinner-dot ld-spinner-dot--pink" />
+            <span className="ld-spinner-dot ld-spinner-dot--green" />
+          </div>
+        ) : isRegistered ? (
+          <>
+            <Link className="navbar-mobile-register navbar-mobile-dashboard" href="/dashboard" onClick={() => setOpen(false)}>
+              My Dashboard
+            </Link>
+            <button
+              className="navbar-mobile-register navbar-mobile-login"
+              onClick={() => { setOpen(false); logout(); }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              Sign Out
+            </button>
+          </>
         ) : showGuestActions && (
           <>
             {!isAuthenticated && (
               <button
                 className="navbar-mobile-register navbar-mobile-login"
                 onClick={() => { setOpen(false); setPendingRoute(null); setShowAuthModal(true); }}
+                disabled={!LOGIN_OPEN}
+                style={LOGIN_OPEN ? undefined : { opacity: 0.5, cursor: 'not-allowed' }}
               >
                 Log In
               </button>
@@ -213,8 +241,10 @@ export default function Navbar() {
             <button
               className="navbar-mobile-register"
               onClick={() => { setOpen(false); setShowRegister(true); }}
+              disabled={!REGISTRATION_OPEN}
+              style={REGISTRATION_OPEN ? undefined : { opacity: 0.5, cursor: 'not-allowed' }}
             >
-              Register Now
+              {REGISTRATION_OPEN ? 'Register Now' : 'Registration Soon'}
             </button>
           </>
         )}

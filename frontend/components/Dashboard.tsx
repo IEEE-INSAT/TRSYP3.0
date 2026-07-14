@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import Link from 'next/link';
 import { useAuth } from './AuthContext';
 import { useTeamStore, useRegistrationStore, useAuthStore } from '@/lib/store';
 import LoadingScreen from './LoadingScreen';
@@ -248,10 +249,10 @@ export default function Dashboard() {
 
           {/* Payment Action (TEMP: hidden while PAYMENT_ENABLED = false) */}
           {PAYMENT_ENABLED && user.status === 'waiting_for_payment' && (
-            <a href="/dashboard/payment" className="dash-pay-btn">
+            <Link href="/dashboard/payment" className="dash-pay-btn">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>
               Submit Payment Proof
-            </a>
+            </Link>
           )}
           {PAYMENT_ENABLED && user.status === 'waiting_for_payment' && needsTeam && (
             <div className="dash-pay-locked">

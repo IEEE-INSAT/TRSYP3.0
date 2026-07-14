@@ -448,11 +448,13 @@ button {
 /* ─── Mobile menu ─── */
 .navbar-mobile-menu {
   display: none;
-  position: absolute;
+  position: fixed;
   top: calc(var(--nav-height) + 10px);
   left: 16px;
   right: 16px;
-  background: rgba(1, 0, 8, 0.98);
+  background:
+    linear-gradient(rgba(1, 0, 8, 0.98), rgba(1, 0, 8, 0.98)) padding-box,
+    linear-gradient(135deg, rgba(0, 232, 122, 0.6), rgba(255, 29, 120, 0.45)) border-box;
   backdrop-filter: blur(24px) saturate(1.4);
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
   flex-direction: column;
@@ -460,7 +462,7 @@ button {
   gap: 16px;
   padding: 24px;
   border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid transparent;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
   z-index: 99;
 }
@@ -486,10 +488,25 @@ button {
   color: #fff;
 }
 
+/* Auth-resolving placeholder inside the mobile menu, mirroring the desktop
+   loading state so the menu doesn't jump from empty to CTA. */
+.navbar-mobile-loading {
+  justify-content: center;
+  width: 100%;
+  padding: 12px 0;
+  margin-top: 6px;
+}
+
+.navbar-mobile-loading .ld-spinner-dot {
+  width: 9px;
+  height: 9px;
+}
+
 .navbar-mobile-register {
   display: inline-flex;
   justify-content: center;
   align-items: center;
+  gap: 8px;
   width: 100%;
   padding: 16px;
   background: linear-gradient(135deg, var(--color-green), #00cc6a);
@@ -2768,6 +2785,22 @@ select.reg-input option {
   color: var(--color-pink);
 }
 
+.reg-phone-group {
+  display: flex;
+  gap: 8px;
+}
+
+.reg-phone-dial {
+  flex: 0 0 auto;
+  width: 42%;
+  max-width: 190px;
+}
+
+.reg-phone-number {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .reg-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -4675,7 +4708,8 @@ select.reg-input option {
   }
 
   .prog-hero-h {
-    font-size: clamp(48px, 14vw, 80px);
+    font-size: clamp(34px, 11vw, 80px);
+    overflow-wrap: break-word;
   }
 
   .prog-tabs {

@@ -50,6 +50,7 @@ export default function AdminGate({ children }: { children: ReactNode }) {
             onSuccess={() => setShowAuthModal(false)}
             onRegister={() => setShowAuthModal(false)}
             pendingRoute="/admin"
+            allowWhenClosed
           />
         </div>
       );

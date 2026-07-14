@@ -2,8 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
+import Link from 'next/link';
 import { useAdminStore } from '@/lib/store';
 import { useToast } from './AdminToast';
+
+const MotionLink = motion.create(Link);
 
 function useCountUp(end: number, duration = 1200) {
   const [val, setVal] = useState(0);
@@ -185,7 +188,7 @@ export default function AdminDashboard() {
 
         {/* Nav cards */}
         <div className="adm-nav-cards">
-          <motion.a className="adm-nav-card" href="/admin/participants" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.25 }}>
+          <MotionLink className="adm-nav-card" href="/admin/participants" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.25 }}>
             <div className="adm-nav-card-icon" style={{ background: '#3b82f615', color: '#3b82f6' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>
             </div>
@@ -194,8 +197,8 @@ export default function AdminDashboard() {
               <div className="adm-nav-card-sub">{participants.length} registered</div>
             </div>
             <svg className="adm-nav-card-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
-          </motion.a>
-          <motion.a className="adm-nav-card" href="/admin/challengers" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.3 }}>
+          </MotionLink>
+          <MotionLink className="adm-nav-card" href="/admin/challengers" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.3 }}>
             <div className="adm-nav-card-icon" style={{ background: '#f59e0b15', color: '#f59e0b' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
             </div>
@@ -204,7 +207,7 @@ export default function AdminDashboard() {
               <div className="adm-nav-card-sub">{challengers.length} teams registered</div>
             </div>
             <svg className="adm-nav-card-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
-          </motion.a>
+          </MotionLink>
         </div>
       </div>
 

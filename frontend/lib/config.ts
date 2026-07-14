@@ -24,6 +24,20 @@ export const isSupabaseConfigured =
  * env var to "true" once the endpoint exists; until then the service layer
  * uses local placeholders so the UI keeps working.
  */
+/**
+ * Master switch for public registration. Set to `false` to temporarily close
+ * registration — the Register CTAs render disabled. Flip back to `true` to
+ * reopen. (Temporary hold — expected back tomorrow.)
+ */
+export const REGISTRATION_OPEN = false;
+
+/**
+ * Master switch for public log-in. Set to `false` to temporarily hide the
+ * Log In CTA in the navbar. Flip back to `true` to reopen. (Admin sign-in via
+ * the admin gate is unaffected.)
+ */
+export const LOGIN_OPEN = false;
+
 export const features = {
   /** POST /registration, GET /registration/profile, ... */
   registrationApi: process.env.NEXT_PUBLIC_FEATURE_REGISTRATION_API === 'true',

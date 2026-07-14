@@ -4,7 +4,7 @@ import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { useAuthStore } from '@/lib/store/auth-store';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { authService } from '@/lib/api/auth.service';
-import { isApiConfigured } from '@/lib/config';
+import { isApiConfigured, LOGIN_OPEN } from '@/lib/config';
 
 // ── Validation helpers ──────────────────────────────────────────────────────
 
@@ -191,14 +191,11 @@ interface AuthModalProps {
   onSuccess: () => void;
   onRegister: () => void;
   pendingRoute?: string | null;
+  /** Bypass the global LOGIN_OPEN switch (admin sign-in must always work). */
+  allowWhenClosed?: boolean;
 }
 
-export default function AuthModal({
-  onClose,
-  onSuccess,
-  onRegister,
-  pendingRoute,
-}: AuthModalProps) {
+export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute, allowWhenClosed = false }: AuthModalProps) {
   const [isLogin, setIsLogin] = useState(true);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -374,30 +371,25 @@ export default function AuthModal({
     }
   };
 
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setEmailTouched(true);
-
-    if (emailFormatError) {
-      setError(emailFormatError);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    try {
-      await resetPassword(email);
-      setForgotSuccess(true);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Unable to request a password reset.',
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Log-in temporarily closed — block every non-admin surface that opens this
+  // modal (navbar, /register direct navigation, etc.).
+  if (!LOGIN_OPEN && !allowWhenClosed) {
+    return (
+      <div className="trsyp-overlay" onClick={onClose}>
+        <div className="trsyp-popup" onClick={(e) => e.stopPropagation()}>
+          <button className="trsyp-close" onClick={onClose} aria-label="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <div className="trsyp-popup-header">
+            <h3 className="trsyp-popup-title">Log in opens soon</h3>
+            <p className="trsyp-popup-sub">Sign-in is temporarily unavailable. Please check back soon.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="trsyp-overlay" onClick={onClose}>

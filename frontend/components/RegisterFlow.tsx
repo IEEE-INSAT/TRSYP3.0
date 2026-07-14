@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
+import Link from 'next/link';
 import { useAuthStore, useRegistrationStore } from '@/lib/store';
+import { REGISTRATION_OPEN } from '@/lib/config';
 import AuthModal from './AuthModal';
 import ParticipantInfoForm from './register/ParticipantInfoForm';
 import TeamStep from './register/TeamStep';
@@ -40,17 +42,21 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
   // registration the moment it flips `isRegistered` true.
   const progressedStep1 = useRef(false);
 
-  // Keep the step in sync with the backend-reconciled `isRegistered` flag:
-  //  - true while on Step 1  → advance past it
-  //  - false while past Step 1 → a stale persisted flag was revoked by backend
-  //    reconciliation, so send the user back to Step 1.
+  // Keep the step in sync with the backend-reconciled `isRegistered` flag: if a
+  // stale persisted flag is revoked by backend reconciliation while the user is
+  // past Step 1, send them back to Step 1.
+  //
+  // We deliberately do NOT auto-advance when `isRegistered` flips true on Step 1:
+  // a fresh registration is driven explicitly by `onParticipantDone`, and an
+  // already-registered arrival is handled by the dashboard redirect below. Doing
+  // it here caused a brief flash of the team/challenge choice, because
+  // `registerParticipant` flips `isRegistered` a render before `onParticipantDone`
+  // sets the step.
   useEffect(() => {
-    if (isRegistered && step === 'participant') {
-      setStep(initialChallenge ? 'team' : 'choosePath');
-    } else if (!isRegistered && step !== 'participant') {
+    if (!isRegistered && step !== 'participant') {
       setStep('participant');
     }
-  }, [isRegistered, step, initialChallenge]);
+  }, [isRegistered, step]);
 
   // A user who reaches the registration flow already registered (e.g. an
   // existing account signing in via Google, which redirects back here) has no
@@ -62,6 +68,37 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
     if (!initialized || hydrating || progressedStep1.current) return;
     if (isAuthenticated && isRegistered) window.location.href = '/dashboard';
   }, [initialized, hydrating, isAuthenticated, isRegistered]);
+
+  // Once Step 1 is done in the non-challenge flow we land on the `done` screen,
+  // play its success animation as a short transition, then send the user to
+  // their dashboard automatically.
+  useEffect(() => {
+    if (step !== 'done') return;
+    const t = setTimeout(() => { window.location.href = '/dashboard'; }, 1600);
+    return () => clearTimeout(t);
+  }, [step]);
+
+  // Registration temporarily closed — block every /register entry point,
+  // including direct URL navigation (regardless of auth state).
+  if (!REGISTRATION_OPEN) {
+    return (
+      <div className="reg-page">
+        <div className="reg-container">
+          <Link href="/" className="reg-back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            Back to Home
+          </Link>
+          <div className="reg-info-banner">
+            <div className="reg-info-badge">REGISTRATION</div>
+            <h2 className="reg-info-title">Registration opens soon</h2>
+            <p className="reg-info-subtitle">Registration is temporarily closed. Please check back soon.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Wait for auth state before deciding anything (avoids a flash).
   if (!initialized) return <LoadingScreen />;
@@ -83,18 +120,19 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
 
   const onParticipantDone = () => {
     progressedStep1.current = true;
-    setStep(initialChallenge ? 'team' : 'choosePath');
+    // After Step 1 go straight to the dashboard — no intermediate screens.
+    window.location.href = '/dashboard';
   };
 
   return (
     <div className="reg-page">
       <div className="reg-container">
-        <a href="/" className="reg-back">
+        <Link href="/" className="reg-back">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
           Back to Home
-        </a>
+        </Link>
 
         <motion.div
           className="reg-info-banner"
@@ -145,9 +183,9 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
             {/* TEMP: payment mention removed while PAYMENT_ENABLED = false in Dashboard.tsx.
               Original text: "Your spot for TRSYP 3.0 is reserved. Track your status and submit your payment from your dashboard." */}
             <p className="reg-success-popup-text">
-              Your spot for TRSYP 3.0 is reserved. Track your status from your dashboard.
+              Your spot for TRSYP 3.0 is reserved. Taking you to your dashboard…
             </p>
-            <a href="/dashboard" className="reg-success-popup-btn">Go to My Dashboard</a>
+            <Link href="/dashboard" className="reg-success-popup-btn">Go to My Dashboard</Link>
           </motion.div>
         )}
       </div>

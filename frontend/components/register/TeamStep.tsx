@@ -2,6 +2,7 @@
 
 import { useEffect, useState, FormEvent } from 'react';
 import { motion } from 'motion/react';
+import Link from 'next/link';
 import { useTeamStore } from '@/lib/store';
 
 /** Page 2 of the registration flow — team leader / member + team status. */
@@ -147,9 +148,9 @@ export default function TeamStep() {
               {submitting ? 'Working…' : 'Leave Team'}
             </button>
           )}
-          <a href="/dashboard" className="reg-submit" style={{ textAlign: 'center', textDecoration: 'none' }}>
+          <Link href="/dashboard" className="reg-submit" style={{ textAlign: 'center', textDecoration: 'none' }}>
             Go to Dashboard
-          </a>
+          </Link>
         </div>
       </motion.div>
     );
