@@ -1,4 +1,9 @@
-import { ConflictException, Injectable, Logger } from '@nestjs/common';
+import {
+    ConflictException,
+    Injectable,
+    Logger,
+    ServiceUnavailableException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { ConfigService } from '@nestjs/config';
@@ -86,15 +91,21 @@ export class AuthService {
             throw new Error('Unable to create the account. Please try again.');
         }
 
-        this.emailService
-            .sendAccountVerificationEmail(dto.email, verificationUrl)
-            .catch((err) => {
-                this.logger.error(
-                    `Verification email failed to send for ${dto.email}: ${
-                        err instanceof Error ? err.message : String(err)
-                    }`,
-                );
-            });
+        try {
+            await this.emailService.sendAccountVerificationEmail(
+                dto.email,
+                verificationUrl,
+            );
+        } catch (error) {
+            this.logger.error(
+                `Verification email failed to send for ${dto.email}: ${
+                    error instanceof Error ? error.message : String(error)
+                }`,
+            );
+            throw new ServiceUnavailableException(
+                'Your account was created, but we could not send the verification email. Please contact support.',
+            );
+        }
 
         return {
             message: 'Check your inbox to verify your TRSYP 3.0 account.',
