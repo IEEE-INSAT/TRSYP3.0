@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { motion } from 'motion/react';
+import Link from 'next/link';
 import { useAdminStore } from '@/lib/store';
 
 const STATUS_COLORS: Record<string, { bg: string; color: string; label: string }> = {
@@ -43,10 +44,10 @@ export default function AdminParticipants() {
   return (
     <div className="adm-list-page">
       <div className="adm-list-header">
-        <a href="/admin" className="adm-back-link">
+        <Link href="/admin" className="adm-back-link">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
           Back
-        </a>
+        </Link>
         <h1 className="adm-list-title">Participants <span className="adm-count-badge">{participants.length}</span></h1>
       </div>
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, DragEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import Link from 'next/link';
 import { useAuth } from './AuthContext';
 import { useTeamStore } from '@/lib/store';
 
@@ -92,10 +93,10 @@ export default function PaymentPage() {
   return (
     <div className="reg-page">
       <div className="reg-container">
-        <a href="/dashboard" className="reg-back">
+        <Link href="/dashboard" className="reg-back">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
           Back to Dashboard
-        </a>
+        </Link>
 
         {/* Instructions */}
         <motion.div className="reg-info-banner" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
@@ -244,7 +245,7 @@ export default function PaymentPage() {
                 Thank you! Your payment proof has been received. Our team will verify it within 48 hours.
                 You can track your status from your dashboard.
               </p>
-              <a href="/dashboard" className="reg-success-popup-btn">Back to Dashboard</a>
+              <Link href="/dashboard" className="reg-success-popup-btn">Back to Dashboard</Link>
             </motion.div>
           </motion.div>
         )}

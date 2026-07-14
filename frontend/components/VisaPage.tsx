@@ -1,7 +1,9 @@
 'use client';
 
 import { motion } from 'motion/react';
+import Link from 'next/link';
 import Image from 'next/image';
+import { REGISTRATION_OPEN } from '@/lib/config';
 
 // Full visa-free list, kept in the same order/grouping as the reference (EU
 // block first, then the rest), each paired with its flag.
@@ -415,9 +417,20 @@ export default function VisaPage() {
               embassies on a participant&apos;s behalf. Once your registration fee is paid, an invitation
               letter will be made available to support your visa application.
             </p>
-            <a href="/register" className="prog-cta-btn">
-              GO TO REGISTRATION
-            </a>
+            {REGISTRATION_OPEN ? (
+              <Link href="/register" className="prog-cta-btn">
+                GO TO REGISTRATION
+              </Link>
+            ) : (
+              <button
+                className="prog-cta-btn"
+                disabled
+                title="Registration opens soon"
+                style={{ opacity: 0.5, cursor: 'not-allowed' }}
+              >
+                REGISTRATION SOON
+              </button>
+            )}
           </div>
         </div>
       </section>

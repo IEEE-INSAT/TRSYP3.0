@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { motion } from 'motion/react';
+import Link from 'next/link';
 import { useAuth } from './AuthContext';
+import { REGISTRATION_OPEN } from '@/lib/config';
 
 const PROGRAM = [
   {
@@ -269,9 +271,17 @@ export default function ProgramPage() {
             </h2>
             <p className="prog-cta-p">Two days. One symbiosis. Zero excuses.</p>
             {isRegistered ? (
-              <a href="/dashboard" className="prog-cta-btn">GO TO DASHBOARD</a>
+              <Link href="/dashboard" className="prog-cta-btn">GO TO DASHBOARD</Link>
             ) : (
-              <button onClick={handleRegisterClick} className="prog-cta-btn">REGISTER NOW</button>
+              <button
+                onClick={handleRegisterClick}
+                className="prog-cta-btn"
+                disabled={!REGISTRATION_OPEN}
+                title={REGISTRATION_OPEN ? undefined : 'Registration opens soon'}
+                style={REGISTRATION_OPEN ? undefined : { opacity: 0.5, cursor: 'not-allowed' }}
+              >
+                {REGISTRATION_OPEN ? 'REGISTER NOW' : 'REGISTRATION SOON'}
+              </button>
             )}
           </div>
         </div>

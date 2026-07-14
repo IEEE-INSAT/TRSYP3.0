@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, ReactNode } from 'react';
+import Link from 'next/link';
 import { useAdminStore } from '@/lib/store';
 import { useAuthStore } from '@/lib/store/auth-store';
 import { ToastProvider } from './AdminToast';
@@ -33,12 +34,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       <div className="adm-layout">
         <aside className={`adm-sidebar ${sidebarOpen ? 'adm-sidebar-open' : ''}`}>
           <div className="adm-sidebar-header">
-            <a href="/" className="adm-sidebar-logo">TRSYP 3.0</a>
+            <Link href="/" className="adm-sidebar-logo">TRSYP 3.0</Link>
             <span className="adm-sidebar-badge">Admin</span>
           </div>
           <nav className="adm-sidebar-nav">
             {SIDEBAR_LINKS.map((l) => (
-              <a
+              <Link
                 key={l.href}
                 href={l.href}
                 className={`adm-sidebar-link ${currentPath === l.href ? 'adm-sidebar-link-active' : ''}`}
@@ -48,7 +49,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                   <path d={l.icon} />
                 </svg>
                 {l.label}
-              </a>
+              </Link>
             ))}
           </nav>
           <button className="adm-sidebar-logout" onClick={handleLogout}>
@@ -67,10 +68,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
             </button>
             <span className="adm-topbar-title">Admin Dashboard</span>
-            <a href="/" className="adm-topbar-home">
+            <Link href="/" className="adm-topbar-home">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
               View Site
-            </a>
+            </Link>
           </header>
           <div className="adm-content">
             {children}

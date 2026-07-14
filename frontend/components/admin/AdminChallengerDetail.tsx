@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import Link from 'next/link';
 import { useAdminStore } from '@/lib/store';
 import type { AdminStatus } from '@/lib/admin/types';
 import { useToast } from './AdminToast';
@@ -78,10 +79,10 @@ export default function AdminChallengerDetail({ id }: { id: string }) {
 
   return (
     <div className="adm-detail-page">
-      <a href="/admin/challengers" className="adm-back-link">
+      <Link href="/admin/challengers" className="adm-back-link">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
         Back to Challengers
-      </a>
+      </Link>
 
       <motion.div className="adm-detail-header" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
         <h1 className="adm-detail-name">{c.teamName}</h1>

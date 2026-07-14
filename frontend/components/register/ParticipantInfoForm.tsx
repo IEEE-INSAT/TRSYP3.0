@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useRegistrationStore } from '@/lib/store';
 import {
   COUNTRY_OPTIONS,
+  DIAL_CODES,
   SB_OPTIONS,
   type Country,
   type Gender,
@@ -21,6 +22,7 @@ const PARTICIPANT_TYPES: { value: ParticipantType; label: string }[] = [
 interface FormState {
   participantType: ParticipantType | null;
   gender: Gender | null;
+  dialCode: string;
   phone: string;
   ieeeId: string;
   sb: SB | '';
@@ -30,6 +32,7 @@ interface FormState {
 const initial: FormState = {
   participantType: null,
   gender: null,
+  dialCode: DIAL_CODES[0].dial, // Tunisia (+216)
   phone: '',
   ieeeId: '',
   sb: '',
@@ -52,17 +55,20 @@ export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => vo
   const isIeee = form.participantType === 'Student' || form.participantType === 'YoungProfessional';
   const isStudent = form.participantType === 'Student';
 
+  // Local number digits only (drop spaces/dashes and any national trunk `0`),
+  // then prepend the selected dial code to build the E.164 value.
+  const localDigits = form.phone.replace(/[\s-]/g, '').replace(/^0+/, '');
+  const fullPhone = `${form.dialCode}${localDigits}`;
+
   const validate = (): boolean => {
     const e: typeof errors = {};
     if (!form.participantType) e.participantType = 'Select one';
     if (!form.gender) e.gender = 'Select one';
-    if (!form.phone.trim()) e.phone = 'Required';
-    else if (!/^\+?[1-9]\d{1,14}$/.test(form.phone.replace(/[\s-]/g, '')))
-      e.phone = 'Use E.164 format, e.g. +21612345678';
+    if (!localDigits) e.phone = 'Required';
+    else if (!/^\d{4,14}$/.test(localDigits)) e.phone = 'Enter a valid phone number (digits only)';
+    else if (!/^\+[1-9]\d{1,14}$/.test(fullPhone)) e.phone = 'Invalid phone number for this country code';
     if (isStudent && !form.sb) e.sb = 'Required for students';
-    if (form.ieeeId && !/^\d+$/.test(form.ieeeId.trim())) e.ieeeId = 'Digits only';
-    if (isStudent && !form.sb) e.sb = 'Required for students';
-    if (!form.country) e.country = 'Select your country';   // ← ADD
+    if (!form.country) e.country = 'Select your country';
     if (form.ieeeId && !/^\d+$/.test(form.ieeeId.trim())) e.ieeeId = 'Digits only';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -76,7 +82,7 @@ export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => vo
       await registerParticipant({
         participantType: form.participantType as ParticipantType,
         gender: form.gender as Gender,
-        phone: form.phone.replace(/[\s-]/g, ''),
+        phone: fullPhone,
         ieeeId: isIeee && form.ieeeId ? Number(form.ieeeId) : undefined,
         sb: isStudent && form.sb ? (form.sb as SB) : undefined,
         country: form.country as Country,
@@ -149,14 +155,29 @@ export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => vo
       {/* Phone */}
       <div className="reg-field">
         <label className="reg-label" htmlFor="phone">Phone Number *</label>
-        <input
-          id="phone"
-          className={`reg-input ${errors.phone ? 'reg-input-error' : ''}`}
-          type="tel"
-          placeholder="+216 12 345 678"
-          value={form.phone}
-          onChange={(e) => set('phone', e.target.value)}
-        />
+        <div className="reg-phone-group">
+          <select
+            aria-label="Country dial code"
+            className={`reg-input reg-phone-dial ${errors.phone ? 'reg-input-error' : ''}`}
+            value={form.dialCode}
+            onChange={(e) => set('dialCode', e.target.value)}
+          >
+            {DIAL_CODES.map((c) => (
+              <option key={c.label} value={c.dial}>
+                {c.label} ({c.dial})
+              </option>
+            ))}
+          </select>
+          <input
+            id="phone"
+            className={`reg-input reg-phone-number ${errors.phone ? 'reg-input-error' : ''}`}
+            type="tel"
+            inputMode="tel"
+            placeholder="12 345 678"
+            value={form.phone}
+            onChange={(e) => set('phone', e.target.value)}
+          />
+        </div>
         {errors.phone && <span className="reg-error">{errors.phone}</span>}
       </div>
 
