@@ -141,6 +141,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         throw new Error(error.message);
       }
 
+      // Supabase hides whether an email is already registered by returning a
+      // user with no identities. That can be an unconfirmed account whose
+      // first email was missed, so explicitly resend the signup email. A new
+      // sign-up has identities and already triggers its confirmation email.
+      if (data.user?.identities?.length === 0) {
+        const { error: resendError } = await supabase.auth.resend({
+          type: 'signup',
+          email,
+          options: { emailRedirectTo },
+        });
+        if (resendError) throw new Error(resendError.message);
+      }
+
       const token = data.session?.access_token ?? null;
       set({ accessToken: token, email });
 
