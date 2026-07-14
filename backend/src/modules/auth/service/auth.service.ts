@@ -61,6 +61,13 @@ export class AuthService {
      * available until every hostname has received that build.
      */
     async signUp(dto: SignUpDto): Promise<{ message: string }> {
+        const existingUser = await this.findByEmail(dto.email);
+        if (existingUser) {
+            throw new ConflictException(
+                'An account with this email already exists. Please sign in instead.',
+            );
+        }
+
         const { data, error } = await this.supabase.auth.signUp({
             email: dto.email,
             password: dto.password,
@@ -89,29 +96,6 @@ export class AuthService {
             throw new ServiceUnavailableException(
                 'We could not send the verification email. Please try again shortly.',
             );
-        }
-
-        // With email confirmation enabled, Supabase intentionally returns an
-        // obfuscated user for an address that already exists. That includes an
-        // account whose original confirmation email was missed. Ask Supabase
-        // to resend the *signup* email in that case; new users already receive
-        // one from signUp, so sending again would only hit the rate limit.
-        if (data.user.identities?.length === 0) {
-            const { error: resendError } = await this.supabase.auth.resend({
-                type: 'signup',
-                email: dto.email,
-                options: {
-                    emailRedirectTo: this.getFrontendUrl('/verify-email/'),
-                },
-            });
-            if (resendError) {
-                this.logger.error(
-                    `Unable to resend Supabase signup email: ${resendError.message}`,
-                );
-                throw new ServiceUnavailableException(
-                    'We could not send the verification email. Please try again shortly.',
-                );
-            }
         }
 
         return {
