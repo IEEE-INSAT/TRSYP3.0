@@ -1,9 +1,8 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { EmailOtpType, SupabaseClient } from '@supabase/supabase-js';
 
 /**
- * Stores a session delivered in the fragment of a Supabase confirmation or
- * recovery URL. Static hosting does not provide a server callback, so this
- * must run in the browser before pages call getSession().
+ * Consumes every Supabase confirmation/recovery callback format before pages
+ * call getSession(). Static hosting does not provide a server callback.
  */
 export async function consumeEmailCallback(
   supabase: SupabaseClient,
@@ -12,11 +11,34 @@ export async function consumeEmailCallback(
   const accessToken = fragment.get('access_token');
   const refreshToken = fragment.get('refresh_token');
 
-  if (!accessToken || !refreshToken) return null;
+  if (accessToken && refreshToken) {
+    const { error } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+    return error?.message ?? null;
+  }
 
-  const { error } = await supabase.auth.setSession({
-    access_token: accessToken,
-    refresh_token: refreshToken,
-  });
-  return error?.message ?? null;
+  const query = new URLSearchParams(window.location.search);
+  const code = query.get('code');
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) return null;
+
+    // supabase-js may already have exchanged the code automatically.
+    const { data } = await supabase.auth.getSession();
+    return data.session ? null : error.message;
+  }
+
+  const tokenHash = query.get('token_hash');
+  const type = query.get('type');
+  if (tokenHash && type) {
+    const { error } = await supabase.auth.verifyOtp({
+      token_hash: tokenHash,
+      type: type as EmailOtpType,
+    });
+    return error?.message ?? null;
+  }
+
+  return null;
 }
