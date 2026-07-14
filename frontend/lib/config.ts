@@ -29,14 +29,14 @@ export const isSupabaseConfigured =
  * registration — the Register CTAs render disabled. Flip back to `true` to
  * reopen. (Temporary hold — expected back tomorrow.)
  */
-export const REGISTRATION_OPEN = false;
+export const REGISTRATION_OPEN = true;
 
 /**
  * Master switch for public log-in. Set to `false` to temporarily hide the
  * Log In CTA in the navbar. Flip back to `true` to reopen. (Admin sign-in via
  * the admin gate is unaffected.)
  */
-export const LOGIN_OPEN = false;
+export const LOGIN_OPEN = true;
 
 export const features = {
   /** POST /registration, GET /registration/profile, ... */

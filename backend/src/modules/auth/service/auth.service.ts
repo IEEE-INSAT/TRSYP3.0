@@ -86,10 +86,15 @@ export class AuthService {
             throw new Error('Unable to create the account. Please try again.');
         }
 
-        await this.emailService.sendAccountVerificationEmail(
-            dto.email,
-            verificationUrl,
-        );
+        this.emailService
+            .sendAccountVerificationEmail(dto.email, verificationUrl)
+            .catch((err) => {
+                this.logger.error(
+                    `Verification email failed to send for ${dto.email}: ${
+                        err instanceof Error ? err.message : String(err)
+                    }`,
+                );
+            });
 
         return {
             message: 'Check your inbox to verify your TRSYP 3.0 account.',
