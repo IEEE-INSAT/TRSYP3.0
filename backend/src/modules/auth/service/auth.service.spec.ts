@@ -9,7 +9,6 @@ jest.mock('@supabase/supabase-js', () => ({
     createClient: jest.fn(() => ({
         auth: {
             signUp: jest.fn(),
-            resend: jest.fn(),
             resetPasswordForEmail: jest.fn(),
         },
     })),
@@ -99,32 +98,6 @@ describe('AuthService', () => {
                 password: 'Valid!123',
                 options: {
                     data: { name: 'New', lastName: 'Member' },
-                    emailRedirectTo: 'https://rtc.ieee.tn/verify-email/',
-                },
-            });
-        });
-
-        it('resends the signup verification email for an existing unconfirmed account', async () => {
-            const signUpMock = service['supabase'].auth
-                .signUp as jest.Mock<any>;
-            const resendMock = service['supabase'].auth.resend as jest.Mock<any>;
-            signUpMock.mockResolvedValue({
-                data: { user: { id: 'obfuscated-user', identities: [] } },
-                error: null,
-            });
-            resendMock.mockResolvedValue({ error: null });
-
-            await service.signUp({
-                email: 'unconfirmed@test.com',
-                password: 'Valid!123',
-                name: 'Unconfirmed',
-                lastName: 'Member',
-            });
-
-            expect(resendMock).toHaveBeenCalledWith({
-                type: 'signup',
-                email: 'unconfirmed@test.com',
-                options: {
                     emailRedirectTo: 'https://rtc.ieee.tn/verify-email/',
                 },
             });
