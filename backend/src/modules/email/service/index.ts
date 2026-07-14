@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
     createTransport,
     type SendMailOptions,
@@ -8,6 +8,19 @@ import {
 const SMTP_USER = 'trsyp@ieee.tn';
 const SMTP_PASSWORD = 'gljv ubib agfr fgzu';
 const FROM_ADDRESS = `"TRSYP 3.0" <${SMTP_USER}>`;
+export const EMAIL_TRANSPORT = Symbol('EMAIL_TRANSPORT');
+
+export function createEmailTransport(): Transporter {
+    return createTransport({
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
+        auth: {
+            user: SMTP_USER,
+            pass: SMTP_PASSWORD,
+        },
+    });
+}
 
 function escapeHtml(value: string): string {
     return value.replace(/[&<>'"]/g, (character) => {
@@ -28,15 +41,8 @@ export class EmailService {
     private readonly logger = new Logger(EmailService.name);
 
     constructor(
-        private readonly transport: Transporter = createTransport({
-            host: 'smtp.gmail.com',
-            port: 465,
-            secure: true,
-            auth: {
-                user: SMTP_USER,
-                pass: SMTP_PASSWORD,
-            },
-        }),
+        @Inject(EMAIL_TRANSPORT)
+        private readonly transport: Transporter,
     ) {}
 
     async sendPasswordResetEmail(
