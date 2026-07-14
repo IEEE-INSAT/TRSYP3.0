@@ -4,6 +4,7 @@ import {
     type SendMailOptions,
     type Transporter,
 } from 'nodemailer';
+import type SMTPTransport from 'nodemailer/lib/smtp-transport';
 
 const SMTP_USER = 'trsyp@ieee.tn';
 const SMTP_PASSWORD = 'gljv ubib agfr fgzu';
@@ -11,7 +12,7 @@ const FROM_ADDRESS = `"TRSYP 3.0" <${SMTP_USER}>`;
 export const EMAIL_TRANSPORT = Symbol('EMAIL_TRANSPORT');
 
 export function createEmailTransport(): Transporter {
-    return createTransport({
+    const options: SMTPTransport.Options = {
         host: 'smtp.gmail.com',
         port: 465,
         secure: true,
@@ -20,7 +21,8 @@ export function createEmailTransport(): Transporter {
             user: SMTP_USER,
             pass: SMTP_PASSWORD,
         },
-    });
+    };
+    return createTransport(options);
 }
 
 function escapeHtml(value: string): string {
