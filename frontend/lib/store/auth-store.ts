@@ -179,6 +179,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         } catch (getErr) {
           console.error('[auth] getMe failed during signIn:', getErr);
         }
+        // Reconcile the registration profile before we hand control back to the
+        // caller, so post-login routing can tell an already-registered user
+        // (→ dashboard) from a new one (→ registration flow). hydrateFromBackend
+        // swallows its own errors, so this never rejects the sign-in.
+        await useRegistrationStore.getState().hydrateFromBackend();
       }
       set({ loading: false });
     } catch (e) {
