@@ -371,6 +371,42 @@ export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setEmailTouched(true);
+
+  if (emailFormatError) {
+    setError(emailFormatError);
+    return;
+  }
+
+  if (email !== lastCheckedEmail.current) {
+    setEmailChecking(true);
+    lastCheckedEmail.current = email;
+    const domainErr = await validateEmailDomain(email);
+    setEmailDomainError(domainErr);
+    setEmailChecking(false);
+    if (domainErr) {
+      setError(domainErr);
+      return;
+    }
+  } else if (emailDomainError) {
+    setError(emailDomainError);
+    return;
+  }
+
+  setLoading(true);
+  setError(null);
+  try {
+    await resetPassword(email);
+    setForgotSuccess(true);
+  } catch (err) {
+    setError(err instanceof Error ? err.message : 'Failed to send reset link');
+  } finally {
+    setLoading(false);
+  }
+  };
+  
   // Log-in temporarily closed — block every non-admin surface that opens this
   // modal (navbar, /register direct navigation, etc.).
   if (!LOGIN_OPEN && !allowWhenClosed) {
