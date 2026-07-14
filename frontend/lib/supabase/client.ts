@@ -19,10 +19,13 @@ export function getSupabaseClient(): SupabaseClient | null {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
-        // PKCE is the secure flow for browser/SPA clients: the OAuth and
-        // email-confirmation code exchange is bound to a per-session verifier,
-        // so an intercepted `code` in the URL can't be redeemed by an attacker.
-        flowType: 'pkce',
+        // Email confirmation and password-recovery links are often opened in
+        // a different browser or device from the one that requested them.
+        // PKCE requires the original browser's verifier and therefore treats
+        // those legitimate links as invalid. Implicit callbacks put the
+        // short-lived session in the URL fragment, which Supabase consumes on
+        // this static site regardless of where the email link is opened.
+        flowType: 'implicit',
       },
     });
   }
