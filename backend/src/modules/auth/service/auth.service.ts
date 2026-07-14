@@ -1,15 +1,8 @@
-import {
-    ConflictException,
-    Injectable,
-    Logger,
-    ServiceUnavailableException,
-} from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { ConfigService } from '@nestjs/config';
 import { resolveMx } from 'dns/promises';
-import { EmailService } from '../../email/service';
-import { SignUpDto } from '../dto';
 
 // Reserved / documentation domains that can never receive email (RFC 2606).
 const RESERVED_DOMAINS = [
@@ -29,7 +22,6 @@ export class AuthService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly configService: ConfigService,
-        private readonly emailService: EmailService,
     ) {
         const supabaseUrl = this.configService.get<string>('SUPABASE_URL');
         const supabaseKey = this.configService.get<string>(
@@ -55,111 +47,6 @@ export class AuthService {
         return this.prisma.user.findUnique({
             where: { email },
         });
-    }
-
-    async signUp(dto: SignUpDto): Promise<{ message: string }> {
-        const redirectTo = this.getFrontendUrl('/verify-email/');
-        const { data, error } = await this.supabase.auth.admin.generateLink({
-            type: 'signup',
-            email: dto.email,
-            password: dto.password,
-            options: {
-                data: {
-                    name: dto.name,
-                    lastName: dto.lastName,
-                },
-                redirectTo,
-            },
-        });
-        const verificationUrl = data.properties?.action_link;
-
-        if (error || !verificationUrl) {
-            if (
-                error?.code === 'email_exists' ||
-                /already (been )?(registered|exists)/i.test(
-                    error?.message ?? '',
-                )
-            ) {
-                throw new ConflictException(
-                    'An account with this email already exists. Please sign in instead.',
-                );
-            }
-
-            this.logger.error(
-                `Unable to generate account verification email: ${error?.message ?? 'No verification link returned'}`,
-            );
-            throw new Error('Unable to create the account. Please try again.');
-        }
-
-        try {
-            await this.emailService.sendAccountVerificationEmail(
-                dto.email,
-                verificationUrl,
-            );
-        } catch (error) {
-            this.logger.error(
-                `Verification email failed to send for ${dto.email}: ${
-                    error instanceof Error ? error.message : String(error)
-                }`,
-            );
-            throw new ServiceUnavailableException(
-                'Your account was created, but we could not send the verification email. Please contact support.',
-            );
-        }
-
-        return {
-            message: 'Check your inbox to verify your TRSYP 3.0 account.',
-        };
-    }
-
-    async resetPassword(email: string) {
-        const user = await this.prisma.user.findUnique({
-            where: { email },
-        });
-
-        // Only send the reset email if the user actually exists.
-        // We intentionally do NOT throw or return a different response when the
-        // user is missing — doing so would let an attacker enumerate registered
-        // emails by comparing HTTP status codes (200 vs 500).
-        if (user) {
-            try {
-                const redirectTo = this.getFrontendUrl('/reset-password/');
-                const { data, error } =
-                    await this.supabase.auth.admin.generateLink({
-                        type: 'recovery',
-                        email,
-                        options: { redirectTo },
-                    });
-                const resetUrl = data.properties?.action_link;
-
-                if (error || !resetUrl) {
-                    throw new Error(
-                        error?.message ??
-                            'Supabase did not return a password reset link',
-                    );
-                }
-
-                await this.emailService.sendPasswordResetEmail(email, resetUrl);
-            } catch (error) {
-                this.logger.error(
-                    `Unable to send password reset email: ${error instanceof Error ? error.message : String(error)}`,
-                );
-                // Keep the same generic response so a failed delivery cannot be used
-                // to enumerate accounts.
-            }
-        }
-
-        return {
-            message:
-                'If an account exists, a password reset email has been sent',
-        };
-    }
-
-    private getFrontendUrl(path: string): string {
-        const frontendUrl =
-            this.configService.get<string>('FRONTEND_URL') ??
-            'http://localhost:3000';
-        return new URL(path, frontendUrl).toString();
     }
 
     /**

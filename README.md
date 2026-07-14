@@ -23,7 +23,7 @@ Full-stack Modular Monolith platform built with NestJS, Next.js, PostgreSQL, and
 | VisaModule         | Visa application & tracking                    |
 | ChatbotModule      | AI chatbot with FAQ, embeddings, vector search |
 | NotificationModule | In-app notifications                           |
-| EmailModule        | Email dispatch                                 |
+| Supabase Auth      | Account confirmation and password recovery email |
 | AdminModule        | Admin panel & management                       |
 
 ### Architecture Rules

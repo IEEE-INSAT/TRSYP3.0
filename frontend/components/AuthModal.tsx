@@ -205,6 +205,7 @@ export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotSuccess, setForgotSuccess] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState(false);
+  const [verificationResent, setVerificationResent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -225,7 +226,7 @@ export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute
   // Combined email error: format first, then domain
   const emailError = emailFormatError || emailDomainError;
 
-  const { signIn, signUp, resetPassword } = useAuthStore();
+  const { signIn, signUp, resendVerification, resetPassword } = useAuthStore();
 
   /** Run DNS MX check when the email field loses focus. */
   const handleEmailBlur = useCallback(async () => {
@@ -250,6 +251,7 @@ export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute
     setShowForgotPassword(false);
     setForgotSuccess(false);
     setSignupSuccess(false);
+    setVerificationResent(false);
     setEmailTouched(false);
     setPasswordTouched(false);
     setEmailDomainError(null);
@@ -362,10 +364,24 @@ export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute
         lastName: lastName.trim(),
         provider: 'email',
       });
+      setVerificationResent(false);
       setSignupSuccess(true);
       setPassword('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign up failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await resendVerification(email);
+      setVerificationResent(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to resend the verification email.');
     } finally {
       setLoading(false);
     }
@@ -527,6 +543,19 @@ export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute
                   Check your inbox and open the TRSYP 3.0 verification link to
                   activate your account.
                 </p>
+                <p>
+                  {verificationResent
+                    ? 'A new verification link has been sent.'
+                    : "Didn't receive it?"}
+                </p>
+                <button
+                  type="button"
+                  className="trsyp-btn-login"
+                  onClick={handleResendVerification}
+                  disabled={loading}
+                >
+                  {loading ? 'Sending…' : 'Resend verification email'}
+                </button>
                 <button
                   type="button"
                   className="trsyp-btn-login"
