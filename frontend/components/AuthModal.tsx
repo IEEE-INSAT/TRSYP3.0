@@ -411,8 +411,13 @@ export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute
   // modal (navbar, /register direct navigation, etc.).
   if (!LOGIN_OPEN && !allowWhenClosed) {
     return (
-      <div className="trsyp-overlay" onClick={onClose}>
-        <div className="trsyp-popup" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="trsyp-overlay"
+        onPointerDown={(event) => {
+          if (event.target === event.currentTarget) onClose();
+        }}
+      >
+        <div className="trsyp-popup">
           <button className="trsyp-close" onClick={onClose} aria-label="Close">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -428,8 +433,13 @@ export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute
   }
 
   return (
-    <div className="trsyp-overlay" onClick={onClose}>
-      <div className="trsyp-popup" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="trsyp-overlay"
+      onPointerDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div className="trsyp-popup">
         <button className="trsyp-close" onClick={onClose} aria-label="Close">
           <svg
             viewBox="0 0 24 24"
