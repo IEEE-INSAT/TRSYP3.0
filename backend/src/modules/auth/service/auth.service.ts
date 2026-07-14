@@ -1,8 +1,14 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+    ConflictException,
+    Injectable,
+    Logger,
+    ServiceUnavailableException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { ConfigService } from '@nestjs/config';
 import { resolveMx } from 'dns/promises';
+import { SignUpDto } from '../dto';
 
 // Reserved / documentation domains that can never receive email (RFC 2606).
 const RESERVED_DOMAINS = [
@@ -47,6 +53,86 @@ export class AuthService {
         return this.prisma.user.findUnique({
             where: { email },
         });
+    }
+
+    /**
+     * Compatibility for the already-deployed static frontend. New frontend
+     * builds call Supabase from the browser, but this endpoint must remain
+     * available until every hostname has received that build.
+     */
+    async signUp(dto: SignUpDto): Promise<{ message: string }> {
+        const existingUser = await this.findByEmail(dto.email);
+        if (existingUser) {
+            throw new ConflictException(
+                'An account with this email already exists. Please sign in instead.',
+            );
+        }
+
+        const { data, error } = await this.supabase.auth.signUp({
+            email: dto.email,
+            password: dto.password,
+            options: {
+                data: { name: dto.name, lastName: dto.lastName },
+                emailRedirectTo: this.getFrontendUrl('/verify-email/'),
+            },
+        });
+
+        if (error || !data.user) {
+            if (
+                error?.code === 'email_exists' ||
+                error?.code === 'user_already_exists' ||
+                /already (been )?(registered|exists)/i.test(
+                    error?.message ?? '',
+                )
+            ) {
+                throw new ConflictException(
+                    'An account with this email already exists. Please sign in instead.',
+                );
+            }
+
+            this.logger.error(
+                `Unable to start Supabase email signup: ${error?.message ?? 'No user returned'}`,
+            );
+            throw new ServiceUnavailableException(
+                'We could not send the verification email. Please try again shortly.',
+            );
+        }
+
+        return {
+            message: 'Check your inbox to verify your TRSYP 3.0 account.',
+        };
+    }
+
+    /** Compatibility for deployed clients that still use the backend reset API. */
+    async resetPassword(email: string): Promise<{ message: string }> {
+        const user = await this.findByEmail(email);
+        if (user) {
+            try {
+                const { error } =
+                    await this.supabase.auth.resetPasswordForEmail(email, {
+                        redirectTo: this.getFrontendUrl('/reset-password/'),
+                    });
+                if (error) throw new Error(error.message);
+            } catch (error) {
+                this.logger.error(
+                    `Unable to start Supabase password recovery: ${
+                        error instanceof Error ? error.message : String(error)
+                    }`,
+                );
+            }
+        }
+
+        return {
+            message:
+                'If an account exists, a password reset email has been sent',
+        };
+    }
+
+    private getFrontendUrl(path: string): string {
+        const frontendUrl =
+            this.configService.get<string>('FRONTEND_URL') ??
+            'https://rtc.ieee.tn';
+        return new URL(path, frontendUrl).toString();
     }
 
     /**

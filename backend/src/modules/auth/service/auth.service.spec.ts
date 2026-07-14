@@ -7,7 +7,10 @@ import { ConfigService } from '@nestjs/config';
 // Mock the supabase module
 jest.mock('@supabase/supabase-js', () => ({
     createClient: jest.fn(() => ({
-        auth: {},
+        auth: {
+            signUp: jest.fn(),
+            resetPasswordForEmail: jest.fn(),
+        },
     })),
 }));
 
@@ -70,4 +73,45 @@ describe('AuthService', () => {
         });
     });
 
+    describe('legacy auth endpoints', () => {
+        it('uses Supabase signup for deployed clients that still post to the backend', async () => {
+            mockPrismaService.user.findUnique.mockResolvedValue(null);
+            const signUpMock = service['supabase'].auth
+                .signUp as jest.Mock<any>;
+            signUpMock.mockResolvedValue({
+                data: { user: { id: 'supabase-user-id' } },
+                error: null,
+            });
+
+            await expect(
+                service.signUp({
+                    email: 'new@test.com',
+                    password: 'Valid!123',
+                    name: 'New',
+                    lastName: 'Member',
+                }),
+            ).resolves.toEqual({
+                message: 'Check your inbox to verify your TRSYP 3.0 account.',
+            });
+            expect(signUpMock).toHaveBeenCalledWith({
+                email: 'new@test.com',
+                password: 'Valid!123',
+                options: {
+                    data: { name: 'New', lastName: 'Member' },
+                    emailRedirectTo: 'https://rtc.ieee.tn/verify-email/',
+                },
+            });
+        });
+
+        it('keeps a password-reset response generic for legacy clients', async () => {
+            mockPrismaService.user.findUnique.mockResolvedValue(null);
+
+            await expect(
+                service.resetPassword('missing@test.com'),
+            ).resolves.toEqual({
+                message:
+                    'If an account exists, a password reset email has been sent',
+            });
+        });
+    });
 });
