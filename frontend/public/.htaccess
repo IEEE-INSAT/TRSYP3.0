@@ -1,0 +1,10 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # trsyp.ieee.tn is the legacy public hostname. Redirect it before Next.js
+  # loads so visitors never see a stale page or a duplicate version of the site.
+  # Keep this as a temporary redirect until the FTP deployment is verified, then
+  # change R=302 to R=301 if a permanent redirect is desired.
+  RewriteCond %{HTTP_HOST} ^(?:www\.)?trsyp\.ieee\.tn(?::\d+)?$ [NC]
+  RewriteRule ^(.*)$ https://rtc.ieee.tn/$1 [R=302,L]
+</IfModule>

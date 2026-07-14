@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { AuthProvider } from '@/components/AuthContext';
+import { CanonicalHostRedirect } from '@/components/CanonicalHostRedirect';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -19,6 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
+        <CanonicalHostRedirect />
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

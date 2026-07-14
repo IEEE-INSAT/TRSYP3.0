@@ -17,7 +17,7 @@ import {
     ApiResponse,
     ApiBearerAuth,
 } from '@nestjs/swagger';
-import { ResetPasswordDto } from '../dto';
+import { ResetPasswordDto, SignUpDto } from '../dto';
 import { JwtAuthGuard } from '@common/guards/jwt-auth.guard';
 
 @ApiTags('Auth')
@@ -45,6 +45,26 @@ export class AuthController {
         return res.status(HttpStatus.OK).json(user);
     }
 
+    @Post('sign-up')
+    @ApiOperation({
+        summary: 'Create an account and send a Supabase verification email',
+    })
+    @ApiResponse({ status: 201, description: 'Verification email requested.' })
+    async signUp(@Body() dto: SignUpDto) {
+        return this.authService.signUp(dto);
+    }
+
+    @Post('reset-password')
+    @ApiOperation({ summary: 'Request a password reset email' })
+    @ApiResponse({
+        status: 200,
+        description: 'Password reset email requested.',
+    })
+    async resetPassword(@Body() dto: ResetPasswordDto, @Res() res: Response) {
+        const result = await this.authService.resetPassword(dto.email);
+        return res.status(HttpStatus.OK).json(result);
+    }
+
     @Post('check-email')
     @ApiOperation({ summary: 'Check if an email is already registered' })
     @ApiResponse({ status: 200, description: 'Email is available.' })
@@ -52,11 +72,9 @@ export class AuthController {
     async checkEmail(@Body() dto: ResetPasswordDto, @Res() res: Response) {
         const user = await this.authService.findByEmail(dto.email);
         if (user) {
-            return res
-                .status(HttpStatus.CONFLICT)
-                .json({
-                    message: 'An account with this email already exists.',
-                });
+            return res.status(HttpStatus.CONFLICT).json({
+                message: 'An account with this email already exists.',
+            });
         }
         return res.status(HttpStatus.OK).json({ message: 'Email available' });
     }

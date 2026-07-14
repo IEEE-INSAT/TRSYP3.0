@@ -11,6 +11,8 @@ describe('AuthController', () => {
 
     const mockAuthService = {
         findbySupabaseId: jest.fn<any>(),
+        signUp: jest.fn<any>(),
+        resetPassword: jest.fn<any>(),
     };
 
     const mockResponse = () => {
@@ -56,4 +58,19 @@ describe('AuthController', () => {
         });
     });
 
+    it('keeps the legacy signup endpoint available during frontend rollout', async () => {
+        const dto = {
+            email: 'new@test.com',
+            password: 'Valid!123',
+            name: 'New',
+            lastName: 'Member',
+        };
+        const expected = {
+            message: 'Check your inbox to verify your TRSYP 3.0 account.',
+        };
+        mockAuthService.signUp.mockResolvedValue(expected);
+
+        await expect(controller.signUp(dto)).resolves.toEqual(expected);
+        expect(authService.signUp).toHaveBeenCalledWith(dto);
+    });
 });
