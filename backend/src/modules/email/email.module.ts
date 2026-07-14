@@ -1,11 +1,21 @@
 import { Module } from '@nestjs/common';
-import { createEmailTransport, EMAIL_TRANSPORT, EmailService } from './service';
+import {
+  createEmailTransport,
+  createFromAddress,
+  EMAIL_FROM_ADDRESS,
+  EMAIL_TRANSPORT,
+  EmailService,
+} from './service';
 
 @Module({
   providers: [
     {
       provide: EMAIL_TRANSPORT,
       useFactory: createEmailTransport,
+    },
+    {
+      provide: EMAIL_FROM_ADDRESS,
+      useFactory: createFromAddress,
     },
     EmailService,
   ],

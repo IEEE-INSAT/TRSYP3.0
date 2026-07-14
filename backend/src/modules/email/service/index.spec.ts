@@ -2,6 +2,8 @@ import { describe, expect, it, jest } from '@jest/globals';
 import type { Transporter } from 'nodemailer';
 import { EmailService } from './index';
 
+const fromAddress = '"TRSYP 3.0" <trsyp@ieee.tn>';
+
 describe('EmailService', () => {
     it('sends a branded password reset email with the Supabase recovery link', async () => {
         const transport = {
@@ -9,14 +11,14 @@ describe('EmailService', () => {
                 .fn<any>()
                 .mockResolvedValue({ messageId: 'message-id' }),
         } as unknown as Transporter;
-        const service = new EmailService(transport);
+        const service = new EmailService(transport, fromAddress);
         const resetUrl =
             'https://supabase.example/auth/v1/verify?token=abc&type=recovery';
 
         await service.sendPasswordResetEmail('member@example.com', resetUrl);
 
         expect(transport.sendMail).toHaveBeenCalledWith({
-            from: '"TRSYP 3.0" <trsyp@ieee.tn>',
+            from: fromAddress,
             to: 'member@example.com',
             subject: 'Reset your TRSYP 3.0 password',
             text: [
@@ -42,7 +44,7 @@ describe('EmailService', () => {
                 .fn<any>()
                 .mockResolvedValue({ messageId: 'message-id' }),
         } as unknown as Transporter;
-        const service = new EmailService(transport);
+        const service = new EmailService(transport, fromAddress);
         const verificationUrl =
             'https://supabase.example/auth/v1/verify?token=abc&type=signup';
 
@@ -52,7 +54,7 @@ describe('EmailService', () => {
         );
 
         expect(transport.sendMail).toHaveBeenCalledWith({
-            from: '"TRSYP 3.0" <trsyp@ieee.tn>',
+            from: fromAddress,
             to: 'member@example.com',
             subject: 'Verify your TRSYP 3.0 email address',
             text: [

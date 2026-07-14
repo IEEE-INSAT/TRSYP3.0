@@ -191,5 +191,32 @@ describe('AuthService', () => {
                 message: 'Check your inbox to verify your TRSYP 3.0 account.',
             });
         });
+
+        it('does not claim that an email was sent when delivery fails', async () => {
+            const generateLinkMock = service['supabase'].auth.admin
+                .generateLink as jest.Mock<any>;
+            generateLinkMock.mockResolvedValue({
+                data: {
+                    properties: {
+                        action_link: 'https://supabase.test/verify-link',
+                    },
+                },
+                error: null,
+            });
+            (
+                mockEmailService.sendAccountVerificationEmail as jest.Mock<any>
+            ).mockRejectedValueOnce(new Error('SMTP connection timed out'));
+
+            await expect(
+                service.signUp({
+                    email: 'new@test.com',
+                    password: 'Valid!123',
+                    name: 'New',
+                    lastName: 'Member',
+                }),
+            ).rejects.toThrow(
+                'Your account was created, but we could not send the verification email.',
+            );
+        });
     });
 });
