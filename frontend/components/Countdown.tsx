@@ -18,17 +18,18 @@ function getTimeLeft() {
 function pad(n: number) { return String(n).padStart(2, '0'); }
 
 export default function Countdown() {
-  const [t, setT] = useState(getTimeLeft);
+  const [t, setT] = useState<ReturnType<typeof getTimeLeft> | null>(null);
   useEffect(() => {
+    setT(getTimeLeft());
     const id = setInterval(() => setT(getTimeLeft()), 1000);
     return () => clearInterval(id);
   }, []);
 
   const units = [
-    { val: String(t.days),  label: 'Days' },
-    { val: pad(t.hours),    label: 'Hrs'  },
-    { val: pad(t.minutes),  label: 'Min'  },
-    { val: pad(t.seconds),  label: 'Sec'  },
+    { val: t ? String(t.days) : '--', label: 'Days' },
+    { val: t ? pad(t.hours)   : '--', label: 'Hrs'  },
+    { val: t ? pad(t.minutes) : '--', label: 'Min'  },
+    { val: t ? pad(t.seconds) : '--', label: 'Sec'  },
   ];
 
   return (

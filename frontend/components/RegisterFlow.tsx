@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { useAuthStore, useRegistrationStore } from '@/lib/store';
 import AuthModal from './AuthModal';
@@ -28,11 +28,17 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
   const initialized = useAuthStore((s) => s.initialized);
   const isAuthenticated = !!accessToken;
   const isRegistered = useRegistrationStore((s) => s.isRegistered);
+  const hydrating = useRegistrationStore((s) => s.hydrating);
 
   const [showAuthGate, setShowAuthGate] = useState(true);
   const [step, setStep] = useState<Step>(() =>
     isRegistered ? (initialChallenge ? 'team' : 'choosePath') : 'participant',
   );
+
+  // Set once the user completes Step 1 in this session, so the "arrived already
+  // registered → dashboard" redirect below doesn't fire for a brand-new
+  // registration the moment it flips `isRegistered` true.
+  const progressedStep1 = useRef(false);
 
   // Keep the step in sync with the backend-reconciled `isRegistered` flag:
   //  - true while on Step 1  → advance past it
@@ -45,6 +51,17 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
       setStep('participant');
     }
   }, [isRegistered, step, initialChallenge]);
+
+  // A user who reaches the registration flow already registered (e.g. an
+  // existing account signing in via Google, which redirects back here) has no
+  // reason to see Step 1/2 — send them to their dashboard. We wait for the
+  // backend profile reconciliation to settle (`initialized && !hydrating`) so
+  // we act on the real status, not a stale persisted flag, and we skip it once
+  // the user has progressed past Step 1 here (a genuine new registration).
+  useEffect(() => {
+    if (!initialized || hydrating || progressedStep1.current) return;
+    if (isAuthenticated && isRegistered) window.location.href = '/dashboard';
+  }, [initialized, hydrating, isAuthenticated, isRegistered]);
 
   // Wait for auth state before deciding anything (avoids a flash).
   if (!initialized) return <LoadingScreen />;
@@ -64,7 +81,10 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
   }
   if (!isAuthenticated) return null;
 
-  const onParticipantDone = () => setStep(initialChallenge ? 'team' : 'choosePath');
+  const onParticipantDone = () => {
+    progressedStep1.current = true;
+    setStep(initialChallenge ? 'team' : 'choosePath');
+  };
 
   return (
     <div className="reg-page">

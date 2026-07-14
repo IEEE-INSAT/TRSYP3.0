@@ -255,7 +255,10 @@ export default function Navbar() {
           onClose={() => setShowAuthModal(false)}
           onSuccess={() => {
             setShowAuthModal(false);
-            if (pendingRoute) window.location.href = pendingRoute;
+            // An already-registered account goes straight to its dashboard;
+            // otherwise continue to the pending registration route (or home).
+            const registered = useRegistrationStore.getState().isRegistered;
+            window.location.href = registered ? '/dashboard' : (pendingRoute ?? '/');
           }}
           onRegister={() => {
             setShowAuthModal(false);
