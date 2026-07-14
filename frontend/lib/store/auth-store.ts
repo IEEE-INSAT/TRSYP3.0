@@ -29,7 +29,6 @@ interface AuthState {
 
   initialize: () => Promise<void>;
   signUp: (input: SignUpInput) => Promise<void>;
-  resendVerification: (email: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ message: string }>;
@@ -157,24 +156,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ loading: false, error: message });
       throw e;
     }
-  },
-
-  resendVerification: async (email) => {
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      throw new Error('Email verification is not configured.');
-    }
-
-    const emailRedirectTo = new URL(
-      '/verify-email/',
-      window.location.origin,
-    ).toString();
-    const { error } = await supabase.auth.resend({
-      type: 'signup',
-      email,
-      options: { emailRedirectTo },
-    });
-    if (error) throw new Error(error.message);
   },
 
   signIn: async (email, password) => {
