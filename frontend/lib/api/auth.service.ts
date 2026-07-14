@@ -1,12 +1,5 @@
 import { apiFetch } from './http';
-import type { BackendUser, SyncUserPayload } from './types';
-
-export interface SignUpPayload {
-  email: string;
-  password: string;
-  name: string;
-  lastName: string;
-}
+import type { BackendUser } from './types';
 
 /**
  * Auth service — wired to the backend routes that already exist
@@ -14,25 +7,9 @@ export interface SignUpPayload {
  * access token obtained from the auth store.
  */
 export const authService = {
-  /** POST /auth/sign-up — creates an unverified account and sends a TRSYP verification email. */
-  signUp(payload: SignUpPayload): Promise<{ message: string }> {
-    return apiFetch<{ message: string }>('/auth/sign-up', {
-      method: 'POST',
-      body: payload,
-    });
-  },
-
   /** GET /auth/me — current user profile. */
   getMe(token: string): Promise<BackendUser> {
     return apiFetch<BackendUser>('/auth/me', { token });
-  },
-
-  /** POST /auth/reset-password — public endpoint, sends a reset email. */
-  resetPassword(email: string): Promise<{ message: string }> {
-    return apiFetch<{ message: string }>('/auth/reset-password', {
-      method: 'POST',
-      body: { email },
-    });
   },
 
   /** POST /auth/check-email — checks if email is registered. */

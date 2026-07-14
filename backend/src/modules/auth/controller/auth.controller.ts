@@ -7,11 +7,9 @@ import {
     Res,
     HttpStatus,
     Get,
-    UnauthorizedException,
     NotFoundException,
 } from '@nestjs/common';
 import { AuthService } from '../service/auth.service';
-import { SupabaseAuthGuard } from '../guards/supabase-auth.guard';
 import { Response, Request } from 'express';
 import {
     ApiTags,
@@ -19,7 +17,7 @@ import {
     ApiResponse,
     ApiBearerAuth,
 } from '@nestjs/swagger';
-import { ResetPasswordDto, SignUpDto } from '../dto';
+import { ResetPasswordDto } from '../dto';
 import { JwtAuthGuard } from '@common/guards/jwt-auth.guard';
 
 @ApiTags('Auth')
@@ -45,27 +43,6 @@ export class AuthController {
             throw new NotFoundException('User not found');
         }
         return res.status(HttpStatus.OK).json(user);
-    }
-
-    @Post('sign-up')
-    @ApiOperation({
-        summary: 'Create an account and send a TRSYP email verification link',
-    })
-    @ApiResponse({ status: 201, description: 'Verification email sent.' })
-    @ApiResponse({
-        status: 409,
-        description: 'An account with this email already exists.',
-    })
-    async signUp(@Body() dto: SignUpDto) {
-        return this.authService.signUp(dto);
-    }
-
-    @Post('reset-password')
-    @ApiOperation({ summary: 'Request a password reset email' })
-    @ApiResponse({ status: 200, description: 'Password reset email sent.' })
-    async Password_reset(@Body() dto: ResetPasswordDto, @Res() res: Response) {
-        const result = await this.authService.resetPassword(dto.email);
-        return res.status(HttpStatus.OK).json(result);
     }
 
     @Post('check-email')

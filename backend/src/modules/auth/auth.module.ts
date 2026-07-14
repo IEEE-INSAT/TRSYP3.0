@@ -5,12 +5,11 @@ import { PrismaModule } from "src/prisma/prisma.module";
 import { AuthService } from "./service/auth.service";
 import { SupabaseJwtStrategy } from "./supabase-jwt.strategy";
 import { AuthController } from "./controller/auth.controller";
-import { EmailModule } from '../email/email.module';
 
 
 
 @Module({
-    imports: [PrismaModule,PassportModule,JwtModule, EmailModule],
+    imports: [PrismaModule,PassportModule,JwtModule],
     controllers: [AuthController],
     providers: [AuthService,SupabaseJwtStrategy],
     exports: [AuthService]

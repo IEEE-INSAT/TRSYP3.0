@@ -11,8 +11,6 @@ describe('AuthController', () => {
 
     const mockAuthService = {
         findbySupabaseId: jest.fn<any>(),
-        resetPassword: jest.fn<any>(),
-        signUp: jest.fn<any>(),
     };
 
     const mockResponse = () => {
@@ -58,44 +56,4 @@ describe('AuthController', () => {
         });
     });
 
-    describe('Password_reset', () => {
-        it('should initiate password reset and return 200 OK', async () => {
-            const dto = { email: 'test@test.com' };
-            const res = mockResponse();
-            const expectedResult = {
-                message:
-                    'If an account exists, a password reset email has been sent',
-            };
-
-            mockAuthService.resetPassword.mockResolvedValue(expectedResult);
-
-            await controller.Password_reset(dto, res);
-
-            expect(authService.resetPassword).toHaveBeenCalledWith(
-                'test@test.com',
-            );
-            expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
-            expect(res.json).toHaveBeenCalledWith(expectedResult);
-        });
-    });
-
-    describe('signUp', () => {
-        it('should create an account and return the verification-email response', async () => {
-            const dto = {
-                email: 'new@test.com',
-                password: 'Valid!123',
-                name: 'New',
-                lastName: 'Member',
-            };
-            const expectedResult = {
-                message: 'Check your inbox to verify your TRSYP 3.0 account.',
-            };
-            mockAuthService.signUp.mockResolvedValue(expectedResult);
-
-            await expect(controller.signUp(dto)).resolves.toEqual(
-                expectedResult,
-            );
-            expect(authService.signUp).toHaveBeenCalledWith(dto);
-        });
-    });
 });

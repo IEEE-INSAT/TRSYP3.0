@@ -18,7 +18,12 @@ User provisioning into the local `public.users` table is handled by a **Postgres
 3. **Service (`auth.service.ts`)**:
    - Manages communication with the `PrismaService`.
    - `findbySupabaseId`: Fetches a user record given their Supabase ID.
-   - `findByEmail`, `resetPassword`: profile lookup and password-reset email dispatch.
+   - `findByEmail`, `validateEmailDomain`: profile lookup and email-domain validation.
+
+Email signup confirmation and password recovery are sent directly from the
+browser through Supabase Auth. See
+[`docs/supabase-gmail-smtp.md`](../../../docs/supabase-gmail-smtp.md) for the
+required Gmail SMTP setup in Supabase.
 
 ## Exposed Endpoints
 
