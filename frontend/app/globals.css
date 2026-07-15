@@ -384,12 +384,19 @@ button {
 /* ─── Guest actions (Log In + Register) ─── */
 .navbar-guest-actions {
   /* Two equal columns so Log In and Register Now are the exact same size even
-     though their labels differ in length. */
+     though their labels differ in length. When Log In isn't rendered (e.g. an
+     authenticated-but-unregistered user, who never sees Log In), the
+     --single modifier collapses this to one column so Register Now doesn't
+     leave a phantom empty column beside it. */
   display: grid;
   grid-template-columns: 1fr 1fr;
   align-items: stretch;
   gap: 12px;
   flex-shrink: 0;
+}
+
+.navbar-guest-actions--single {
+  grid-template-columns: 1fr;
 }
 
 /* Both auth buttons share size: full column width + matched height. */

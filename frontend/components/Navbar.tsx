@@ -148,7 +148,11 @@ export default function Navbar() {
                 My Dashboard
               </MotionLink>
             ) : showGuestActions ? (
-              <motion.div key="guest" className="navbar-guest-actions" {...AUTH_FADE}>
+              <motion.div
+                key="guest"
+                className={`navbar-guest-actions ${isAuthenticated ? 'navbar-guest-actions--single' : ''}`}
+                {...AUTH_FADE}
+              >
                 {!isAuthenticated && (
                   <button
                     className="navbar-login"
