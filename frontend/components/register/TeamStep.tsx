@@ -28,6 +28,9 @@ export default function TeamStep() {
   const [formErr, setFormErr] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
+  const canCreate = teamName.trim().length >= 2 && teamName.trim().length <= 50 && size >= 2 && size <= 6;
+  const canJoin = code.trim().length === 6;
+
   useEffect(() => {
     void fetchTeam();
   }, [fetchTeam]);
@@ -173,7 +176,7 @@ export default function TeamStep() {
         <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '10px' }}>
           <div className="reg-field">
             <label className="reg-label" htmlFor="teamName">Team Name *</label>
-            <input id="teamName" className="reg-input" type="text" placeholder="Your team name" maxLength={50} value={teamName} onChange={(e) => setTeamName(e.target.value)} />
+            <input id="teamName" className="reg-input" type="text" placeholder="Your team name" maxLength={50} required value={teamName} onChange={(e) => setTeamName(e.target.value)} />
           </div>
           <div className="reg-field">
             <label className="reg-label">Team Size (including you) *</label>
@@ -184,7 +187,7 @@ export default function TeamStep() {
             </div>
           </div>
           {(formErr || storeError) && <span className="reg-error">{formErr || storeError}</span>}
-          <button type="submit" className="reg-submit" disabled={submitting}>
+          <button type="submit" className="reg-submit" disabled={submitting || !canCreate}>
             {submitting ? 'Creating…' : 'Create Team'}
           </button>
         </form>
@@ -200,13 +203,14 @@ export default function TeamStep() {
               type="text"
               placeholder="6-character code"
               maxLength={6}
+              required
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
               style={{ textTransform: 'uppercase', letterSpacing: '0.2em' }}
             />
           </div>
           {(formErr || storeError) && <span className="reg-error">{formErr || storeError}</span>}
-          <button type="submit" className="reg-submit" disabled={submitting}>
+          <button type="submit" className="reg-submit" disabled={submitting || !canJoin}>
             {submitting ? 'Joining…' : 'Join Team'}
           </button>
         </form>

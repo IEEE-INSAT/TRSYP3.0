@@ -69,7 +69,8 @@ export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => vo
     else if (!/^\+[1-9]\d{1,14}$/.test(fullPhone)) e.phone = 'Invalid phone number for this country code';
     if (isStudent && !form.sb) e.sb = 'Required for students';
     if (!form.country) e.country = 'Select your country';
-    if (form.ieeeId && !/^\d+$/.test(form.ieeeId.trim())) e.ieeeId = 'Digits only';
+    if (isIeee && !form.ieeeId.trim()) e.ieeeId = 'Required for IEEE members';
+    else if (form.ieeeId && !/^\d+$/.test(form.ieeeId.trim())) e.ieeeId = 'Digits only';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -100,7 +101,8 @@ export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => vo
     !!form.gender &&
     !!form.phone &&
     !!form.country &&
-    (!isStudent || !!form.sb);
+    (!isStudent || !!form.sb) &&
+    (!isIeee || !!form.ieeeId.trim());
 
   return (
     <motion.form
@@ -240,10 +242,11 @@ export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => vo
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <label className="reg-label" htmlFor="ieeeId">IEEE Member ID</label>
+            <label className="reg-label" htmlFor="ieeeId">IEEE Member ID *</label>
             <input
               id="ieeeId"
               className={`reg-input ${errors.ieeeId ? 'reg-input-error' : ''}`}
+              required
               type="text"
               inputMode="numeric"
               placeholder="e.g. 12345678"
