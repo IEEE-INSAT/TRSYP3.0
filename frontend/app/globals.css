@@ -7542,7 +7542,9 @@ select.reg-input option {
   justify-content: center;
   padding: 16px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+  touch-action: pan-y;
   animation: trsypFadeIn 0.2s ease;
 }
 
@@ -7558,6 +7560,7 @@ select.reg-input option {
 
 .trsyp-popup {
   position: relative;
+  z-index: 1;
   background: rgba(22, 18, 38, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
@@ -7569,6 +7572,8 @@ select.reg-input option {
   box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
   animation: trsypSlideUp 0.25s ease;
   text-align: left;
+  pointer-events: auto;
+  touch-action: manipulation;
 }
 
 @keyframes trsypSlideUp {
@@ -7665,6 +7670,11 @@ select.reg-input option {
   font-family: var(--font-body, sans-serif);
   font-size: 16px;
   outline: none;
+  pointer-events: auto;
+  touch-action: manipulation;
+  user-select: text;
+  -webkit-user-select: text;
+  -webkit-appearance: none;
   transition: all 0.2s;
 }
 

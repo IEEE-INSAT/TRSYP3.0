@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { getSupabaseClient } from '@/lib/supabase/client';
-import { consumeEmailCallback } from '@/lib/supabase/email-callback';
+import { waitForEmailCallbackSession } from '@/lib/supabase/email-callback';
 
 type VerificationState = 'checking' | 'verified' | 'invalid';
 
@@ -18,17 +18,11 @@ export default function VerifyEmailPage() {
 
     let mounted = true;
     const checkVerification = async () => {
-      const callbackError = await consumeEmailCallback(supabase);
-      if (callbackError) {
-        if (mounted) setState('invalid');
-        return;
-      }
-
-      const { data, error } = await supabase.auth.getSession();
+      const { session, error } = await waitForEmailCallbackSession(supabase);
       if (!mounted) return;
 
       setState(
-        !error && data.session?.user.email_confirmed_at
+        !error && session?.user.email_confirmed_at
           ? 'verified'
           : 'invalid',
       );
