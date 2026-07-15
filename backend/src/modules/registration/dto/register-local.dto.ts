@@ -2,10 +2,12 @@ import { z } from 'zod';
 import {
   IsEnum,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsPositive,
   IsString,
   Matches,
+  ValidateIf,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ParticipantType, SB, COUNTRY } from '@prisma/client';
@@ -28,6 +30,15 @@ export const RegisterLocalSchema = z.object({
   participantType: z.nativeEnum(ParticipantType),
   sb: z.nativeEnum(SB).optional(),
   country: z.nativeEnum(COUNTRY),
+})
+.superRefine((data, ctx) => {
+  if (data.participantType === ParticipantType.Student && !data.sb) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Student branch is required for students',
+      path: ['sb'],
+    });
+  }
 });
 
 export type RegisterLocalInput = z.infer<typeof RegisterLocalSchema>;
@@ -80,11 +91,12 @@ export class RegisterLocalDto {
   participantType!: ParticipantType;
 
   @ApiPropertyOptional({
-    description: 'Student branch (for students only)',
+    description: 'Student branch (required for students, unused otherwise)',
     enum: SB,
     example: 'INSAT',
   })
-  @IsOptional()
+  @ValidateIf((o) => o.participantType === ParticipantType.Student)
+  @IsNotEmpty({ message: 'Student branch is required for students' })
   @IsEnum(SB, { message: 'Invalid student branch' })
   sb?: SB;
 
