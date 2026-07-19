@@ -294,3 +294,31 @@ export interface CreateTeamPayload {
   name: string;
   size: number;
 }
+
+// ── Challenge (riddles) ───────────────────────────────────────────────────────
+
+/** Body of POST /challenge/access. */
+export interface RiddleAccessPayload {
+  code: string;
+}
+
+/** Response of POST /challenge/access. */
+export interface RiddleAccessResponse {
+  riddleNumber: number;
+  question: string;
+  solved: boolean;
+  attempts: number;
+}
+
+/** Body of POST /challenge/submit. */
+export interface RiddleSubmitPayload {
+  code: string;
+  answer: string;
+}
+
+/** Response of POST /challenge/submit. */
+export interface RiddleSubmitResponse {
+  correct: boolean;
+  solved: boolean;
+  attempts: number;
+}
