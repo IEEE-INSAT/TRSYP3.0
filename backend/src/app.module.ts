@@ -13,6 +13,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AdminModule } from './modules/admin/admin.module';
 import { RoomingModule } from './modules/rooming/rooming.module';
 import { RegistrationModule } from './modules/registration/registration.module';
+import { ChallengeModule } from './modules/challenge/challenge.module';
 // import { NotificationModule } from './modules/notification/notification.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AppController } from './app.controller';
@@ -28,7 +29,8 @@ import { AppController } from './app.controller';
             GOOGLE_CALLBACK_URL:Joi.string().optional(),
             SUPABASE_URL:Joi.string().required(),
             SUPABASE_SERVICE_ROLE_KEY:Joi.string().required(),
-            FRONTEND_URL:Joi.string().uri().required(),
+            FRONTEND_URL: Joi.string().uri().required(),
+            RIDDLE_CODE_SECRET: Joi.string().required(),
         })
     }),
         PassportModule,
@@ -50,7 +52,7 @@ import { AppController } from './app.controller';
             }],
         }),
         EventEmitterModule.forRoot(),
-        PrismaModule, AuthModule, AdminModule, RoomingModule, RegistrationModule, /* NotificationModule */],
+        PrismaModule, AuthModule, AdminModule, RoomingModule, RegistrationModule, ChallengeModule, /* NotificationModule */],
     controllers: [AppController],
     providers: [
         AppService,
