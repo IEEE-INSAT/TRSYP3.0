@@ -383,3 +383,13 @@ model RiddleProgress {
   @@unique([teamId, riddleNumber])
   @@map("riddle_progress")
 }
+model RiddleCode {
+  id           String   @id @default(uuid())
+  teamId       String   @map("team_id")
+  riddleNumber Int      @map("riddle_number")
+  code         String   @unique
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@unique([teamId, riddleNumber])
+  @@map("riddle_codes")
+}
