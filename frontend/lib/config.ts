@@ -44,3 +44,28 @@ export const features = {
   /** GET /registration/admin/participants and moderation endpoints. */
   adminApi: process.env.NEXT_PUBLIC_FEATURE_ADMIN_API === 'true',
 } as const;
+
+/**
+ * Team registration window for one activity.
+ * - `soon`   — announced, but creating/joining is not possible yet.
+ * - `open`   — fully live.
+ * - `closed` — the window has passed; existing teams stay visible and
+ *              manageable, but no new ones can be created or joined.
+ */
+export type RegistrationPhase = 'soon' | 'open' | 'closed';
+
+function readPhase(value: string | undefined, fallback: RegistrationPhase): RegistrationPhase {
+  const phase = value?.trim().toLowerCase();
+  return phase === 'soon' || phase === 'open' || phase === 'closed' ? phase : fallback;
+}
+
+/**
+ * Per-activity registration windows. These mirror the backend's
+ * `COMPETITION_REGISTRATION_PHASE` / `CHALLENGE_REGISTRATION_PHASE` env vars —
+ * the backend is the one that actually enforces them, these only decide what
+ * the UI offers, so keep the two in sync when flipping a window.
+ */
+export const activityPhases = {
+  competition: readPhase(process.env.NEXT_PUBLIC_COMPETITION_PHASE, 'open'),
+  challenge: readPhase(process.env.NEXT_PUBLIC_CHALLENGE_PHASE, 'soon'),
+} as const satisfies Record<'competition' | 'challenge', RegistrationPhase>;

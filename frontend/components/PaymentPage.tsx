@@ -8,9 +8,10 @@ import { useTeamStore } from '@/lib/store';
 
 export default function PaymentPage() {
   const { user, submitPayment } = useAuth();
-  const team = useTeamStore((s) => s.team);
-  const teamLoaded = useTeamStore((s) => s.loaded);
-  const fetchTeam = useTeamStore((s) => s.fetchTeam);
+  // Teams are optional — a participant may hold a competition team, a challenge
+  // team, both, or neither — so payment is not gated on team membership. The
+  // teams are still refreshed here to keep the dashboard warm.
+  const fetchTeams = useTeamStore((s) => s.fetchTeams);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
@@ -27,20 +28,11 @@ export default function PaymentPage() {
     }
   }, [user]);
 
-  // Payment is gated behind team membership — a team-less challenger must
-  // (re)join or create a team first. Bounce them back to the dashboard.
   useEffect(() => {
-    if (user) void fetchTeam();
-  }, [user?.participantId, fetchTeam]);
-
-  useEffect(() => {
-    if (user && teamLoaded && !team) {
-      window.location.href = '/dashboard';
-    }
-  }, [user, teamLoaded, team]);
+    if (user) void fetchTeams();
+  }, [user?.participantId, fetchTeams]);
 
   if (!user || user.status !== 'waiting_for_payment') return null;
-  if (teamLoaded && !team) return null;
 
   const isChallenger = user.userType === 'challenger';
   const feeAmount = user.isIeee ? 30 : 50;

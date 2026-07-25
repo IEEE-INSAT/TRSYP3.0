@@ -6,7 +6,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Prisma, Participant, Team, VisaApplication, VisaStatus } from '@prisma/client';
+import { ConfigService } from '@nestjs/config';
+import {
+  Prisma,
+  Participant,
+  Team,
+  TeamActivity,
+  VisaApplication,
+  VisaStatus,
+} from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import {
   RegisterLocalDto,
@@ -16,6 +24,7 @@ import {
   CreateTeamDto,
   JoinTeamDto,
   UpdateTeamDto,
+  DEFAULT_TEAM_ACTIVITY,
 } from '../dto';
 import {
   ParticipantRegisteredEvent,
@@ -43,6 +52,54 @@ type TeamWithMembers = Team & {
   })[];
 };
 
+/** Raw shape returned by every team query — flattened by `shapeTeam`. */
+type TeamWithMemberships = Team & {
+  memberships: {
+    participant: Participant & {
+      user: { name: string; lastName: string; email: string };
+    };
+  }[];
+};
+
+/**
+ * Membership rows carry the member's participant + user info, ordered by join
+ * time so the leader (created first) heads the list.
+ */
+const TEAM_INCLUDE = {
+  memberships: {
+    orderBy: { createdAt: 'asc' },
+    include: {
+      participant: {
+        include: { user: { select: { name: true, lastName: true, email: true } } },
+      },
+    },
+  },
+} satisfies Prisma.TeamInclude;
+
+/**
+ * Registration window for a team activity.
+ * `soon` and `closed` both block creating/joining; they differ only in the
+ * message shown, so the frontend can render the right copy.
+ */
+export type RegistrationPhase = 'soon' | 'open' | 'closed';
+
+/** Env var holding each activity's phase, and the fallback when it is unset. */
+const ACTIVITY_PHASE_CONFIG: Record<
+  TeamActivity,
+  { envKey: string; fallback: RegistrationPhase; label: string }
+> = {
+  [TeamActivity.COMPETITION]: {
+    envKey: 'COMPETITION_REGISTRATION_PHASE',
+    fallback: 'open',
+    label: 'Competition',
+  },
+  [TeamActivity.CHALLENGE]: {
+    envKey: 'CHALLENGE_REGISTRATION_PHASE',
+    fallback: 'soon',
+    label: 'Technical challenge',
+  },
+};
+
 /**
  * Service handling participant registration, profile management, and visa operations
  */
@@ -51,6 +108,7 @@ export class RegistrationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly config: ConfigService,
   ) {}
 
   // ============================================================================
@@ -272,7 +330,13 @@ export class RegistrationService {
             id: true,
             userId: true,
             paid: true,
-            ownedTeam: { select: { id: true, members: { select: { id: true } } } },
+            ledTeams: {
+              select: {
+                id: true,
+                activity: true,
+                memberships: { select: { participantId: true } },
+              },
+            },
           },
         });
 
@@ -290,15 +354,17 @@ export class RegistrationService {
         // Edge case: Cannot delete a profile that leads a team with other
         // members — the DB-level ON DELETE CASCADE on Team.leaderId would
         // silently delete the team and drop every teammate out with no
-        // warning. Force an explicit disband/kick first instead.
-        if (participant.ownedTeam) {
-          const teammateCount = participant.ownedTeam.members.filter(
-            (m) => m.id !== participant.id,
+        // warning. Force an explicit disband/kick first instead. Checked across
+        // every activity the participant leads a team in.
+        for (const led of participant.ledTeams) {
+          const teammateCount = led.memberships.filter(
+            (m) => m.participantId !== participant.id,
           ).length;
 
           if (teammateCount > 0) {
             throw new ConflictException(
-              `You lead a team with ${teammateCount} other member(s). ` +
+              `You lead a ${ACTIVITY_PHASE_CONFIG[led.activity].label.toLowerCase()} team ` +
+                `with ${teammateCount} other member(s). ` +
                 'Disband the team or remove them before deleting your profile.',
             );
           }
@@ -802,23 +868,31 @@ export class RegistrationService {
    * Generates a unique 6-character join code.
    * The creating participant becomes both leader and first member.
    *
+   * A participant may lead one team per activity — a competition team and a
+   * technical challenge team are independent of each other.
+   *
    * @param userId  - JWT sub resolved to internal DB user ID
-   * @param dto     - Team name and maximum size
+   * @param dto     - Team name, maximum size, and activity (default COMPETITION)
    * @throws NotFoundException   if no participant profile exists for this user
-   * @throws ForbiddenException  if the participant is banned or has already paid
-   * @throws ConflictException   if the participant already leads or belongs to a team
+   * @throws ForbiddenException  if the participant is banned, has already paid,
+   *                             or that activity's registration is not open
+   * @throws ConflictException   if the participant already leads or belongs to a
+   *                             team for the same activity
    */
   async createTeam(userId: string, dto: CreateTeamDto): Promise<TeamWithMembers> {
+    const activity = dto.activity ?? DEFAULT_TEAM_ACTIVITY;
+    this.assertActivityOpen(activity);
+
     try {
       const team = await this.prisma.$transaction(async (tx) => {
         const participant = await tx.participant.findUnique({
           where: { userId },
           select: {
             id: true,
-            teamId: true,
             paid: true,
             banned: true,
-            ownedTeam: { select: { id: true } },
+            memberships: { where: { activity }, select: { id: true } },
+            ledTeams: { where: { activity }, select: { id: true } },
           },
         });
 
@@ -841,34 +915,37 @@ export class RegistrationService {
           );
         }
 
-        if (participant.ownedTeam) {
-          throw new ConflictException('You already lead a team.');
+        const label = this.activityLabel(activity).toLowerCase();
+
+        if (participant.ledTeams.length > 0) {
+          throw new ConflictException(`You already lead a ${label} team.`);
         }
 
-        if (participant.teamId) {
-          throw new ConflictException('You are already a member of a team.');
+        if (participant.memberships.length > 0) {
+          throw new ConflictException(`You are already a member of a ${label} team.`);
         }
 
         const code = await this.generateUniqueCode(tx);
 
-        // Create the team and immediately connect the leader as a member
+        // Create the team and immediately enrol the leader as its first member
         const created = await tx.team.create({
           data: {
             code,
             name: dto.name,
             size: dto.size,
+            activity,
             leader: { connect: { id: participant.id } },
-            members: { connect: { id: participant.id } },
+            memberships: {
+              create: { activity, participant: { connect: { id: participant.id } } },
+            },
           },
-          include: {
-            members: { include: { user: { select: { name: true, lastName: true, email: true } } } },
-          },
+          include: TEAM_INCLUDE,
         });
 
         return created;
       });
 
-      return team;
+      return this.shapeTeam(team);
     } catch (error) {
       this.handlePrismaError(error);
       throw error;
@@ -877,14 +954,16 @@ export class RegistrationService {
 
   /**
    * Update a team (leader path).
-   * 
+   *
    * @param userId - JWT sub resolved to internal DB user ID
-   * @param dto - Optional new name and/or size
-   * @throws NotFoundException if the user doesn't lead a team
+   * @param dto - Optional new name and/or size, plus which activity's team
+   * @throws NotFoundException if the user doesn't lead a team for that activity
    * @throws ForbiddenException if the user is banned or paid
    * @throws BadRequestException if the new size is smaller than current member count
    */
   async updateTeam(userId: string, dto: UpdateTeamDto): Promise<TeamWithMembers> {
+    const activity = dto.activity ?? DEFAULT_TEAM_ACTIVITY;
+
     try {
       const team = await this.prisma.$transaction(async (tx) => {
         const participant = await tx.participant.findUnique({
@@ -893,8 +972,9 @@ export class RegistrationService {
             id: true,
             paid: true,
             banned: true,
-            ownedTeam: { 
-              select: { id: true, members: { select: { id: true } } } 
+            ledTeams: {
+              where: { activity },
+              select: { id: true, memberships: { select: { id: true } } },
             },
           },
         });
@@ -911,11 +991,15 @@ export class RegistrationService {
           throw new ForbiddenException('Your registration is paid and locked.');
         }
 
-        if (!participant.ownedTeam) {
-          throw new NotFoundException('You do not lead a team.');
+        const ledTeam = participant.ledTeams[0];
+
+        if (!ledTeam) {
+          throw new NotFoundException(
+            `You do not lead a ${this.activityLabel(activity).toLowerCase()} team.`,
+          );
         }
 
-        const currentMemberCount = participant.ownedTeam.members.length;
+        const currentMemberCount = ledTeam.memberships.length;
 
         if (dto.size !== undefined && dto.size < currentMemberCount) {
           throw new BadRequestException(
@@ -924,18 +1008,16 @@ export class RegistrationService {
         }
 
         return tx.team.update({
-          where: { id: participant.ownedTeam.id },
+          where: { id: ledTeam.id },
           data: {
             ...(dto.name !== undefined && { name: dto.name }),
             ...(dto.size !== undefined && { size: dto.size }),
           },
-          include: {
-            members: { include: { user: { select: { name: true, lastName: true, email: true } } } },
-          },
+          include: TEAM_INCLUDE,
         });
       });
 
-      return team;
+      return this.shapeTeam(team);
     } catch (error) {
       this.handlePrismaError(error);
       throw error;
@@ -944,12 +1026,15 @@ export class RegistrationService {
 
   /**
    * Join an existing team using a 6-character code (member path).
+   * The team's own activity decides which slot is taken — a participant already
+   * in a competition team can still join a challenge team, and vice versa.
    *
    * @param userId  - JWT sub resolved to internal DB user ID
    * @param dto     - The join code
    * @throws NotFoundException   if no participant profile or team with that code exists
-   * @throws ForbiddenException  if the participant is banned, has already paid, or the team is full
-   * @throws ConflictException   if the participant is already in a team
+   * @throws ForbiddenException  if the participant is banned, has already paid, the team is
+   *                             full, or that activity's registration is not open
+   * @throws ConflictException   if the participant is already in a team for that activity
    */
   async joinTeam(userId: string, dto: JoinTeamDto): Promise<TeamWithMembers> {
     try {
@@ -958,10 +1043,8 @@ export class RegistrationService {
           where: { userId },
           select: {
             id: true,
-            teamId: true,
             paid: true,
             banned: true,
-            ownedTeam: { select: { id: true } },
           },
         });
 
@@ -984,14 +1067,10 @@ export class RegistrationService {
           );
         }
 
-        if (participant.ownedTeam || participant.teamId) {
-          throw new ConflictException('You are already in a team.');
-        }
-
         const target = await tx.team.findUnique({
           where: { code: dto.code.toUpperCase() },
           include: {
-            members: { select: { id: true } },
+            memberships: { select: { id: true } },
           },
         });
 
@@ -999,8 +1078,30 @@ export class RegistrationService {
           throw new NotFoundException('No team found with that code. Check the code and try again.');
         }
 
+        // The code determines the activity, so the window check happens here
+        // rather than up front.
+        this.assertActivityOpen(target.activity);
+
+        const existing = await tx.teamMembership.findUnique({
+          where: {
+            participantId_activity: {
+              participantId: participant.id,
+              activity: target.activity,
+            },
+          },
+          select: { teamId: true },
+        });
+
+        if (existing) {
+          throw new ConflictException(
+            existing.teamId === target.id
+              ? 'You are already a member of this team.'
+              : `You are already in a ${this.activityLabel(target.activity).toLowerCase()} team.`,
+          );
+        }
+
         // Enforce the hard size cap
-        if (target.members.length >= target.size) {
+        if (target.memberships.length >= target.size) {
           throw new ForbiddenException(
             `This team is already full (${target.size}/${target.size} members).`,
           );
@@ -1009,16 +1110,21 @@ export class RegistrationService {
         // Add the participant to the team
         const updated = await tx.team.update({
           where: { id: target.id },
-          data: { members: { connect: { id: participant.id } } },
-          include: {
-            members: { include: { user: { select: { name: true, lastName: true, email: true } } } },
+          data: {
+            memberships: {
+              create: {
+                activity: target.activity,
+                participant: { connect: { id: participant.id } },
+              },
+            },
           },
+          include: TEAM_INCLUDE,
         });
 
         return updated;
       });
 
-      return team;
+      return this.shapeTeam(team);
     } catch (error) {
       this.handlePrismaError(error);
       throw error;
@@ -1026,40 +1132,74 @@ export class RegistrationService {
   }
 
   /**
-   * Get the team the current user belongs to.
+   * Get the current user's team for one activity.
    *
-   * @param userId - JWT sub resolved to internal DB user ID
-   * @throws NotFoundException if the user has no participant profile or is not in a team
+   * @param userId   - JWT sub resolved to internal DB user ID
+   * @param activity - Which event's team to return (default COMPETITION)
+   * @throws NotFoundException if the user has no participant profile or no team
+   *                           for that activity
    */
-  async getMyTeam(userId: string): Promise<TeamWithMembers> {
+  async getMyTeam(
+    userId: string,
+    activity: TeamActivity = DEFAULT_TEAM_ACTIVITY,
+  ): Promise<TeamWithMembers> {
     const participant = await this.prisma.participant.findUnique({
       where: { userId },
-      select: { id: true, teamId: true, ownedTeam: { select: { id: true } } },
+      select: {
+        id: true,
+        memberships: {
+          where: { activity },
+          select: { team: { include: TEAM_INCLUDE } },
+        },
+      },
     });
 
     if (!participant) {
       throw new NotFoundException('Participant profile not found.');
     }
 
-    // A participant's team is either one they joined or one they lead
-    const teamId = participant.teamId ?? participant.ownedTeam?.id;
+    const team = participant.memberships[0]?.team;
 
-    if (!teamId) {
-      throw new NotFoundException('You are not part of any team yet.');
+    if (!team) {
+      throw new NotFoundException(
+        `You are not part of any ${this.activityLabel(activity).toLowerCase()} team yet.`,
+      );
     }
 
-    const team = await this.prisma.team.findUnique({
-      where: { id: teamId },
-      include: {
-        members: { include: { user: { select: { name: true, lastName: true, email: true } } } },
+    return this.shapeTeam(team);
+  }
+
+  /**
+   * Get every team the current user belongs to, keyed by activity.
+   * Lets the dashboard render both the competition and challenge panels from a
+   * single request instead of one 404-prone call per activity.
+   *
+   * @param userId - JWT sub resolved to internal DB user ID
+   * @throws NotFoundException if the user has no participant profile
+   */
+  async getMyTeams(userId: string): Promise<Record<TeamActivity, TeamWithMembers | null>> {
+    const participant = await this.prisma.participant.findUnique({
+      where: { userId },
+      select: {
+        id: true,
+        memberships: { select: { activity: true, team: { include: TEAM_INCLUDE } } },
       },
     });
 
-    if (!team) {
-      throw new NotFoundException('Team not found.');
+    if (!participant) {
+      throw new NotFoundException('Participant profile not found.');
     }
 
-    return team;
+    const teams: Record<TeamActivity, TeamWithMembers | null> = {
+      [TeamActivity.COMPETITION]: null,
+      [TeamActivity.CHALLENGE]: null,
+    };
+
+    for (const membership of participant.memberships) {
+      teams[membership.activity] = this.shapeTeam(membership.team);
+    }
+
+    return teams;
   }
 
   /**
@@ -1067,36 +1207,45 @@ export class RegistrationService {
    * Team leaders cannot use this — they must disband the team instead,
    * since removing the leader would orphan the remaining members.
    *
-   * @param userId - JWT sub resolved to internal DB user ID
+   * @param userId   - JWT sub resolved to internal DB user ID
+   * @param activity - Which event's team to leave (default COMPETITION)
    * @throws NotFoundException  if no participant profile exists, or the participant isn't in a team
    * @throws ConflictException  if the participant is the team leader
    */
-  async leaveTeam(userId: string): Promise<void> {
+  async leaveTeam(
+    userId: string,
+    activity: TeamActivity = DEFAULT_TEAM_ACTIVITY,
+  ): Promise<void> {
     try {
       await this.prisma.$transaction(async (tx) => {
         const participant = await tx.participant.findUnique({
           where: { userId },
-          select: { id: true, teamId: true, ownedTeam: { select: { id: true } } },
+          select: {
+            id: true,
+            memberships: { where: { activity }, select: { id: true } },
+            ledTeams: { where: { activity }, select: { id: true } },
+          },
         });
 
         if (!participant) {
           throw new NotFoundException('Participant profile not found.');
         }
 
-        if (participant.ownedTeam) {
+        if (participant.ledTeams.length > 0) {
           throw new ConflictException(
             'Team leaders cannot leave their own team. Disband the team instead.',
           );
         }
 
-        if (!participant.teamId) {
-          throw new NotFoundException('You are not part of any team.');
+        const membership = participant.memberships[0];
+
+        if (!membership) {
+          throw new NotFoundException(
+            `You are not part of any ${this.activityLabel(activity).toLowerCase()} team.`,
+          );
         }
 
-        await tx.participant.update({
-          where: { id: participant.id },
-          data: { team: { disconnect: true } },
-        });
+        await tx.teamMembership.delete({ where: { id: membership.id } });
       });
     } catch (error) {
       this.handlePrismaError(error);
@@ -1110,24 +1259,33 @@ export class RegistrationService {
    *
    * @param userId        - JWT sub of the caller, resolved to internal DB user ID
    * @param memberId      - Participant ID of the member to remove
+   * @param activity      - Which event's team to remove them from (default COMPETITION)
    * @throws NotFoundException   if the caller has no profile, doesn't lead a team,
    *                             or the target isn't a member of that team
    * @throws ConflictException   if the leader tries to kick themselves
    */
-  async kickMember(userId: string, memberId: string): Promise<TeamWithMembers> {
+  async kickMember(
+    userId: string,
+    memberId: string,
+    activity: TeamActivity = DEFAULT_TEAM_ACTIVITY,
+  ): Promise<TeamWithMembers> {
     try {
       const team = await this.prisma.$transaction(async (tx) => {
         const participant = await tx.participant.findUnique({
           where: { userId },
-          select: { id: true, ownedTeam: { select: { id: true } } },
+          select: { id: true, ledTeams: { where: { activity }, select: { id: true } } },
         });
 
         if (!participant) {
           throw new NotFoundException('Participant profile not found.');
         }
 
-        if (!participant.ownedTeam) {
-          throw new NotFoundException('You do not lead a team.');
+        const ledTeam = participant.ledTeams[0];
+
+        if (!ledTeam) {
+          throw new NotFoundException(
+            `You do not lead a ${this.activityLabel(activity).toLowerCase()} team.`,
+          );
         }
 
         if (memberId === participant.id) {
@@ -1136,25 +1294,26 @@ export class RegistrationService {
           );
         }
 
-        const target = await tx.team.findFirst({
-          where: { id: participant.ownedTeam.id, members: { some: { id: memberId } } },
+        const membership = await tx.teamMembership.findUnique({
+          where: {
+            participantId_teamId: { participantId: memberId, teamId: ledTeam.id },
+          },
           select: { id: true },
         });
 
-        if (!target) {
+        if (!membership) {
           throw new NotFoundException('That participant is not a member of your team.');
         }
 
-        return tx.team.update({
-          where: { id: participant.ownedTeam.id },
-          data: { members: { disconnect: { id: memberId } } },
-          include: {
-            members: { include: { user: { select: { name: true, lastName: true, email: true } } } },
-          },
+        await tx.teamMembership.delete({ where: { id: membership.id } });
+
+        return tx.team.findUniqueOrThrow({
+          where: { id: ledTeam.id },
+          include: TEAM_INCLUDE,
         });
       });
 
-      return team;
+      return this.shapeTeam(team);
     } catch (error) {
       this.handlePrismaError(error);
       throw error;
@@ -1163,31 +1322,39 @@ export class RegistrationService {
 
   /**
    * Disband a team entirely (leader path only).
-   * Deletes the Team row. The `team_id` foreign key on Participant is
-   * `ON DELETE SET NULL`, so every member (including the ex-leader) is
-   * automatically freed from the team at the database level.
+   * Deletes the Team row; `team_memberships.team_id` is `ON DELETE CASCADE`, so
+   * every member (including the ex-leader) is freed from the team at the
+   * database level — and only for that activity, leaving their other team alone.
    * The leader's own participant profile is untouched — only the team goes away.
    *
-   * @param userId - JWT sub resolved to internal DB user ID
+   * @param userId   - JWT sub resolved to internal DB user ID
+   * @param activity - Which event's team to disband (default COMPETITION)
    * @throws NotFoundException  if the caller has no participant profile or does not lead a team
    */
-  async disbandTeam(userId: string): Promise<void> {
+  async disbandTeam(
+    userId: string,
+    activity: TeamActivity = DEFAULT_TEAM_ACTIVITY,
+  ): Promise<void> {
     try {
       await this.prisma.$transaction(async (tx) => {
         const participant = await tx.participant.findUnique({
           where: { userId },
-          select: { id: true, ownedTeam: { select: { id: true } } },
+          select: { id: true, ledTeams: { where: { activity }, select: { id: true } } },
         });
 
         if (!participant) {
           throw new NotFoundException('Participant profile not found.');
         }
 
-        if (!participant.ownedTeam) {
-          throw new NotFoundException('You do not lead a team.');
+        const ledTeam = participant.ledTeams[0];
+
+        if (!ledTeam) {
+          throw new NotFoundException(
+            `You do not lead a ${this.activityLabel(activity).toLowerCase()} team.`,
+          );
         }
 
-        await tx.team.delete({ where: { id: participant.ownedTeam.id } });
+        await tx.team.delete({ where: { id: ledTeam.id } });
       });
     } catch (error) {
       this.handlePrismaError(error);
@@ -1196,7 +1363,7 @@ export class RegistrationService {
   }
 
   /**
-   * List all teams with optional pagination and search (Admin only).
+   * List all teams with optional pagination, search and activity filter (Admin only).
    * Search matches against team name or join code (case-insensitive).
    *
    * @param options - Filter/pagination options
@@ -1204,49 +1371,97 @@ export class RegistrationService {
    */
   async listTeams(options?: {
     search?: string;
+    activity?: TeamActivity;
     skip?: number;
     take?: number;
   }): Promise<TeamWithMembers[]> {
-    const where: Prisma.TeamWhereInput = {};
-    if (options?.search) {
-      where.OR = [
-        { name: { contains: options.search, mode: 'insensitive' } },
-        { code: { contains: options.search, mode: 'insensitive' } },
-      ];
-    }
-
-    return this.prisma.team.findMany({
-      where,
+    const teams = await this.prisma.team.findMany({
+      where: this.teamFilter(options),
       skip: options?.skip,
       take: options?.take,
-      include: {
-        members: { include: { user: { select: { name: true, lastName: true, email: true } } } },
-      },
+      include: TEAM_INCLUDE,
       orderBy: { createdAt: 'desc' },
     });
+
+    return teams.map((team) => this.shapeTeam(team));
   }
 
   /**
-   * Count teams matching optional search (Admin only).
+   * Count teams matching the optional search/activity filter (Admin only).
    *
    * @param options - Filter options
    * @returns Count of teams
    */
-  async countTeams(options?: { search?: string }): Promise<number> {
-    const where: Prisma.TeamWhereInput = {};
-    if (options?.search) {
-      where.OR = [
-        { name: { contains: options.search, mode: 'insensitive' } },
-        { code: { contains: options.search, mode: 'insensitive' } },
-      ];
-    }
-
-    return this.prisma.team.count({ where });
+  async countTeams(options?: { search?: string; activity?: TeamActivity }): Promise<number> {
+    return this.prisma.team.count({ where: this.teamFilter(options) });
   }
 
   // ============================================================================
   // PRIVATE HELPERS
   // ============================================================================
+
+  /**
+   * Flatten the `memberships` join rows back into the `members` array the API
+   * has always returned, so response shapes are unaffected by the join table.
+   */
+  private shapeTeam(team: TeamWithMemberships): TeamWithMembers {
+    const { memberships, ...rest } = team;
+    return { ...rest, members: memberships.map((m) => m.participant) };
+  }
+
+  /** Shared `where` for the admin team list/count. */
+  private teamFilter(options?: {
+    search?: string;
+    activity?: TeamActivity;
+  }): Prisma.TeamWhereInput {
+    const where: Prisma.TeamWhereInput = {};
+
+    if (options?.activity) where.activity = options.activity;
+
+    if (options?.search) {
+      where.OR = [
+        { name: { contains: options.search, mode: 'insensitive' } },
+        { code: { contains: options.search, mode: 'insensitive' } },
+      ];
+    }
+
+    return where;
+  }
+
+  /** Human-readable name for an activity, used in error messages. */
+  private activityLabel(activity: TeamActivity): string {
+    return ACTIVITY_PHASE_CONFIG[activity].label;
+  }
+
+  /**
+   * Current registration window for an activity, from the environment.
+   * Unrecognised values fall back to the activity's default rather than
+   * accidentally opening a window that should be shut.
+   */
+  getActivityPhase(activity: TeamActivity): RegistrationPhase {
+    const { envKey, fallback } = ACTIVITY_PHASE_CONFIG[activity];
+    const raw = this.config.get<string>(envKey)?.trim().toLowerCase();
+
+    return raw === 'open' || raw === 'soon' || raw === 'closed' ? raw : fallback;
+  }
+
+  /**
+   * Guard for the two write paths that grow a team roster (create and join).
+   * Managing an existing team stays available after the window shuts so leaders
+   * can still fix or disband what they already have.
+   */
+  private assertActivityOpen(activity: TeamActivity): void {
+    const phase = this.getActivityPhase(activity);
+    if (phase === 'open') return;
+
+    const label = this.activityLabel(activity);
+
+    throw new ForbiddenException(
+      phase === 'soon'
+        ? `${label} team registration has not opened yet.`
+        : `${label} team registration is closed.`,
+    );
+  }
 
   /**
    * Generate a unique 6-character alphanumeric team code.

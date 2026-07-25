@@ -15,7 +15,9 @@ import {
   DefaultValuePipe,
   ParseBoolPipe,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
+import { TeamActivity } from '@prisma/client';
 import {
   ApiTags,
   ApiOperation,
@@ -49,6 +51,9 @@ import {
   TeamResponseDto,
   TeamMemberResponseDto,
   TeamListResponseDto,
+  TeamActivityQueryDto,
+  MyTeamsResponseDto,
+  DEFAULT_TEAM_ACTIVITY,
 } from '../dto';
 import { JwtAuthGuard, RolesGuard } from '../../../common/guards';
 import { CurrentUser, Roles } from '../../../common/decorators';
@@ -64,6 +69,31 @@ import { JwtPayload } from '../../../common/guards/jwt-auth.guard';
 @UseGuards(JwtAuthGuard)
 export class RegistrationController {
   constructor(private readonly registrationService: RegistrationService) { }
+
+  /**
+   * Shape a service-level team (participants + their user rows) into the flat
+   * API response, adding the derived member counts.
+   */
+  private toTeamResponse(team: {
+    size: number;
+    members: { id: string; user: { name: string; lastName: string; email: string } }[];
+  }): TeamResponseDto {
+    return plainToInstance(
+      TeamResponseDto,
+      {
+        ...team,
+        memberCount: team.members.length,
+        spotsLeft: team.size - team.members.length,
+        members: team.members.map((m) => ({
+          id: m.id,
+          name: m.user.name,
+          lastName: m.user.lastName,
+          email: m.user.email,
+        })),
+      },
+      { excludeExtraneousValues: true },
+    );
+  }
 
   // ============================================================================
   // PARTICIPANT REGISTRATION ROUTES
@@ -292,22 +322,7 @@ export class RegistrationController {
     @CurrentUser('sub') userId: string,
     @Body(new ZodValidationPipe(CreateTeamSchema)) dto: CreateTeamDto,
   ): Promise<TeamResponseDto> {
-    const team = await this.registrationService.createTeam(userId, dto);
-    return plainToInstance(
-      TeamResponseDto,
-      {
-        ...team,
-        memberCount: team.members.length,
-        spotsLeft: team.size - team.members.length,
-        members: team.members.map((m: { id: string; user: { name: string; lastName: string; email: string } }) => ({
-          id: m.id,
-          name: m.user.name,
-          lastName: m.user.lastName,
-          email: m.user.email,
-        })),
-      },
-      { excludeExtraneousValues: true },
-    );
+    return this.toTeamResponse(await this.registrationService.createTeam(userId, dto));
   }
 
   /**
@@ -325,22 +340,7 @@ export class RegistrationController {
     @CurrentUser('sub') userId: string,
     @Body(new ZodValidationPipe(UpdateTeamSchema)) dto: UpdateTeamDto,
   ): Promise<TeamResponseDto> {
-    const team = await this.registrationService.updateTeam(userId, dto);
-    return plainToInstance(
-      TeamResponseDto,
-      {
-        ...team,
-        memberCount: team.members.length,
-        spotsLeft: team.size - team.members.length,
-        members: team.members.map((m: { id: string; user: { name: string; lastName: string; email: string } }) => ({
-          id: m.id,
-          name: m.user.name,
-          lastName: m.user.lastName,
-          email: m.user.email,
-        })),
-      },
-      { excludeExtraneousValues: true },
-    );
+    return this.toTeamResponse(await this.registrationService.updateTeam(userId, dto));
   }
 
   /**
@@ -359,51 +359,48 @@ export class RegistrationController {
     @CurrentUser('sub') userId: string,
     @Body(new ZodValidationPipe(JoinTeamSchema)) dto: JoinTeamDto,
   ): Promise<TeamResponseDto> {
-    const team = await this.registrationService.joinTeam(userId, dto);
-    return plainToInstance(
-      TeamResponseDto,
-      {
-        ...team,
-        memberCount: team.members.length,
-        spotsLeft: team.size - team.members.length,
-        members: team.members.map((m: { id: string; user: { name: string; lastName: string; email: string } }) => ({
-          id: m.id,
-          name: m.user.name,
-          lastName: m.user.lastName,
-          email: m.user.email,
-        })),
-      },
-      { excludeExtraneousValues: true },
-    );
+    return this.toTeamResponse(await this.registrationService.joinTeam(userId, dto));
   }
 
   /**
-   * Get the current user's team.
+   * Get every team the current user belongs to, keyed by activity.
+   * Preferred over `GET /registration/team` for clients that render both the
+   * competition and the technical challenge — one request, no 404 handling.
+   */
+  @Get('teams')
+  @ApiOperation({ summary: 'Get all of the current user\'s teams, keyed by activity' })
+  @ApiResponse({ status: 200, description: 'Teams retrieved successfully', type: MyTeamsResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Participant profile not found' })
+  async getMyTeams(@CurrentUser('sub') userId: string): Promise<MyTeamsResponseDto> {
+    const teams = await this.registrationService.getMyTeams(userId);
+    const competition = teams[TeamActivity.COMPETITION];
+    const challenge = teams[TeamActivity.CHALLENGE];
+
+    return {
+      competition: competition ? this.toTeamResponse(competition) : null,
+      challenge: challenge ? this.toTeamResponse(challenge) : null,
+    };
+  }
+
+  /**
+   * Get the current user's team for one activity.
    * Returns full team info including members.
    * Note: the join code is only useful to the leader — consider omitting it
    * from the response for non-leaders in a future iteration.
    */
   @Get('team')
-  @ApiOperation({ summary: 'Get the current user\'s team' })
+  @ApiOperation({ summary: 'Get the current user\'s team for one activity' })
+  @ApiQuery({ name: 'activity', required: false, enum: TeamActivity, description: 'Defaults to COMPETITION' })
   @ApiResponse({ status: 200, description: 'Team retrieved successfully', type: TeamResponseDto })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Not in a team' })
-  async getMyTeam(@CurrentUser('sub') userId: string): Promise<TeamResponseDto> {
-    const team = await this.registrationService.getMyTeam(userId);
-    return plainToInstance(
-      TeamResponseDto,
-      {
-        ...team,
-        memberCount: team.members.length,
-        spotsLeft: team.size - team.members.length,
-        members: team.members.map((m: { id: string; user: { name: string; lastName: string; email: string } }) => ({
-          id: m.id,
-          name: m.user.name,
-          lastName: m.user.lastName,
-          email: m.user.email,
-        })),
-      },
-      { excludeExtraneousValues: true },
+  async getMyTeam(
+    @CurrentUser('sub') userId: string,
+    @Query() query: TeamActivityQueryDto,
+  ): Promise<TeamResponseDto> {
+    return this.toTeamResponse(
+      await this.registrationService.getMyTeam(userId, query.activity ?? DEFAULT_TEAM_ACTIVITY),
     );
   }
 
@@ -414,12 +411,16 @@ export class RegistrationController {
   @Delete('team/leave')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Leave your current team (members only, not the leader)' })
+  @ApiQuery({ name: 'activity', required: false, enum: TeamActivity, description: 'Defaults to COMPETITION' })
   @ApiResponse({ status: 204, description: 'Left the team successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Not in a team' })
   @ApiResponse({ status: 409, description: 'Team leaders cannot leave; disband the team instead' })
-  async leaveTeam(@CurrentUser('sub') userId: string): Promise<void> {
-    await this.registrationService.leaveTeam(userId);
+  async leaveTeam(
+    @CurrentUser('sub') userId: string,
+    @Query() query: TeamActivityQueryDto,
+  ): Promise<void> {
+    await this.registrationService.leaveTeam(userId, query.activity ?? DEFAULT_TEAM_ACTIVITY);
   }
 
   /**
@@ -429,6 +430,7 @@ export class RegistrationController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Remove a member from your team (leader only)' })
   @ApiParam({ name: 'participantId', description: 'Participant ID of the member to remove' })
+  @ApiQuery({ name: 'activity', required: false, enum: TeamActivity, description: 'Defaults to COMPETITION' })
   @ApiResponse({ status: 200, description: 'Member removed successfully', type: TeamResponseDto })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'You do not lead a team, or the target is not a member' })
@@ -436,22 +438,14 @@ export class RegistrationController {
   async kickMember(
     @CurrentUser('sub') userId: string,
     @Param('participantId', ParseUUIDPipe) participantId: string,
+    @Query() query: TeamActivityQueryDto,
   ): Promise<TeamResponseDto> {
-    const team = await this.registrationService.kickMember(userId, participantId);
-    return plainToInstance(
-      TeamResponseDto,
-      {
-        ...team,
-        memberCount: team.members.length,
-        spotsLeft: team.size - team.members.length,
-        members: team.members.map((m: { id: string; user: { name: string; lastName: string; email: string } }) => ({
-          id: m.id,
-          name: m.user.name,
-          lastName: m.user.lastName,
-          email: m.user.email,
-        })),
-      },
-      { excludeExtraneousValues: true },
+    return this.toTeamResponse(
+      await this.registrationService.kickMember(
+        userId,
+        participantId,
+        query.activity ?? DEFAULT_TEAM_ACTIVITY,
+      ),
     );
   }
 
@@ -463,11 +457,15 @@ export class RegistrationController {
   @Delete('team')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Disband your team (leader only)' })
+  @ApiQuery({ name: 'activity', required: false, enum: TeamActivity, description: 'Defaults to COMPETITION' })
   @ApiResponse({ status: 204, description: 'Team disbanded successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'You do not lead a team' })
-  async disbandTeam(@CurrentUser('sub') userId: string): Promise<void> {
-    await this.registrationService.disbandTeam(userId);
+  async disbandTeam(
+    @CurrentUser('sub') userId: string,
+    @Query() query: TeamActivityQueryDto,
+  ): Promise<void> {
+    await this.registrationService.disbandTeam(userId, query.activity ?? DEFAULT_TEAM_ACTIVITY);
   }
 
   // ============================================================================
@@ -556,6 +554,7 @@ export class RegistrationController {
   @ApiQuery({ name: 'skip', required: false, type: Number })
   @ApiQuery({ name: 'take', required: false, type: Number })
   @ApiQuery({ name: 'search', required: false, type: String, description: 'Filter by team name or join code' })
+  @ApiQuery({ name: 'activity', required: false, enum: TeamActivity, description: 'Filter by event; omit for all' })
   @ApiResponse({ status: 200, description: 'Teams list', type: TeamListResponseDto })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - admin only' })
@@ -563,28 +562,23 @@ export class RegistrationController {
     @Query('skip', new DefaultValuePipe(0), ParseIntPipe) skip: number,
     @Query('take', new DefaultValuePipe(20), ParseIntPipe) take: number,
     @Query('search') search?: string,
+    @Query('activity') activity?: TeamActivity,
   ): Promise<TeamListResponseDto> {
-    const filters = { skip, take, search };
+    if (activity !== undefined && !(activity in TeamActivity)) {
+      throw new BadRequestException('activity must be COMPETITION or CHALLENGE');
+    }
+
+    const filters = { skip, take, search, activity };
 
     const [teams, total] = await Promise.all([
       this.registrationService.listTeams(filters),
-      this.registrationService.countTeams({ search }),
+      this.registrationService.countTeams({ search, activity }),
     ]);
 
     return plainToInstance(
       TeamListResponseDto,
       {
-        data: teams.map((t) => ({
-          ...t,
-          memberCount: t.members.length,
-          spotsLeft: t.size - t.members.length,
-          members: t.members.map((m: { id: string; user: { name: string; lastName: string; email: string } }) => ({
-            id: m.id,
-            name: m.user.name,
-            lastName: m.user.lastName,
-            email: m.user.email,
-          })),
-        })),
+        data: teams.map((t) => this.toTeamResponse(t)),
         total,
         skip,
         take,

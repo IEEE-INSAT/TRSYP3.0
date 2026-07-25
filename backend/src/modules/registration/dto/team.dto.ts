@@ -1,7 +1,35 @@
 import { z } from 'zod';
-import { IsString, IsInt, Min, Max, Length } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsInt, Min, Max, Length, IsEnum, IsOptional } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
+import { TeamActivity } from '@prisma/client';
+
+/**
+ * Which event a team belongs to. Omitting it anywhere in the API means
+ * `COMPETITION`, so clients written before the technical challenge existed keep
+ * working unchanged.
+ */
+export const DEFAULT_TEAM_ACTIVITY = TeamActivity.COMPETITION;
+
+export const TeamActivitySchema = z
+  .nativeEnum(TeamActivity)
+  .default(DEFAULT_TEAM_ACTIVITY);
+
+// ============================================================================
+// ACTIVITY SELECTOR (query string)
+// ============================================================================
+
+/** `?activity=COMPETITION|CHALLENGE` for the read/leave/disband routes. */
+export class TeamActivityQueryDto {
+  @ApiPropertyOptional({
+    description: 'Which event the team belongs to. Defaults to COMPETITION.',
+    enum: TeamActivity,
+    default: DEFAULT_TEAM_ACTIVITY,
+  })
+  @IsOptional()
+  @IsEnum(TeamActivity, { message: 'activity must be COMPETITION or CHALLENGE' })
+  activity?: TeamActivity;
+}
 
 // ============================================================================
 // CREATE TEAM
@@ -18,6 +46,7 @@ export const CreateTeamSchema = z.object({
     .int({ message: 'Team size must be an integer' })
     .min(2, { message: 'Team size must be at least 2' })
     .max(6, { message: 'Team size must be at most 6' }),
+  activity: TeamActivitySchema,
 });
 
 export type CreateTeamInput = z.infer<typeof CreateTeamSchema>;
@@ -42,6 +71,15 @@ export class CreateTeamDto {
   @Min(2, { message: 'Team size must be at least 2' })
   @Max(6, { message: 'Team size must be at most 6' })
   size!: number;
+
+  @ApiPropertyOptional({
+    description: 'Which event this team competes in. Defaults to COMPETITION.',
+    enum: TeamActivity,
+    default: DEFAULT_TEAM_ACTIVITY,
+  })
+  @IsOptional()
+  @IsEnum(TeamActivity, { message: 'activity must be COMPETITION or CHALLENGE' })
+  activity?: TeamActivity;
 }
 
 // ============================================================================
@@ -74,6 +112,15 @@ export class UpdateTeamDto {
   @Min(2, { message: 'Team size must be at least 2' })
   @Max(6, { message: 'Team size must be at most 6' })
   size?: number;
+
+  @ApiPropertyOptional({
+    description: 'Which of your teams to update. Defaults to COMPETITION.',
+    enum: TeamActivity,
+    default: DEFAULT_TEAM_ACTIVITY,
+  })
+  @IsOptional()
+  @IsEnum(TeamActivity, { message: 'activity must be COMPETITION or CHALLENGE' })
+  activity?: TeamActivity;
 }
 
 // ============================================================================
@@ -140,6 +187,10 @@ export class TeamResponseDto {
   @Expose()
   size!: number;
 
+  @ApiProperty({ description: 'Event this team competes in', enum: TeamActivity })
+  @Expose()
+  activity!: TeamActivity;
+
   @ApiProperty({ description: 'Leader participant ID', format: 'uuid' })
   @Expose()
   leaderId!: string;
@@ -164,6 +215,22 @@ export class TeamResponseDto {
   @Expose()
   @Type(() => TeamMemberResponseDto)
   members!: TeamMemberResponseDto[];
+}
+
+/**
+ * Every team the caller belongs to, one slot per activity. A `null` slot means
+ * they have not joined that event yet.
+ */
+export class MyTeamsResponseDto {
+  @ApiProperty({ description: 'The caller\'s competition team', type: TeamResponseDto, nullable: true })
+  @Expose()
+  @Type(() => TeamResponseDto)
+  competition!: TeamResponseDto | null;
+
+  @ApiProperty({ description: 'The caller\'s technical challenge team', type: TeamResponseDto, nullable: true })
+  @Expose()
+  @Type(() => TeamResponseDto)
+  challenge!: TeamResponseDto | null;
 }
 
 /**

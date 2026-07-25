@@ -3,8 +3,10 @@ import { features } from '../config';
 import type {
   BackendParticipant,
   CreateTeamPayload,
+  MyTeams,
   RegisterParticipantPayload,
   Team,
+  TeamActivity,
 } from './types';
 
 /**
@@ -22,11 +24,17 @@ import type {
 
 // ── Local placeholder team persistence ────────────────────────────────────────
 
-const TEAM_KEY = 'trsyp_team';
+/** One storage slot per activity, mirroring the one-team-per-activity rule. */
+const TEAM_KEY: Record<TeamActivity, string> = {
+  COMPETITION: 'trsyp_team',
+  CHALLENGE: 'trsyp_team_challenge',
+};
 
-function readLocalTeam(): Team | null {
+const DEFAULT_ACTIVITY: TeamActivity = 'COMPETITION';
+
+function readLocalTeam(activity: TeamActivity): Team | null {
   if (typeof window === 'undefined') return null;
-  const raw = window.localStorage.getItem(TEAM_KEY);
+  const raw = window.localStorage.getItem(TEAM_KEY[activity]);
   if (!raw) return null;
   try {
     return JSON.parse(raw) as Team;
@@ -35,10 +43,15 @@ function readLocalTeam(): Team | null {
   }
 }
 
-function writeLocalTeam(team: Team | null): void {
+function writeLocalTeam(activity: TeamActivity, team: Team | null): void {
   if (typeof window === 'undefined') return;
-  if (team) window.localStorage.setItem(TEAM_KEY, JSON.stringify(team));
-  else window.localStorage.removeItem(TEAM_KEY);
+  if (team) window.localStorage.setItem(TEAM_KEY[activity], JSON.stringify(team));
+  else window.localStorage.removeItem(TEAM_KEY[activity]);
+}
+
+/** `?activity=…`, omitted for the default so old URLs stay byte-identical. */
+function activityQuery(activity: TeamActivity): string {
+  return activity === DEFAULT_ACTIVITY ? '' : `?activity=${activity}`;
 }
 
 function randomCode(): string {
@@ -78,20 +91,26 @@ export const registrationService = {
   },
 
   // ── Page 2: teams ────────────────────────────────────────────────────────
+  // Every team call is scoped to an activity (competition or technical
+  // challenge) and defaults to COMPETITION, which is what the API assumes when
+  // the parameter is absent.
+
   /** POST /registration/team — create a team, returns the team + join `code`. */
   async createTeam(payload: CreateTeamPayload, token: string): Promise<Team> {
+    const activity = payload.activity ?? DEFAULT_ACTIVITY;
     if (features.registrationApi) {
       return apiFetch<Team>('/registration/team', {
         method: 'POST',
-        body: payload,
+        body: { ...payload, activity },
         token,
       });
     }
     const team: Team = {
-      id: 'local-team',
+      id: `local-team-${activity.toLowerCase()}`,
       name: payload.name,
       size: payload.size,
       code: randomCode(),
+      activity,
       leaderId: 'me',
       memberCount: 1,
       spotsLeft: payload.size - 1,
@@ -99,30 +118,42 @@ export const registrationService = {
         { id: 'me', name: 'You', lastName: '(leader)', email: '', isLeader: true },
       ],
     };
-    writeLocalTeam(team);
+    writeLocalTeam(activity, team);
     return team;
   },
 
   /** PATCH /registration/team — leader updates team name/size. */
-  async updateTeam(payload: { name?: string; size?: number }, token: string): Promise<Team> {
+  async updateTeam(
+    payload: { name?: string; size?: number },
+    token: string,
+    activity: TeamActivity = DEFAULT_ACTIVITY,
+  ): Promise<Team> {
     if (features.registrationApi) {
       return apiFetch<Team>('/registration/team', {
         method: 'PATCH',
-        body: payload,
+        body: { ...payload, activity },
         token,
       });
     }
-    const team = readLocalTeam();
+    const team = readLocalTeam(activity);
     if (!team) throw new Error('Not in a team');
     if (payload.name) team.name = payload.name;
     if (payload.size) team.size = payload.size;
     team.spotsLeft = team.size - team.memberCount;
-    writeLocalTeam(team);
+    writeLocalTeam(activity, team);
     return team;
   },
 
-  /** POST /registration/team/join — join a team by 6-char code. */
-  async joinTeam(code: string, token: string): Promise<Team> {
+  /**
+   * POST /registration/team/join — join a team by 6-char code.
+   * The server derives the activity from the code; `activity` is only a hint
+   * for which local slot the placeholder should fill.
+   */
+  async joinTeam(
+    code: string,
+    token: string,
+    activity: TeamActivity = DEFAULT_ACTIVITY,
+  ): Promise<Team> {
     if (features.registrationApi) {
       return apiFetch<Team>('/registration/team/join', {
         method: 'POST',
@@ -131,64 +162,94 @@ export const registrationService = {
       });
     }
     const team: Team = {
-      id: 'local-team',
+      id: `local-team-${activity.toLowerCase()}`,
       name: `Team ${code}`,
       size: 1,
       code,
+      activity,
       leaderId: 'someone-else',
       memberCount: 1,
       spotsLeft: 0,
       members: [{ id: 'me', name: 'You', lastName: '', email: '', isLeader: false }],
     };
-    writeLocalTeam(team);
+    writeLocalTeam(activity, team);
     return team;
   },
 
-  /** GET /registration/team — the current user's team, or null. */
-  async getTeam(token: string): Promise<Team | null> {
+  /** GET /registration/team — the current user's team for one activity, or null. */
+  async getTeam(
+    token: string,
+    activity: TeamActivity = DEFAULT_ACTIVITY,
+  ): Promise<Team | null> {
     if (features.registrationApi) {
       try {
-        return await apiFetch<Team>('/registration/team', { token });
+        return await apiFetch<Team>(`/registration/team${activityQuery(activity)}`, { token });
       } catch {
         return null; // 404 → not in a team
       }
     }
-    return readLocalTeam();
+    return readLocalTeam(activity);
+  },
+
+  /** GET /registration/teams — both teams in one round trip. */
+  async getTeams(token: string): Promise<MyTeams> {
+    if (features.registrationApi) {
+      try {
+        return await apiFetch<MyTeams>('/registration/teams', { token });
+      } catch {
+        // 404 → no participant profile yet; treat as "no teams".
+        return { competition: null, challenge: null };
+      }
+    }
+    return {
+      competition: readLocalTeam('COMPETITION'),
+      challenge: readLocalTeam('CHALLENGE'),
+    };
   },
 
   /** DELETE /registration/team/leave — member leaves their team. */
-  async leaveTeam(token: string): Promise<void> {
+  async leaveTeam(token: string, activity: TeamActivity = DEFAULT_ACTIVITY): Promise<void> {
     if (features.registrationApi) {
-      await apiFetch('/registration/team/leave', { method: 'DELETE', token });
-      return;
-    }
-    writeLocalTeam(null);
-  },
-
-  /** DELETE /registration/team — leader disbands the whole team. */
-  async disbandTeam(token: string): Promise<void> {
-    if (features.registrationApi) {
-      await apiFetch('/registration/team', { method: 'DELETE', token });
-      return;
-    }
-    writeLocalTeam(null);
-  },
-
-  /** DELETE /registration/team/members/:participantId — leader removes a member. */
-  async removeMember(participantId: string, token: string): Promise<Team | null> {
-    if (features.registrationApi) {
-      await apiFetch(`/registration/team/members/${participantId}`, {
+      await apiFetch(`/registration/team/leave${activityQuery(activity)}`, {
         method: 'DELETE',
         token,
       });
-      return this.getTeam(token);
+      return;
     }
-    const team = readLocalTeam();
+    writeLocalTeam(activity, null);
+  },
+
+  /** DELETE /registration/team — leader disbands the whole team. */
+  async disbandTeam(token: string, activity: TeamActivity = DEFAULT_ACTIVITY): Promise<void> {
+    if (features.registrationApi) {
+      await apiFetch(`/registration/team${activityQuery(activity)}`, {
+        method: 'DELETE',
+        token,
+      });
+      return;
+    }
+    writeLocalTeam(activity, null);
+  },
+
+  /** DELETE /registration/team/members/:participantId — leader removes a member. */
+  async removeMember(
+    participantId: string,
+    token: string,
+    activity: TeamActivity = DEFAULT_ACTIVITY,
+  ): Promise<Team | null> {
+    if (features.registrationApi) {
+      await apiFetch(
+        `/registration/team/members/${participantId}${activityQuery(activity)}`,
+        { method: 'DELETE', token },
+      );
+      return this.getTeam(token, activity);
+    }
+    const team = readLocalTeam(activity);
     if (!team) return null;
     team.members = team.members.filter((m) => m.id !== participantId);
     team.memberCount = team.members.length;
     team.spotsLeft = team.size - team.members.length;
-    writeLocalTeam(team);
+    writeLocalTeam(activity, team);
     return team;
   },
 

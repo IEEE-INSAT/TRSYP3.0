@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import { useAuth } from './AuthContext';
-import { useTeamStore, useRegistrationStore, useAuthStore } from '@/lib/store';
+import { useTeamStore, useRegistrationStore, useAuthStore, selectTeam, selectRole } from '@/lib/store';
+import { ACTIVITY_LABELS } from '@/lib/api/types';
+import ActivityToggle, { isActivityOpen, phaseOf } from './register/ActivityToggle';
 import LoadingScreen from './LoadingScreen';
 
 // TEMP: payment step disabled for now — flip back to true to re-enable.
@@ -22,11 +24,16 @@ export default function Dashboard() {
   const [showMembers, setShowMembers] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
 
-  const team = useTeamStore((s) => s.team);
-  const role = useTeamStore((s) => s.role);
+  const activity = useTeamStore((s) => s.activity);
+  const setActivity = useTeamStore((s) => s.setActivity);
+  const team = useTeamStore(selectTeam);
+  const role = useTeamStore(selectRole);
+  const otherTeam = useTeamStore((s) =>
+    s.teams[s.activity === 'COMPETITION' ? 'CHALLENGE' : 'COMPETITION'],
+  );
   const teamLoaded = useTeamStore((s) => s.loaded);
   const updateTeam = useTeamStore((s) => s.updateTeam);
-  const fetchTeam = useTeamStore((s) => s.fetchTeam);
+  const fetchTeams = useTeamStore((s) => s.fetchTeams);
   const createTeam = useTeamStore((s) => s.createTeam);
   const joinTeam = useTeamStore((s) => s.joinTeam);
   const removeMember = useTeamStore((s) => s.removeMember);
@@ -77,19 +84,29 @@ export default function Dashboard() {
   // the tree ("rendered fewer hooks than expected"), surfacing a black
   // "page couldn't load" error screen until signOut's navigation recovers it.
   useEffect(() => {
-    if (user) void fetchTeam();
-  }, [user?.participantId, fetchTeam]);
+    if (user) void fetchTeams();
+  }, [user?.participantId, fetchTeams]);
 
   if (!user || redirecting) return <LoadingScreen />;
 
   const status = STATUS_MAP[user.status];
 
-  const isChallenger = user.userType === 'challenger' || !!team;
+  const activityLabel = ACTIVITY_LABELS[activity];
+  const activityOpen = isActivityOpen(activity);
 
-  // A registered user with no team must (re)join or create one before they can
-  // continue (e.g. after being kicked or leaving). Gate on `teamLoaded` so this
-  // doesn't flash while the team is still being fetched.
-  const needsTeam = teamLoaded && !team;
+  const isChallenger = user.userType === 'challenger' || !!team || !!otherTeam;
+
+  // Teams are opt-in: plenty of participants attend TRSYP 3.0 without entering
+  // either track. So this is an invitation to join, never a required step — it
+  // just shows the create/join controls whenever the selected activity is open
+  // and the user has no team in it. Gated on `teamLoaded` so it doesn't flash
+  // while the teams are still being fetched.
+  const canJoinActivity = teamLoaded && !team && activityOpen;
+
+  // Team rows describe the *selected* activity only. Before the first fetch
+  // resolves we still show the registration store's cached team name so the
+  // card doesn't flash empty.
+  const showTeam = team ? true : !teamLoaded && isChallenger;
 
   // Derive leader status at render time so it self-corrects once both the team
   // and the participant id have loaded — the persisted `role` snapshot can be
@@ -228,7 +245,7 @@ export default function Dashboard() {
         <motion.div className="dash-header" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
           <div className="dash-header-left">
             <h1 className="dash-welcome">
-              Welcome back, {isChallenger ? `Team ${team?.name || user.teamName || 'Member'}` : user.fullName}!
+              Welcome back, {isChallenger ? `Team ${team?.name || otherTeam?.name || user.teamName || 'Member'}` : user.fullName}!
             </h1>
             <span className={`dash-type-badge ${isChallenger ? 'dash-type-challenger' : 'dash-type-participant'}`}>
               {isChallenger ? 'Challenger' : 'Participant'}
@@ -254,12 +271,8 @@ export default function Dashboard() {
               Submit Payment Proof
             </Link>
           )}
-          {PAYMENT_ENABLED && user.status === 'waiting_for_payment' && needsTeam && (
-            <div className="dash-pay-locked">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
-              Join or create a team to unlock payment.
-            </div>
-          )}
+          {/* No team lock here: attending without entering either track is a
+              valid path, so payment must stay reachable for team-less users. */}
           {PAYMENT_ENABLED && user.status === 'waiting_for_verification' && (
             <div className="dash-pay-submitted">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
@@ -275,12 +288,44 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {/* No team yet — (re)join or create one */}
-        {needsTeam && (
+        {/* Which track the team panels below refer to */}
+        <motion.div className="dash-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.12 }}>
+          <div className="dash-card-title">Your Teams</div>
+          <ActivityToggle
+            value={activity}
+            onChange={(next) => {
+              // Drop any in-flight edit so it can't be applied to the other track.
+              setIsEditingTeam(false);
+              setTeamMode('none');
+              setConfirmDisband(false);
+              setConfirmLeave(false);
+              setNoTeamErr('');
+              setTeamActionErr('');
+              setActivity(next);
+            }}
+          />
+        </motion.div>
+
+        {/* Selected track is not taking teams yet — say so instead of offering a form */}
+        {teamLoaded && !team && !activityOpen && (
           <motion.div className="dash-card dash-noteam-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }}>
-            <div className="dash-card-title">Your Team</div>
+            <div className="dash-card-title">{activityLabel}</div>
             <p className="dash-noteam-msg">
-              You&apos;re not part of a team yet. Every challenger competes as a team — join one with a code, or create your own and invite members.
+              {phaseOf(activity) === 'soon'
+                ? `${activityLabel} team registration opens soon. We'll open it here as soon as it goes live.`
+                : `${activityLabel} team registration is closed.`}
+            </p>
+          </motion.div>
+        )}
+
+        {/* No team in this track yet — optionally (re)join or create one */}
+        {canJoinActivity && (
+          <motion.div className="dash-card dash-noteam-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }}>
+            <div className="dash-card-title">Your {activityLabel} Team</div>
+            <p className="dash-noteam-msg">
+              You&apos;re not in a {activityLabel.toLowerCase()} team. Entering is optional — you&apos;re
+              registered for TRSYP 3.0 either way. To take part, join a team with a code or create
+              your own and invite members.
             </p>
 
             {teamMode === 'none' && (
@@ -355,9 +400,9 @@ export default function Dashboard() {
         <motion.div className="dash-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
           <div className="dash-card-title">Registration Details</div>
 
-          {isChallenger && (
+          {showTeam && (
             <div className="dash-detail-row dash-detail-highlight" style={{ alignItems: isEditingTeam ? 'center' : 'flex-start' }}>
-              <span className="dash-detail-label">Team Name</span>
+              <span className="dash-detail-label">{activityLabel} Team</span>
               {isEditingTeam ? (
                 <input className="dash-edit-input" value={editTeamName} onChange={(e) => setEditTeamName(e.target.value)} style={{ width: '100%', maxWidth: '250px' }} />
               ) : (
@@ -373,7 +418,7 @@ export default function Dashboard() {
               )}
             </div>
           )}
-          {isChallenger && (
+          {showTeam && (
             <div className="dash-detail-row">
               <span className="dash-detail-label">Team Size</span>
               {isEditingTeam ? (
@@ -421,7 +466,7 @@ export default function Dashboard() {
             <p className="dash-code-hint">Share this code with your teammates so they can join your team.</p>
           )}
 
-          <div className="dash-detail-divider">{isChallenger ? 'Team Leader' : 'Personal Info'}</div>
+          <div className="dash-detail-divider">{showTeam ? 'Team Leader' : 'Personal Info'}</div>
 
           <div className="dash-details-grid">
             <div className="dash-detail-row">
@@ -461,7 +506,7 @@ export default function Dashboard() {
           </div>
 
           {/* Team Members (Challenger) */}
-          {isChallenger && teamMembers.length > 0 && (
+          {showTeam && teamMembers.length > 0 && (
             <>
               <button className="dash-members-toggle" onClick={() => setShowMembers((p) => !p)}>
                 <span>Team Members ({teamMembers.length})</span>

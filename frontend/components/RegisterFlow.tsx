@@ -15,7 +15,7 @@ type Step = 'participant' | 'choosePath' | 'team' | 'done';
 const SUBTITLES: Record<Step, string> = {
   participant: 'Tell us about yourself to complete your registration.',
   choosePath: 'Almost done. One more choice.',
-  team: 'Create or join a team for the robotics challenge.',
+  team: 'Create or join a team for the competition or the technical challenge.',
   done: 'You are all set!',
 };
 
@@ -149,13 +149,14 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
 
         {step === 'choosePath' && (
           <motion.div className="reg-form" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-            <div className="reg-section-label">Robotics Challenge</div>
+            <div className="reg-section-label">Compete as a team</div>
             <p className="reg-account-hint">
-              Would you like to compete in the TRSYP 3.0 robotics challenge as part of a team?
+              Would you like to compete at TRSYP 3.0 as part of a team? You pick the
+              track — the competition or the technical challenge — on the next step.
             </p>
             <div className="reg-toggle-group">
               <button type="button" className="reg-toggle reg-toggle-active-green" onClick={() => setStep('team')}>
-                Yes, join the challenge
+                Yes, I want a team
               </button>
               <button type="button" className="reg-toggle" onClick={() => setStep('done')}>
                 No, just attending

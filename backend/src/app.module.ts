@@ -31,6 +31,11 @@ import { AppController } from './app.controller';
             SUPABASE_SERVICE_ROLE_KEY:Joi.string().required(),
             FRONTEND_URL: Joi.string().uri().required(),
             RIDDLE_CODE_SECRET: Joi.string().required(),
+            // Team registration windows. `soon`/`closed` both block creating and
+            // joining; only the wording of the error differs. Defaults keep the
+            // competition live and the technical challenge unannounced.
+            COMPETITION_REGISTRATION_PHASE: Joi.string().valid('soon', 'open', 'closed').default('open'),
+            CHALLENGE_REGISTRATION_PHASE: Joi.string().valid('soon', 'open', 'closed').default('soon'),
         })
     }),
         PassportModule,

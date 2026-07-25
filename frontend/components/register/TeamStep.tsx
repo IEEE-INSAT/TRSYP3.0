@@ -3,23 +3,30 @@
 import { useEffect, useState, FormEvent } from 'react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
-import { useTeamStore } from '@/lib/store';
+import { useTeamStore, selectTeam, selectRole } from '@/lib/store';
+import { ACTIVITY_LABELS } from '@/lib/api/types';
+import ActivityToggle, { isActivityOpen, phaseOf } from './ActivityToggle';
 
 /** Page 2 of the registration flow — team leader / member + team status. */
 export default function TeamStep() {
-  const team = useTeamStore((s) => s.team);
-  const role = useTeamStore((s) => s.role);
+  const activity = useTeamStore((s) => s.activity);
+  const setActivity = useTeamStore((s) => s.setActivity);
+  const team = useTeamStore(selectTeam);
+  const role = useTeamStore(selectRole);
   const loaded = useTeamStore((s) => s.loaded);
   const loading = useTeamStore((s) => s.loading);
   const submitting = useTeamStore((s) => s.submitting);
   const storeError = useTeamStore((s) => s.error);
-  const fetchTeam = useTeamStore((s) => s.fetchTeam);
+  const fetchTeams = useTeamStore((s) => s.fetchTeams);
   const createTeam = useTeamStore((s) => s.createTeam);
   const joinTeam = useTeamStore((s) => s.joinTeam);
   const leaveTeam = useTeamStore((s) => s.leaveTeam);
   const disbandTeam = useTeamStore((s) => s.disbandTeam);
   const removeMember = useTeamStore((s) => s.removeMember);
   const clearError = useTeamStore((s) => s.clearError);
+
+  const activityLabel = ACTIVITY_LABELS[activity];
+  const activityOpen = isActivityOpen(activity);
 
   const [choice, setChoice] = useState<'leader' | 'member' | null>(null);
   const [teamName, setTeamName] = useState('');
@@ -32,8 +39,8 @@ export default function TeamStep() {
   const canJoin = code.trim().length === 6;
 
   useEffect(() => {
-    void fetchTeam();
-  }, [fetchTeam]);
+    void fetchTeams();
+  }, [fetchTeams]);
 
   const handleCreate = async (e: FormEvent) => {
     e.preventDefault();
@@ -79,12 +86,32 @@ export default function TeamStep() {
     return <div className="reg-form"><p className="reg-account-hint">Loading team…</p></div>;
   }
 
+  // The activity switcher sits above every branch below so the user can always
+  // hop between their competition and challenge teams. Switching clears the
+  // half-filled form so a name typed for one track never lands on the other.
+  const toggle = (
+    <ActivityToggle
+      value={activity}
+      disabled={submitting}
+      onChange={(next) => {
+        setChoice(null);
+        setTeamName('');
+        setSize(0);
+        setCode('');
+        setFormErr(null);
+        setActivity(next);
+      }}
+    />
+  );
+
   // ── Team status panel (already in a team) ──────────────────────────────────
   if (team) {
     const isLeader = role === 'leader';
     return (
       <motion.div className="reg-form" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-        <div className="reg-section-label">Your Team</div>
+        {toggle}
+
+        <div className="reg-section-label">Your {activityLabel} Team</div>
 
         <div className="dash-detail-row dash-detail-highlight">
           <span className="dash-detail-label">Team Name</span>
@@ -159,10 +186,28 @@ export default function TeamStep() {
     );
   }
 
+  // ── Window not open — nothing to create or join yet ────────────────────────
+  if (!activityOpen) {
+    return (
+      <motion.div className="reg-form" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+        {toggle}
+
+        <div className="reg-section-label">{activityLabel}</div>
+        <p className="reg-account-hint">
+          {phaseOf(activity) === 'soon'
+            ? `${activityLabel} team registration opens soon. Check back shortly — you can still register for the other track in the meantime.`
+            : `${activityLabel} team registration is now closed.`}
+        </p>
+      </motion.div>
+    );
+  }
+
   // ── Leader / member choice + forms ─────────────────────────────────────────
   return (
     <motion.div className="reg-form" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-      <div className="reg-section-label">Team</div>
+      {toggle}
+
+      <div className="reg-section-label">{activityLabel} Team</div>
 
       <div className="reg-field">
         <label className="reg-label">Are you a team leader?</label>

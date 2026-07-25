@@ -269,6 +269,20 @@ export interface BackendParticipant {
 
 // ── Teams (Page 2 of the registration flow spec) ─────────────────────────────
 
+/**
+ * The event a team competes in. A participant may hold one team of each — a
+ * competition team and a technical challenge team — but never two of the same.
+ */
+export type TeamActivity = 'COMPETITION' | 'CHALLENGE';
+
+export const TEAM_ACTIVITIES: TeamActivity[] = ['COMPETITION', 'CHALLENGE'];
+
+/** UI copy for each activity, so labels stay identical across screens. */
+export const ACTIVITY_LABELS: Record<TeamActivity, string> = {
+  COMPETITION: 'Competition',
+  CHALLENGE: 'Technical Challenge',
+};
+
 export interface TeamMemberSummary {
   id: string;
   name: string;
@@ -282,17 +296,25 @@ export interface Team {
   id: string;
   name: string;
   size: number;
-  code: string; 
+  code: string;
+  activity: TeamActivity;
   leaderId: string;
   memberCount: number;
   spotsLeft: number;
   members: TeamMemberSummary[];
 }
 
+/** GET /registration/teams — every team the caller holds, one slot per activity. */
+export interface MyTeams {
+  competition: Team | null;
+  challenge: Team | null;
+}
+
 /** Body of POST /registration/team. */
 export interface CreateTeamPayload {
   name: string;
   size: number;
+  activity?: TeamActivity;
 }
 
 // ── Challenge (riddles) ───────────────────────────────────────────────────────

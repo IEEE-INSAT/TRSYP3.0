@@ -8,7 +8,7 @@ export type {
   RegStatus,
   ParticipantRegistrationInput,
 } from './registration-store';
-export { useTeamStore } from './team-store';
+export { useTeamStore, selectTeam, selectRole } from './team-store';
 export type { TeamRole } from './team-store';
 export { useAdminStore } from './admin-store';
 export { AuthProvider } from './auth-provider';
