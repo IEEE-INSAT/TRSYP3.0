@@ -7,9 +7,11 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from './AuthContext';
 import AuthModal from './AuthModal';
+import ModalPortal from './ModalPortal';
 import { useAuthStore } from '@/lib/store/auth-store';
 import { useRegistrationStore } from '@/lib/store/registration-store';
 import { REGISTRATION_OPEN, LOGIN_OPEN } from '@/lib/config';
+import { resolvePostAuth } from '@/lib/auth/post-auth';
 
 // Shared fade/slide used to crossfade the auth actions so state changes
 // (login → dashboard, etc.) don't pop.
@@ -36,7 +38,6 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [pendingRoute, setPendingRoute] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
   const { isRegistered, logout } = useAuth();
   const { accessToken, error: authError } = useAuthStore();
@@ -52,18 +53,6 @@ export default function Navbar() {
 
   // Dismiss the global auth error (e.g. after OAuth 409)
   const dismissAuthError = () => useAuthStore.setState({ error: null });
-
-  const handleRegisterClick = (e: React.MouseEvent, route: string) => {
-    e.preventDefault();
-    setShowRegister(false);
-
-    if (isAuthenticated) {
-      window.location.href = route;
-    } else {
-      setPendingRoute(route);
-      setShowAuthModal(true);
-    }
-  };
 
   const handleScroll = useCallback(() => {
     setScrolled(window.scrollY > 50);
@@ -156,7 +145,7 @@ export default function Navbar() {
                 {!isAuthenticated && (
                   <button
                     className="navbar-login"
-                    onClick={() => { setPendingRoute(null); setShowAuthModal(true); }}
+                    onClick={() => setShowAuthModal(true)}
                     disabled={!LOGIN_OPEN}
                     title={LOGIN_OPEN ? undefined : 'Log in opens soon'}
                     style={LOGIN_OPEN ? undefined : { opacity: 0.5, cursor: 'not-allowed' }}
@@ -222,7 +211,7 @@ export default function Navbar() {
             {!isAuthenticated && (
               <button
                 className="navbar-mobile-register navbar-mobile-login"
-                onClick={() => { setOpen(false); setPendingRoute(null); setShowAuthModal(true); }}
+                onClick={() => { setOpen(false); setShowAuthModal(true); }}
                 disabled={!LOGIN_OPEN}
                 style={LOGIN_OPEN ? undefined : { opacity: 0.5, cursor: 'not-allowed' }}
               >
@@ -255,6 +244,7 @@ export default function Navbar() {
       </div>
 
       {showRegister && !isRegistered && (
+        <ModalPortal>
         <div className="reg-overlay" onClick={() => setShowRegister(false)}>
           <div className="reg-popup" onClick={(e) => e.stopPropagation()}>
             <button className="reg-close" onClick={() => setShowRegister(false)} aria-label="Close">
@@ -273,32 +263,34 @@ export default function Navbar() {
                 </svg>
                 <span>Participant (Closed)</span>
               </button>
-              <a href="/register/challenger" className="reg-btn reg-btn-challenger" onClick={(e) => handleRegisterClick(e, '/register/challenger')}>
+              {/* Straight to the registration page — it runs its own auth gate,
+                  so authenticating there keeps the user on the destination
+                  instead of bouncing them through a redirect. */}
+              <Link href="/register/challenger" className="reg-btn reg-btn-challenger" onClick={() => setShowRegister(false)}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
                 </svg>
                 <span>Challenger</span>
-              </a>
+              </Link>
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {showAuthModal && (
         <AuthModal
+          initialMode="login"
           onClose={() => setShowAuthModal(false)}
           onSuccess={() => {
             setShowAuthModal(false);
-            // An already-registered account goes straight to its dashboard;
-            // otherwise continue to the pending registration route (or home).
-            const registered = useRegistrationStore.getState().isRegistered;
-            window.location.href = registered ? '/dashboard' : (pendingRoute ?? '/');
+            // An already-registered account goes to its dashboard; anyone else
+            // continues into the registration flow. Never back to the landing
+            // page — that reads as "nothing happened".
+            window.location.href = resolvePostAuth({
+              isRegistered: useRegistrationStore.getState().isRegistered,
+            });
           }}
-          onRegister={() => {
-            setShowAuthModal(false);
-            if (pendingRoute) window.location.href = pendingRoute;
-          }}
-          pendingRoute={pendingRoute}
         />
       )}
 

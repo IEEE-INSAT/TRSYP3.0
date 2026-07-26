@@ -107,10 +107,13 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
   if (!isAuthenticated && showAuthGate) {
     return (
       <div className="reg-page">
+        {/* The user got here by clicking "Register", so open on the signup
+            form. On success we simply drop the gate: they are already on the
+            page they wanted, so there is no redirect to get wrong. */}
         <AuthModal
+          initialMode="signup"
           onClose={() => { setShowAuthGate(false); window.location.href = '/'; }}
           onSuccess={() => setShowAuthGate(false)}
-          onRegister={() => setShowAuthGate(false)}
           pendingRoute={initialChallenge ? '/register/challenger' : '/register'}
         />
       </div>

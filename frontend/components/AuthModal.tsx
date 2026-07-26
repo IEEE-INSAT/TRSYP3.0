@@ -5,6 +5,8 @@ import { useAuthStore } from '@/lib/store/auth-store';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { authService } from '@/lib/api/auth.service';
 import { isApiConfigured, LOGIN_OPEN } from '@/lib/config';
+import { authCallbackUrl, rememberNext } from '@/lib/auth/post-auth';
+import ModalPortal from './ModalPortal';
 
 // ── Validation helpers ──────────────────────────────────────────────────────
 
@@ -189,14 +191,20 @@ function validatePassword(value: string): string | null {
 interface AuthModalProps {
   onClose: () => void;
   onSuccess: () => void;
-  onRegister: () => void;
+  /**
+   * Which form to open on. Entry points that say "Register" must open on the
+   * signup form — opening on "Log In" is what made the register CTA feel like
+   * it had sent the user somewhere else.
+   */
+  initialMode?: 'login' | 'signup';
+  /** Route the user was heading for; survives OAuth / email round-trips. */
   pendingRoute?: string | null;
   /** Bypass the global LOGIN_OPEN switch (admin sign-in must always work). */
   allowWhenClosed?: boolean;
 }
 
-export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute, allowWhenClosed = false }: AuthModalProps) {
-  const [isLogin, setIsLogin] = useState(true);
+export default function AuthModal({ onClose, onSuccess, initialMode = 'login', pendingRoute, allowWhenClosed = false }: AuthModalProps) {
+  const [isLogin, setIsLogin] = useState(initialMode !== 'signup');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -267,13 +275,12 @@ export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute
       setLoading(false);
       return;
     }
+    // Google takes us off-site, so the destination has to travel in the URL
+    // (and in storage, in case Supabase drops the query string).
+    rememberNext(pendingRoute);
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: pendingRoute
-          ? `${window.location.origin}${pendingRoute}`
-          : window.location.origin,
-      },
+      options: { redirectTo: authCallbackUrl(pendingRoute) },
     });
     if (oauthError) {
       setError(oauthError.message);
@@ -355,12 +362,16 @@ export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute
     setLoading(true);
     setError(null);
     try {
+      // The verification link is opened in a new tab (often minutes later), so
+      // the destination goes into the link itself and into storage.
+      rememberNext(pendingRoute);
       await signUp({
         email,
         password,
         name: firstName.trim(),
         lastName: lastName.trim(),
         provider: 'email',
+        next: pendingRoute,
       });
       setSignupSuccess(true);
       setPassword('');
@@ -411,49 +422,17 @@ export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute
   // modal (navbar, /register direct navigation, etc.).
   if (!LOGIN_OPEN && !allowWhenClosed) {
     return (
-      <div
-        className="trsyp-overlay"
-        onPointerDown={(event) => {
-          if (event.target === event.currentTarget) onClose();
-        }}
-      >
-        <div className="trsyp-popup">
-          <button className="trsyp-close" onClick={onClose} aria-label="Close">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-          <div className="trsyp-popup-header">
-            <h3 className="trsyp-popup-title">Log in opens soon</h3>
-            <p className="trsyp-popup-sub">Sign-in is temporarily unavailable. Please check back soon.</p>
-          </div>
+      <AuthOverlay onClose={onClose}>
+        <div className="trsyp-popup-header">
+          <h3 className="trsyp-popup-title">Log in opens soon</h3>
+          <p className="trsyp-popup-sub">Sign-in is temporarily unavailable. Please check back soon.</p>
         </div>
-      </div>
+      </AuthOverlay>
     );
   }
 
   return (
-    <div
-      className="trsyp-overlay"
-      onPointerDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <div className="trsyp-popup">
-        <button className="trsyp-close" onClick={onClose} aria-label="Close">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
+    <AuthOverlay onClose={onClose}>
         {/* ── Auth forms ── */}
         {
           <>
@@ -913,7 +892,33 @@ export default function AuthModal({ onClose, onSuccess, onRegister, pendingRoute
             )}
           </>
         }
+    </AuthOverlay>
+  );
+}
+
+/**
+ * The modal shell: backdrop, card, close button — portaled to <body> so it
+ * cannot be trapped under the navbar or the footer by the page's stacking
+ * context. Both the normal and the "log-in closed" states render through it.
+ */
+function AuthOverlay({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
+  return (
+    <ModalPortal>
+      <div
+        className="trsyp-overlay"
+        onPointerDown={(event) => {
+          if (event.target === event.currentTarget) onClose();
+        }}
+      >
+        <div className="trsyp-popup">
+          <button className="trsyp-close" onClick={onClose} aria-label="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          {children}
+        </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 }

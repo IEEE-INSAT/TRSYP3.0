@@ -3,6 +3,7 @@ import { getSupabaseClient } from '../supabase/client';
 import { authService } from '../api/auth.service';
 import { ApiError } from '../api/http';
 import { isApiConfigured } from '../config';
+import { redirectUrl } from '../auth/post-auth';
 import { useRegistrationStore } from './registration-store';
 import type { BackendUser } from '../api/types';
 
@@ -12,6 +13,12 @@ export interface SignUpInput {
   name: string;
   lastName: string;
   provider?: string;
+  /**
+   * Route to continue to after the emailed verification link is opened. Rides
+   * along on the confirmation URL because that link lands in a fresh tab with
+   * none of this session's React state.
+   */
+  next?: string | null;
 }
 
 interface AuthState {
@@ -105,7 +112,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ initialized: true });
   },
 
-  signUp: async ({ email, password, name, lastName }) => {
+  signUp: async ({ email, password, name, lastName, next }) => {
     set({ loading: true, error: null });
     try {
       const supabase = getSupabaseClient();
@@ -114,10 +121,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({ accessToken: `offline:${email}`, email, loading: false });
         return;
       }
-      const emailRedirectTo = new URL(
-        '/verify-email/',
-        window.location.origin,
-      ).toString();
+      const emailRedirectTo = redirectUrl('/verify-email/', next);
       const { data, error } = await supabase.auth.signUp({
         email,
         password,

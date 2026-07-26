@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from './AuthContext';
 import { useTeamStore, useRegistrationStore, useAuthStore, selectTeam, selectRole } from '@/lib/store';
 import { ACTIVITY_LABELS } from '@/lib/api/types';
@@ -21,8 +22,13 @@ const STATUS_MAP = {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const router = useRouter();
   const [showMembers, setShowMembers] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
+
+  // Gate the session check below on a settled auth state.
+  const initialized = useAuthStore((s) => s.initialized);
+  const hydrating = useRegistrationStore((s) => s.hydrating);
 
   const activity = useTeamStore((s) => s.activity);
   const setActivity = useTeamStore((s) => s.setActivity);
@@ -64,14 +70,23 @@ export default function Dashboard() {
   const [codeCopied, setCodeCopied] = useState(false);
 
   useEffect(() => {
+    // Don't judge the session until it has actually settled. `hydrateFromBackend`
+    // briefly leaves `user` null while it reconciles the profile, and acting on
+    // that gap fired a redirect *into* the in-flight navigation to this page —
+    // two competing navigations abort each other ("this page couldn't load").
+    // Same guard RegisterFlow uses before its own dashboard redirect.
+    if (!initialized || hydrating) return;
+
     // During an explicit sign-out, let auth-store's signOut() own the single
-    // redirect — issuing our own here would race it and abort the navigation
-    // ("this page couldn't load"). Only redirect for genuine no-session access.
+    // redirect — issuing our own here would race it and abort the navigation.
+    // Only redirect for genuine no-session access.
     if (!user && !useAuthStore.getState().signingOut) {
       setRedirecting(true);
-      window.location.href = '/';
+      // router.replace, not window.location — a full page load here would abort
+      // whatever client-side transition brought us in.
+      router.replace('/');
     }
-  }, [user]);
+  }, [initialized, hydrating, user, router]);
 
   // Fetch (and refresh) the team whenever the signed-in participant is known.
   // Re-running when `participantId` resolves also re-syncs `role`, which is what

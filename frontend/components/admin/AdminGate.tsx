@@ -43,12 +43,12 @@ export default function AdminGate({ children }: { children: ReactNode }) {
       return (
         <div className="adm-gate">
           <AuthModal
+            initialMode="login"
             onClose={() => {
               setShowAuthModal(false);
               window.location.href = '/';
             }}
             onSuccess={() => setShowAuthModal(false)}
-            onRegister={() => setShowAuthModal(false)}
             pendingRoute="/admin"
             allowWhenClosed
           />
