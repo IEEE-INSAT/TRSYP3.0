@@ -1,8 +1,11 @@
 # TRSYP 3.0 — Frontend
 
 Next.js 16 (App Router) + React 19. Marketing site, participant & challenger
-registration, participant dashboard, and an admin panel. State is managed with
+registration, and the participant dashboard. State is managed with
 **Zustand**; backend access goes through a thin **services layer**.
+
+Administration lives in a separate dedicated dashboard app — this frontend
+ships no admin UI, though the backend still serves the `/admin/*` API it uses.
 
 ## Getting started
 
@@ -26,7 +29,6 @@ so the UI keeps working until the backend is finished.
 | `NEXT_PUBLIC_API_URL` | NestJS backend base URL (no trailing slash). |
 | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase project; enables real auth. |
 | `NEXT_PUBLIC_FEATURE_REGISTRATION_API` | Flip to `true` once `/registration/*` is live. |
-| `NEXT_PUBLIC_FEATURE_ADMIN_API` | Flip to `true` once `/registration/admin/*` is live. |
 
 ## Architecture
 
@@ -38,15 +40,13 @@ lib/
     http.ts          #   typed fetch wrapper + ApiError
     types.ts         #   types mirroring backend DTOs
     auth.service.ts  #   /auth/* (wired — exists on the backend today)
-    admin.service.ts #   /admin/* (wired) + registrations data (placeholder)
     registration.service.ts # /registration/* (placeholder, flag-gated)
+  auth/              # post-auth destination rules (?next=, resolvePostAuth)
   store/             # STATE MANAGEMENT — Zustand
     auth-store.ts          # Supabase session + backend user
     registration-store.ts  # the signed-in user's profile (persisted)
-    admin-store.ts         # admin gate + registrations list
     use-auth.ts            # convenience hook composing the stores
     auth-provider.tsx      # mounts init + gates hydration
-  admin/             # admin-view domain types + demo seed (placeholder)
 ```
 
 **Components never call `fetch` or `localStorage` directly** — they read/write
@@ -54,10 +54,10 @@ Zustand stores, and the stores call the services layer.
 
 ## Backend wiring status
 
-The backend (`../backend`, NestJS + Supabase + Prisma) currently exposes only
-`/auth/*` and `/admin/create-admin` + `/admin/delete-account`, which are wired
-for real. Everything else is a **placeholder** that already contains the
-intended call, guarded by a feature flag:
+The backend (`../backend`, NestJS + Supabase + Prisma) currently exposes
+`/auth/*` wired for real (plus `/admin/*`, consumed by the separate admin
+dashboard, not by this app). Everything else is a **placeholder** that already
+contains the intended call, guarded by a feature flag:
 
 - **Auth** — `signUp`/`signIn` via Supabase, then `POST /auth/sync-user`. With
   no Supabase creds the auth store runs offline so the flow is still demoable.
@@ -72,8 +72,4 @@ intended call, guarded by a feature flag:
   The `/registration/*` routes aren't wired on the backend yet — participant
   calls no-op locally and the team flow uses a local-storage simulation. Set
   `NEXT_PUBLIC_FEATURE_REGISTRATION_API=true` to switch to the live routes.
-- **Admin lists & moderation** — served from local seed data until
-  `/registration/admin/*` lands (`NEXT_PUBLIC_FEATURE_ADMIN_API`). The admin
-  password gate (`admin.service.ts`) is a placeholder for real admin auth.
-
 Search the codebase for `TODO(backend` to find every seam that flips to live.

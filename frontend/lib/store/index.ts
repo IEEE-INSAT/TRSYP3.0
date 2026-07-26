@@ -10,7 +10,6 @@ export type {
 } from './registration-store';
 export { useTeamStore, selectTeam, selectRole } from './team-store';
 export type { TeamRole } from './team-store';
-export { useAdminStore } from './admin-store';
 export { AuthProvider } from './auth-provider';
 export { useAuth } from './use-auth';
 export { useHydrated } from './use-hydrated';

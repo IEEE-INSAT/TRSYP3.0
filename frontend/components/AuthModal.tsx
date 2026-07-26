@@ -199,11 +199,9 @@ interface AuthModalProps {
   initialMode?: 'login' | 'signup';
   /** Route the user was heading for; survives OAuth / email round-trips. */
   pendingRoute?: string | null;
-  /** Bypass the global LOGIN_OPEN switch (admin sign-in must always work). */
-  allowWhenClosed?: boolean;
 }
 
-export default function AuthModal({ onClose, onSuccess, initialMode = 'login', pendingRoute, allowWhenClosed = false }: AuthModalProps) {
+export default function AuthModal({ onClose, onSuccess, initialMode = 'login', pendingRoute }: AuthModalProps) {
   const [isLogin, setIsLogin] = useState(initialMode !== 'signup');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -418,9 +416,9 @@ export default function AuthModal({ onClose, onSuccess, initialMode = 'login', p
   }
   };
   
-  // Log-in temporarily closed — block every non-admin surface that opens this
-  // modal (navbar, /register direct navigation, etc.).
-  if (!LOGIN_OPEN && !allowWhenClosed) {
+  // Log-in temporarily closed — block every surface that opens this modal
+  // (navbar, /register direct navigation, etc.).
+  if (!LOGIN_OPEN) {
     return (
       <AuthOverlay onClose={onClose}>
         <div className="trsyp-popup-header">

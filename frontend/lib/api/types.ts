@@ -29,31 +29,6 @@ export interface BackendUser {
   updatedAt: string;
 }
 
-// ── Admin ───────────────────────────────────────────────────────────────────
-
-export type AdminPosition = 'CHAIR' | 'VICE_CHAIR';
-
-/** Body of POST /admin/create-admin (backend CreateAdminDto). */
-export interface CreateAdminPayload {
-  email: string;
-  password: string;
-  name: string;
-  lastName: string;
-  position: AdminPosition;
-}
-
-/** Admin row returned by POST /admin/create-admin (Prisma `Admin`). */
-export interface BackendAdmin {
-  id: string;
-  email: string;
-  name: string;
-  lastName: string;
-  position: AdminPosition;
-  supabaseId: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
 // ── Registration (backend module not wired yet) ──────────────────────────────
 
 export type ParticipantType = 'NonIEEE' | 'Student' | 'YoungProfessional';

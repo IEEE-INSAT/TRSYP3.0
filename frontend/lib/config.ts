@@ -33,16 +33,13 @@ export const REGISTRATION_OPEN = true;
 
 /**
  * Master switch for public log-in. Set to `false` to temporarily hide the
- * Log In CTA in the navbar. Flip back to `true` to reopen. (Admin sign-in via
- * the admin gate is unaffected.)
+ * Log In CTA in the navbar. Flip back to `true` to reopen.
  */
 export const LOGIN_OPEN = true;
 
 export const features = {
   /** POST /registration, GET /registration/profile, ... */
   registrationApi: process.env.NEXT_PUBLIC_FEATURE_REGISTRATION_API === 'true',
-  /** GET /registration/admin/participants and moderation endpoints. */
-  adminApi: process.env.NEXT_PUBLIC_FEATURE_ADMIN_API === 'true',
 } as const;
 
 /**
