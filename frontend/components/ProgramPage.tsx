@@ -261,31 +261,6 @@ export default function ProgramPage() {
           </motion.div>
         </div>
       </section>
-
-      {/* CTA */}
-      <section className="prog-cta">
-        <div className="prog-container">
-          <div className="prog-cta-inner">
-            <h2 className="prog-cta-h">
-              Secure your seat. <span className="prog-hl">Limited capacity.</span>
-            </h2>
-            <p className="prog-cta-p">Two days. One symbiosis. Zero excuses.</p>
-            {isRegistered ? (
-              <Link href="/dashboard" className="prog-cta-btn">GO TO DASHBOARD</Link>
-            ) : (
-              <button
-                onClick={handleRegisterClick}
-                className="prog-cta-btn"
-                disabled={!REGISTRATION_OPEN}
-                title={REGISTRATION_OPEN ? undefined : 'Registration opens soon'}
-                style={REGISTRATION_OPEN ? undefined : { opacity: 0.5, cursor: 'not-allowed' }}
-              >
-                {REGISTRATION_OPEN ? 'REGISTER NOW' : 'REGISTRATION SOON'}
-              </button>
-            )}
-          </div>
-        </div>
-      </section>
     </div>
   );
 }
