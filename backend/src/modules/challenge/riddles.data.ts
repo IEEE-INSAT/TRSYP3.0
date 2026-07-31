@@ -22,12 +22,12 @@ export interface RiddleDefinition {
 }
 
 /**
- * The 3 riddles are identical for every team — only the access code
+ * The 3 riddles are identical for every team - only the access code
  * differs (it encodes which team + which riddle number).
  *
  * Replace the question text and the plaintext passed to hashAnswer()
- * with the real riddles/answers. The plaintext answer is never stored —
- * only its SHA-256 hash — so it isn't sitting in cleartext in the repo.
+ * with the real riddles/answers. The plaintext answer is never stored -
+ * only its SHA-256 hash - so it isn't sitting in cleartext in the repo.
  */
 export const RIDDLES: Record<RiddleNumber, RiddleDefinition> = {
   1: {

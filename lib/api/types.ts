@@ -2,7 +2,7 @@
  * Types mirroring the NestJS backend DTOs / responses.
  *
  * Keep these in sync with `backend/src/modules/**`. They describe the contract
- * the service layer targets — some endpoints are not wired on the backend yet
+ * the service layer targets - some endpoints are not wired on the backend yet
  * (see the feature flags in `lib/config.ts`), but typing them now means the
  * switch from placeholder to live is a one-line flag change.
  */
@@ -269,8 +269,8 @@ export interface BackendParticipant {
 // ── Teams (Page 2 of the registration flow spec) ─────────────────────────────
 
 /**
- * The event a team competes in. A participant may hold one team of each — a
- * competition team and a technical challenge team — but never two of the same.
+ * The event a team competes in. A participant may hold one team of each - a
+ * competition team and a technical challenge team - but never two of the same.
  */
 export type TeamActivity = 'COMPETITION' | 'CHALLENGE';
 
@@ -303,7 +303,7 @@ export interface Team {
   members: TeamMemberSummary[];
 }
 
-/** GET /registration/teams — every team the caller holds, one slot per activity. */
+/** GET /registration/teams - every team the caller holds, one slot per activity. */
 export interface MyTeams {
   competition: Team | null;
   challenge: Team | null;

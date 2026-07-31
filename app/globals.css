@@ -40,7 +40,7 @@ button {
 }
 
 /* ═══════════════════════════════════════════════════════
-   GRIDBEAM — animated background wrapper
+   GRIDBEAM - animated background wrapper
 ═══════════════════════════════════════════════════════ */
 .gridbeam-wrap {
   position: relative;
@@ -103,7 +103,7 @@ button {
   justify-content: space-between;
   padding: 0 48px;
   overflow: visible;
-  /* Default: full-width, transparent, no radius — standard header */
+  /* Default: full-width, transparent, no radius - standard header */
   background: transparent;
   backdrop-filter: blur(0px);
   -webkit-backdrop-filter: blur(0px);
@@ -139,7 +139,7 @@ button {
   /* The base navbar uses justify-content:space-between to spread items across
      the full-width header. In the scrolled pill the width is fit-content, and
      space-between there mis-sizes the box so the last item (Register) overflows
-     the rounded edge — pack the items with the gap instead. */
+     the rounded edge - pack the items with the gap instead. */
   justify-content: center;
   padding: 0 clamp(22px, 3vw, 56px);
   gap: clamp(16px, 2.2vw, 40px);
@@ -174,12 +174,12 @@ button {
   pointer-events: none;
 }
 
-/* Hide glow-line when scrolled — pill border is sufficient */
+/* Hide glow-line when scrolled - pill border is sufficient */
 .navbar--scrolled .navbar-glow-line {
   opacity: 0;
 }
 
-/* Shrink the logo image when scrolled — fluid so the pill's content stays
+/* Shrink the logo image when scrolled - fluid so the pill's content stays
    inside its max-width on narrower laptops (full 84px on wide screens). */
 .navbar--scrolled .navbar-logo img {
   height: clamp(50px, 6vw, 84px) !important;
@@ -829,7 +829,7 @@ button {
 }
 
 /* ═══════════════════════════════════════════════════════
-   ABOUT SECTION — generous spacing (UX-pro-max)
+   ABOUT SECTION - generous spacing (UX-pro-max)
 ═══════════════════════════════════════════════════════ */
 .about {
   position: relative;
@@ -1316,7 +1316,7 @@ button {
 }
 
 /* ═══════════════════════════════════════════════════════
-   WHY JOIN TRSYP — Bento grid redesign
+   WHY JOIN TRSYP - Bento grid redesign
 ═══════════════════════════════════════════════════════ */
 .why {
   position: relative;
@@ -1392,7 +1392,7 @@ button {
   text-shadow: 0 0 50px rgba(0, 232, 122, 0.35);
 }
 
-/* Bento grid — 2x2 */
+/* Bento grid - 2x2 */
 .why-bento {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1422,7 +1422,7 @@ button {
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
 }
 
-/* Default accent borders — visible without hover */
+/* Default accent borders - visible without hover */
 .why-bento-card--green {
   border-color: rgba(0, 232, 122, 0.12);
   background: linear-gradient(
@@ -1699,7 +1699,7 @@ button {
 }
 
 /* ═══════════════════════════════════════════════════════
-   PREVIOUS EDITION — infinite carousel
+   PREVIOUS EDITION - infinite carousel
 ═══════════════════════════════════════════════════════ */
 .prev-edition {
   position: relative;
@@ -1985,7 +1985,7 @@ button {
   touch-action: manipulation;
 }
 
-/* Footer social icons — 44×44px on mobile */
+/* Footer social icons - 44×44px on mobile */
 @media (hover: none) {
   .footer-social {
     width: 44px;
@@ -1994,7 +1994,7 @@ button {
 }
 
 /* ═══════════════════════════════════════════════════════
-   TABLET — 1024px
+   TABLET - 1024px
    ui-ux-pro-max: breakpoint-consistency, layout
 ═══════════════════════════════════════════════════════ */
 @media (max-width: 1024px) {
@@ -2010,7 +2010,7 @@ button {
 }
 
 /* ═══════════════════════════════════════════════════════
-   TABLET / HAMBURGER BREAKPOINT — 900px
+   TABLET / HAMBURGER BREAKPOINT - 900px
 ═══════════════════════════════════════════════════════ */
 @media (max-width: 900px) {
   :root {
@@ -2189,11 +2189,11 @@ button {
 }
 
 /* ═══════════════════════════════════════════════════════
-   MOBILE — 600px
+   MOBILE - 600px
    ui-ux-pro-max: mobile-first, readable-font-size, touch
 ═══════════════════════════════════════════════════════ */
 @media (max-width: 600px) {
-  /* About — breathing room without wasting height */
+  /* About - breathing room without wasting height */
   .about {
     padding: 80px 20px 56px;
   }
@@ -2343,7 +2343,7 @@ button {
 }
 
 /* ═══════════════════════════════════════════════════════
-   SMALL MOBILE — 375px
+   SMALL MOBILE - 375px
    ui-ux-pro-max: minimum viable layout
 ═══════════════════════════════════════════════════════ */
 @media (max-width: 390px) {
@@ -4042,7 +4042,7 @@ select.reg-input option {
   transition: width 0.15s ease;
 }
 
-/* Registration + Dashboard — responsive */
+/* Registration + Dashboard - responsive */
 @media (max-width: 600px) {
   .reg-page {
     padding: calc(var(--nav-height) + 24px) 16px 60px;
@@ -4129,7 +4129,7 @@ select.reg-input option {
 }
 
 /* ═══════════════════════════════════════════════════════
-   LANDSCAPE MOBILE — orientation support
+   LANDSCAPE MOBILE - orientation support
    ui-ux-pro-max: orientation-support
 ═══════════════════════════════════════════════════════ */
 @media (max-height: 500px) and (orientation: landscape) {
@@ -4657,7 +4657,7 @@ select.reg-input option {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   ABOUT PAGE — Robot ID Cards
+   ABOUT PAGE - Robot ID Cards
 ═══════════════════════════════════════════════════════════════ */
 .about-pg .prog-hero,
 .venue-pg .prog-hero,
@@ -5793,7 +5793,7 @@ select.reg-input option {
   color: rgba(255, 255, 255, 0.22);
 }
 
-/* Track 02 — a status panel, not a second mission grid. Nothing about this
+/* Track 02 - a status panel, not a second mission grid. Nothing about this
    track is published yet, so it stays deliberately smaller than Track 01. */
 .challenge-technical {
   padding: 0 0 40px;
@@ -5823,7 +5823,7 @@ select.reg-input option {
 }
 
 /* Three tiles, echoing Track 01's three missions. Dashed borders read as
-   "defined but not yet revealed" — structure without inventing content. */
+   "defined but not yet revealed" - structure without inventing content. */
 .challenge-areas {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -5930,7 +5930,7 @@ select.reg-input option {
 }
 
 /* Left-aligned: these descriptions run 60+ words, and centred ragged text at
-   that length is genuinely hard to read — every line starts in a new place. */
+   that length is genuinely hard to read - every line starts in a new place. */
 .challenge-game-card {
   padding: 34px 30px 32px;
   display: flex;
@@ -5960,7 +5960,7 @@ select.reg-input option {
 /* ═══════════════════════════════════════════════════════════════
    ABOUT / VENUE / CHALLENGE RESPONSIVE
 ═══════════════════════════════════════════════════════════════ */
-/* ──── About / Venue / Challenge — Tablet (1024px) ──── */
+/* ──── About / Venue / Challenge - Tablet (1024px) ──── */
 @media (max-width: 1024px) {
   .venue-hotel-card {
     grid-template-columns: 1fr;
@@ -5984,7 +5984,7 @@ select.reg-input option {
   }
 }
 
-/* ──── About / Venue / Challenge — Small tablet (900px) ──── */
+/* ──── About / Venue / Challenge - Small tablet (900px) ──── */
 @media (max-width: 900px) {
   .converter {
     grid-template-columns: 1fr;
@@ -6019,7 +6019,7 @@ select.reg-input option {
   }
 }
 
-/* ──── About / Venue / Challenge — Mobile (600px) ──── */
+/* ──── About / Venue / Challenge - Mobile (600px) ──── */
 @media (max-width: 600px) {
   .challenge-story {
     padding: 60px 0 24px;
@@ -6189,7 +6189,7 @@ select.reg-input option {
   }
 }
 
-/* ──── About / Venue / Challenge — Small phone (390px) ──── */
+/* ──── About / Venue / Challenge - Small phone (390px) ──── */
 @media (max-width: 390px) {
   .id-card-name {
     font-size: 11px;
@@ -6837,7 +6837,7 @@ select.reg-input option {
   letter-spacing: 0.1em;
 }
 
-/* Email confirmation sent — success view */
+/* Email confirmation sent - success view */
 .trsyp-confirmation {
   display: flex;
   flex-direction: column;
@@ -6923,7 +6923,7 @@ select.reg-input option {
   flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 36px;
-  /* Was var(--font-mono) — never defined, so this fell back to the browser's
+  /* Was var(--font-mono) - never defined, so this fell back to the browser's
      default monospace and clashed with both real faces. */
   font-family: var(--font-heading);
   font-size: 10.5px;
@@ -6983,7 +6983,7 @@ select.reg-input option {
   padding-bottom: 40px;
 }
 
-/* Trims .prog-cta's shared 80px top padding — that value is tuned for the
+/* Trims .prog-cta's shared 80px top padding - that value is tuned for the
    challenge page, where the CTA closes a long scroll. Overridden here rather
    than changed there, so the challenge page keeps its own rhythm. */
 .visa-notes {
@@ -7078,7 +7078,7 @@ select.reg-input option {
   border-left-width: 2px;
 }
 
-/* Tunisia — the easter egg. Both brand colours, since it isn't a verdict. */
+/* Tunisia - the easter egg. Both brand colours, since it isn't a verdict. */
 .visa-result--home {
   border-left-color: var(--color-pink);
   background:
@@ -7102,7 +7102,7 @@ select.reg-input option {
   border-left-color: var(--color-pink);
 }
 
-/* Not a verdict — the name simply wasn't recognised. */
+/* Not a verdict - the name simply wasn't recognised. */
 .visa-result--unknown {
   border-left-color: rgba(255, 255, 255, 0.25);
 }
@@ -7152,7 +7152,7 @@ select.reg-input option {
   margin: 0;
 }
 
-/* The verdict alone isn't the answer — how long you may stay, whether a second
+/* The verdict alone isn't the answer - how long you may stay, whether a second
    route applies, and what paperwork to carry all live here so the reader never
    has to scroll down and cross-reference three separate sections. */
 .visa-result-facts {

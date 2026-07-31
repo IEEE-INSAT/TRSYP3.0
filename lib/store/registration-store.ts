@@ -51,7 +51,7 @@ export interface UserData {
   members?: TeamMember[];
 }
 
-/** Page 1 (participant info) input — matches the registration flow spec. */
+/** Page 1 (participant info) input - matches the registration flow spec. */
 export interface ParticipantRegistrationInput {
   participantType: ParticipantType;
   gender: Gender;
@@ -65,7 +65,7 @@ interface RegistrationState {
   user: UserData | null;
   isRegistered: boolean;
   submitting: boolean;
-  /** True while the first backend profile sync is in flight — lets the UI avoid
+  /** True while the first backend profile sync is in flight - lets the UI avoid
    *  flashing a "not registered" state before we actually know. */
   hydrating: boolean;
   error: string | null;
@@ -90,7 +90,7 @@ function toPayload(input: ParticipantRegistrationInput): RegisterParticipantPayl
 }
 
 /**
- * Registration store — source of truth for the signed-in participant's profile.
+ * Registration store - source of truth for the signed-in participant's profile.
  * Persisted so the dashboard survives reloads while the backend registration
  * module is still a placeholder.
  */

@@ -48,7 +48,7 @@ export default function Navbar() {
   const pathname = usePathname();
 
   // Just after login we're authenticated but the profile sync hasn't resolved
-  // yet — hold a neutral state instead of flashing "Register Now" before the
+  // yet - hold a neutral state instead of flashing "Register Now" before the
   // dashboard link appears.
   const authResolving =
     !initialized || (isAuthenticated && !isRegistered && hydrating);
@@ -284,7 +284,7 @@ export default function Navbar() {
                 </svg>
                 <span>Participant (Closed)</span>
               </button>
-              {/* Straight to the registration page — it runs its own auth gate,
+              {/* Straight to the registration page - it runs its own auth gate,
                   so authenticating there keeps the user on the destination
                   instead of bouncing them through a redirect. */}
               <Link href="/register/challenger" className="reg-btn reg-btn-challenger" onClick={() => setShowRegister(false)}>
@@ -307,7 +307,7 @@ export default function Navbar() {
             setShowAuthModal(false);
             // An already-registered account goes to its dashboard; anyone else
             // continues into the registration flow. Never back to the landing
-            // page — that reads as "nothing happened".
+            // page - that reads as "nothing happened".
             window.location.href = resolvePostAuth({
               isRegistered: useRegistrationStore.getState().isRegistered,
               hasAvatar: !!useAuthStore.getState().account?.avatar,

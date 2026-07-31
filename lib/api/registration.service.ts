@@ -10,7 +10,7 @@ import type {
 } from './types';
 
 /**
- * Registration service — implements the registration flow spec
+ * Registration service - implements the registration flow spec
  * (participant info + teams).
  *
  * PLACEHOLDER STATUS: the backend `/registration/*` routes are not wired yet
@@ -65,7 +65,7 @@ function randomCode(): string {
 
 export const registrationService = {
   // ── Page 1: participant ─────────────────────────────────────────────────
-  /** POST /registration — register the current Supabase user as a participant. */
+  /** POST /registration - register the current Supabase user as a participant. */
   async register(
     payload: RegisterParticipantPayload,
     token: string,
@@ -78,13 +78,13 @@ export const registrationService = {
     });
   },
 
-  /** GET /registration/profile — the current user's participant profile, or null if none yet. */
+  /** GET /registration/profile - the current user's participant profile, or null if none yet. */
   async getProfile(token: string): Promise<BackendParticipant | null> {
     if (!features.registrationApi) return null;
     try {
       return await apiFetch<BackendParticipant>('/registration/profile', { token });
     } catch (e) {
-      // 404 = the user hasn't registered a profile yet — an expected state, not an error.
+      // 404 = the user hasn't registered a profile yet - an expected state, not an error.
       if (e instanceof ApiError && e.status === 404) return null;
       throw e;
     }
@@ -95,7 +95,7 @@ export const registrationService = {
   // challenge) and defaults to COMPETITION, which is what the API assumes when
   // the parameter is absent.
 
-  /** POST /registration/team — create a team, returns the team + join `code`. */
+  /** POST /registration/team - create a team, returns the team + join `code`. */
   async createTeam(payload: CreateTeamPayload, token: string): Promise<Team> {
     const activity = payload.activity ?? DEFAULT_ACTIVITY;
     if (features.registrationApi) {
@@ -122,7 +122,7 @@ export const registrationService = {
     return team;
   },
 
-  /** PATCH /registration/team — leader updates team name/size. */
+  /** PATCH /registration/team - leader updates team name/size. */
   async updateTeam(
     payload: { name?: string; size?: number },
     token: string,
@@ -145,7 +145,7 @@ export const registrationService = {
   },
 
   /**
-   * POST /registration/team/join — join a team by 6-char code.
+   * POST /registration/team/join - join a team by 6-char code.
    * The server derives the activity from the code; `activity` is only a hint
    * for which local slot the placeholder should fill.
    */
@@ -176,7 +176,7 @@ export const registrationService = {
     return team;
   },
 
-  /** GET /registration/team — the current user's team for one activity, or null. */
+  /** GET /registration/team - the current user's team for one activity, or null. */
   async getTeam(
     token: string,
     activity: TeamActivity = DEFAULT_ACTIVITY,
@@ -191,7 +191,7 @@ export const registrationService = {
     return readLocalTeam(activity);
   },
 
-  /** GET /registration/teams — both teams in one round trip. */
+  /** GET /registration/teams - both teams in one round trip. */
   async getTeams(token: string): Promise<MyTeams> {
     if (features.registrationApi) {
       try {
@@ -207,7 +207,7 @@ export const registrationService = {
     };
   },
 
-  /** DELETE /registration/team/leave — member leaves their team. */
+  /** DELETE /registration/team/leave - member leaves their team. */
   async leaveTeam(token: string, activity: TeamActivity = DEFAULT_ACTIVITY): Promise<void> {
     if (features.registrationApi) {
       await apiFetch(`/registration/team/leave${activityQuery(activity)}`, {
@@ -219,7 +219,7 @@ export const registrationService = {
     writeLocalTeam(activity, null);
   },
 
-  /** DELETE /registration/team — leader disbands the whole team. */
+  /** DELETE /registration/team - leader disbands the whole team. */
   async disbandTeam(token: string, activity: TeamActivity = DEFAULT_ACTIVITY): Promise<void> {
     if (features.registrationApi) {
       await apiFetch(`/registration/team${activityQuery(activity)}`, {
@@ -231,7 +231,7 @@ export const registrationService = {
     writeLocalTeam(activity, null);
   },
 
-  /** DELETE /registration/team/members/:participantId — leader removes a member. */
+  /** DELETE /registration/team/members/:participantId - leader removes a member. */
   async removeMember(
     participantId: string,
     token: string,
@@ -257,7 +257,7 @@ export const registrationService = {
   /**
    * Submit a payment proof.
    *
-   * TODO(backend): the Payment module is currently empty stubs — there is no
+   * TODO(backend): the Payment module is currently empty stubs - there is no
    * endpoint nor a model for payment proofs. When it lands, replace this with
    * the real (likely multipart) upload call and drop the placeholder.
    */

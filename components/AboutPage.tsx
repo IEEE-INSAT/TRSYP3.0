@@ -114,7 +114,7 @@ function IdCard({ member, index }: { member: typeof TEAM[0]; index: number }) {
             </div>
             <div className="id-card-back-row">
               <span className="id-card-back-label">EVENT</span>
-              <span className="id-card-back-value">TRSYP 3.0 — OCT 2026</span>
+              <span className="id-card-back-value">TRSYP 3.0 - OCT 2026</span>
             </div>
           </div>
 

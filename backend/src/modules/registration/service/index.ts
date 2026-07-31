@@ -52,7 +52,7 @@ type TeamWithMembers = Team & {
   })[];
 };
 
-/** Raw shape returned by every team query — flattened by `shapeTeam`. */
+/** Raw shape returned by every team query - flattened by `shapeTeam`. */
 type TeamWithMemberships = Team & {
   memberships: {
     participant: Participant & {
@@ -352,7 +352,7 @@ export class RegistrationService {
         }
 
         // Edge case: Cannot delete a profile that leads a team with other
-        // members — the DB-level ON DELETE CASCADE on Team.leaderId would
+        // members - the DB-level ON DELETE CASCADE on Team.leaderId would
         // silently delete the team and drop every teammate out with no
         // warning. Force an explicit disband/kick first instead. Checked across
         // every activity the participant leads a team in.
@@ -868,7 +868,7 @@ export class RegistrationService {
    * Generates a unique 6-character join code.
    * The creating participant becomes both leader and first member.
    *
-   * A participant may lead one team per activity — a competition team and a
+   * A participant may lead one team per activity - a competition team and a
    * technical challenge team are independent of each other.
    *
    * @param userId  - JWT sub resolved to internal DB user ID
@@ -1026,7 +1026,7 @@ export class RegistrationService {
 
   /**
    * Join an existing team using a 6-character code (member path).
-   * The team's own activity decides which slot is taken — a participant already
+   * The team's own activity decides which slot is taken - a participant already
    * in a competition team can still join a challenge team, and vice versa.
    *
    * @param userId  - JWT sub resolved to internal DB user ID
@@ -1204,7 +1204,7 @@ export class RegistrationService {
 
   /**
    * Leave a team the participant is a member of (member path only).
-   * Team leaders cannot use this — they must disband the team instead,
+   * Team leaders cannot use this - they must disband the team instead,
    * since removing the leader would orphan the remaining members.
    *
    * @param userId   - JWT sub resolved to internal DB user ID
@@ -1255,7 +1255,7 @@ export class RegistrationService {
 
   /**
    * Remove a member from a team (leader path only).
-   * The leader cannot kick themselves — use disbandTeam for that.
+   * The leader cannot kick themselves - use disbandTeam for that.
    *
    * @param userId        - JWT sub of the caller, resolved to internal DB user ID
    * @param memberId      - Participant ID of the member to remove
@@ -1324,8 +1324,8 @@ export class RegistrationService {
    * Disband a team entirely (leader path only).
    * Deletes the Team row; `team_memberships.team_id` is `ON DELETE CASCADE`, so
    * every member (including the ex-leader) is freed from the team at the
-   * database level — and only for that activity, leaving their other team alone.
-   * The leader's own participant profile is untouched — only the team goes away.
+   * database level - and only for that activity, leaving their other team alone.
+   * The leader's own participant profile is untouched - only the team goes away.
    *
    * @param userId   - JWT sub resolved to internal DB user ID
    * @param activity - Which event's team to disband (default COMPETITION)

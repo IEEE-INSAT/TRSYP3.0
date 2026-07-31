@@ -12,7 +12,7 @@ datasource db {
 // ============================================================================
 // Each domain module owns its own models.
 // Models are organized by module boundary.
-// No cross-module entity references — use domain events for inter-module comms.
+// No cross-module entity references - use domain events for inter-module comms.
 // ============================================================================
 
 // --- Auth Module ---
@@ -88,7 +88,7 @@ model Participant {
   roomId            String?
   invitations       Invitation[]
   // Relations
-  // A participant may belong to at most one team per activity — the cap is a
+  // A participant may belong to at most one team per activity - the cap is a
   // DB-level unique on TeamMembership(participant_id, activity).
   memberships       TeamMembership[]
   ledTeams          Team[]             @relation("TeamLeader")
@@ -102,7 +102,7 @@ model Team {
   id        String       @id @default(uuid())
   code      String       @unique
   name      String
-  size      Int // max capacity — enforced at service level
+  size      Int // max capacity - enforced at service level
   activity  TeamActivity @default(COMPETITION) // which event this team competes in
   leaderId  String       @map("leader_id")
   createdAt DateTime     @default(now()) @map("created_at")
@@ -112,7 +112,7 @@ model Team {
   leader      Participant      @relation("TeamLeader", fields: [leaderId], references: [id], onDelete: Cascade)
   memberships TeamMembership[]
 
-  // One led team per activity — a leader can head a competition team *and* a
+  // One led team per activity - a leader can head a competition team *and* a
   // challenge team, but never two of the same kind.
   @@unique([leaderId, activity])
   @@map("teams")
@@ -317,7 +317,7 @@ enum InvitationStatus {
 }
 
 enum RoomStatus {
-  Pending // Default — waiting for residents and payments
+  Pending // Default - waiting for residents and payments
   Confirmed // All residents have paid
 }
 

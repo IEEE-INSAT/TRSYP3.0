@@ -11,7 +11,7 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import { AuthService } from '../service/auth.service';
-import { Response, Request } from 'express';
+import { Response } from 'express';
 import {
     ApiTags,
     ApiOperation,
@@ -19,7 +19,10 @@ import {
     ApiBearerAuth,
 } from '@nestjs/swagger';
 import { AvatarDto, ResetPasswordDto, SignUpDto } from '../dto';
-import { JwtAuthGuard } from '@common/guards/jwt-auth.guard';
+import {
+    JwtAuthGuard,
+    RequestWithUser,
+} from '@common/guards/jwt-auth.guard';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -36,9 +39,9 @@ export class AuthController {
     })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })
     @ApiResponse({ status: 429, description: 'Too many requests.' })
-    async getMe(@Req() req: Request, @Res() res: Response) {
+    async getMe(@Req() req: RequestWithUser, @Res() res: Response) {
         const user = await this.authService.findbySupabaseId(
-            (req.user as any)._supabaseId,
+            req.user._supabaseId,
         );
         if (!user) {
             throw new NotFoundException('User not found');
@@ -51,11 +54,8 @@ export class AuthController {
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Set the current user hybrid avatar' })
     @ApiResponse({ status: 200, description: 'Avatar saved.' })
-    async setAvatar(@Req() req: Request, @Body() dto: AvatarDto) {
-        return this.authService.setAvatar(
-            (req.user as { sub: string }).sub,
-            dto,
-        );
+    async setAvatar(@Req() req: RequestWithUser, @Body() dto: AvatarDto) {
+        return this.authService.setAvatar(req.user.sub, dto);
     }
 
     @Post('sign-up')

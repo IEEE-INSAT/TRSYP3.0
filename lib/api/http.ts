@@ -13,7 +13,7 @@ export class ApiError extends Error {
 }
 
 export interface RequestOptions extends Omit<RequestInit, 'body'> {
-  /** Plain object — JSON-serialised automatically. */
+  /** Plain object - JSON-serialised automatically. */
   body?: unknown;
   /** Bearer token attached as `Authorization` header. */
   token?: string | null;

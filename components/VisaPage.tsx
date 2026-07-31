@@ -97,7 +97,7 @@ const ARRIVAL_ELIGIBLE = [
  * A conditional exemption, not a route of its own: these nationalities enter
  * without a visa *only* when travelling on an organized tour and holding a
  * hotel voucher. Without that, they follow whichever route their country
- * otherwise falls under — for most of this list, an embassy application.
+ * otherwise falls under - for most of this list, an embassy application.
  */
 const ORGANIZED_TOUR = [
   { name: 'Azerbaijan', code: 'az' },
@@ -116,7 +116,7 @@ const ORGANIZED_TOUR = [
  * therefore need a visa arranged before travelling.
  *
  * The published source only enumerates the exemptions, so this list is the
- * derived complement — "not exempt" means "apply in advance". Spelling them out
+ * derived complement - "not exempt" means "apply in advance". Spelling them out
  * lets the checker answer by name instead of falling back to a hedge, which is
  * the difference between an answer and a shrug for roughly half the world.
  */
@@ -285,7 +285,7 @@ const IMPORTANT_NOTES = [
 /**
  * EU member states, which the visa-free list above covers only as a single
  * "All European Union citizens (except Cyprus)" line. Spelled out here so the
- * checker can actually answer someone who types "France" — searching the raw
+ * checker can actually answer someone who types "France" - searching the raw
  * list for that returns nothing, which would wrongly imply they need a visa.
  */
 const EU_VISA_FREE: { name: string; code: string }[] = [
@@ -323,7 +323,7 @@ type VisaRoute = 'home' | 'visa-free' | 'on-arrival' | 'embassy';
 interface CountryRule {
   name: string;
   code: string;
-  /** The best route available — what the verdict badge shows. */
+  /** The best route available - what the verdict badge shows. */
   route: VisaRoute;
   /** Why this country is visa-free when the published list only says "EU". */
   basis?: string;
@@ -369,7 +369,7 @@ const ROUTE_COPY: Record<VisaRoute, { label: string; detail: string }> = {
 
 /**
  * One lookup table merged from the three published lists, carrying every fact
- * about a country rather than a single winning verdict — the checker is meant
+ * about a country rather than a single winning verdict - the checker is meant
  * to be the whole answer, so nobody has to scroll and cross-reference.
  */
 const COUNTRY_RULES: CountryRule[] = (() => {
@@ -402,7 +402,7 @@ const COUNTRY_RULES: CountryRule[] = (() => {
   // The 'eu' entry is the umbrella line, already expanded above.
   VISA_FREE_COUNTRIES.filter((c) => c.code !== 'eu').forEach((c) => add({ ...c, route: 'visa-free' }));
   ARRIVAL_ELIGIBLE.forEach((c) => add({ ...c, route: 'on-arrival' }));
-  // Conditional, so it never sets the route on its own — it only ever adds the
+  // Conditional, so it never sets the route on its own - it only ever adds the
   // organized-tour exemption on top of whatever route already applies.
   ORGANIZED_TOUR.forEach((c) => add({ ...c, route: 'embassy', organizedTour: true }));
   VISA_REQUIRED.forEach((c) => add({ ...c, route: 'embassy' }));
@@ -454,7 +454,7 @@ function VisaChecker() {
           id="visa-country"
           type="text"
           className="visa-checker-input"
-          placeholder="Type a country — France, Japan, Nigeria…"
+          placeholder="Type a country - France, Japan, Nigeria…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           autoComplete="country-name"
@@ -468,14 +468,14 @@ function VisaChecker() {
 
       <div className="visa-checker-results" aria-live="polite">
         {/* Every nationality is now listed, so reaching this means the name
-            wasn't recognised — a spelling or naming difference, not a verdict. */}
+            wasn't recognised - a spelling or naming difference, not a verdict. */}
         {searched && matches.length === 0 && (
           <div className="visa-result visa-result--unknown">
             <div className="visa-result-head">
               <strong>No match for “{trimmed}”</strong>
             </div>
             <p>
-              Try a different spelling or the country&apos;s official name — some are listed differently
+              Try a different spelling or the country&apos;s official name - some are listed differently
               (Czechia, Eswatini, Timor-Leste). If you still can&apos;t find it, assume you need to apply in
               advance and confirm with your nearest Tunisian mission.
             </p>
@@ -502,7 +502,7 @@ function VisaChecker() {
                 {match.basis ? ` ${match.basis}.` : ''}
               </p>
 
-              {/* The joke lands better on its own — no stay limits, no
+              {/* The joke lands better on its own - no stay limits, no
                   paperwork, nothing to cross-reference. */}
               <dl className="visa-result-facts">
                 {/* Inline checks rather than `!isHome`: the compiler narrows
@@ -542,7 +542,7 @@ function VisaChecker() {
                     {match.route === 'embassy' ? 'How to apply' : 'Bring with you'}
                   </span>
                   {/* Full detail, because the reference sections that used to
-                      carry it are gone — this card is the whole answer now. */}
+                      carry it are gone - this card is the whole answer now. */}
                   <ul>
                     {(match.route === 'embassy' ? EMBASSY_STEPS : ARRIVAL_DOCS).map((item, n) => (
                       <li key={item.title}>
@@ -565,7 +565,7 @@ function VisaChecker() {
                   <p>
                     Travelling on an <strong>organized tour with a hotel voucher</strong>? You can enter
                     Tunisia without a visa
-                    {match.route === 'embassy' ? ' — no embassy application needed.' : '.'}
+                    {match.route === 'embassy' ? ' - no embassy application needed.' : '.'}
                   </p>
                 </div>
               )}
@@ -575,7 +575,7 @@ function VisaChecker() {
       </div>
 
       <p className="visa-note visa-checker-note">
-        Guidance only. Visa rules change — always confirm with the Tunisian embassy or consulate for your
+        Guidance only. Visa rules change - always confirm with the Tunisian embassy or consulate for your
         country before booking.
       </p>
     </div>

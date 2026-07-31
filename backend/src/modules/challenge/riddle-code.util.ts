@@ -3,13 +3,13 @@ import * as crypto from 'crypto';
 /**
  * Encodes (teamCode, riddleNumber) into a short 7-character alphanumeric code,
  * using the SAME unambiguous alphabet as the team codes themselves
- * (ABCDEFGHJKLMNPQRSTUVWXYZ23456789 — no 0/O/1/I/L), so it looks and feels
+ * (ABCDEFGHJKLMNPQRSTUVWXYZ23456789 - no 0/O/1/I/L), so it looks and feels
  * like the same kind of code your teams already have.
  *
  * No extra DB column needed: team codes are 6 chars in a 33-symbol alphabet,
  * so there are 33^6 (~1.29 billion) possible team codes, times 3 riddles =
  * ~3.87 billion combinations. A 7-char code in the same alphabet has
- * 33^7 (~42.6 billion) possible values — comfortably bigger — so encrypting
+ * 33^7 (~42.6 billion) possible values - comfortably bigger - so encrypting
  * the actual team-code text (rather than a synthetic small integer) is still
  * collision-free.
  *
@@ -26,7 +26,7 @@ const OUTPUT_LENGTH = 7;
 
 const TEAM_CODE_SPACE = RADIX ** TEAM_CODE_LENGTH; // 33^6 ≈ 1.29 billion
 const RIDDLE_COUNT = 3;
-const DOMAIN = TEAM_CODE_SPACE * RIDDLE_COUNT; // ~3.87 billion — exact number of valid (team, riddle) pairs
+const DOMAIN = TEAM_CODE_SPACE * RIDDLE_COUNT; // ~3.87 billion - exact number of valid (team, riddle) pairs
 
 // Split DOMAIN into two roughly-equal "wheels" for the Feistel halves.
 const A = Math.ceil(Math.sqrt(DOMAIN));
@@ -102,7 +102,7 @@ function codeToInt(code: string, expectedLength: number): number {
   for (const char of code) {
     const digit = ALPHABET.indexOf(char);
     if (digit === -1) {
-      throw new Error(`Invalid character "${char}" — not in the allowed alphabet`);
+      throw new Error(`Invalid character "${char}" - not in the allowed alphabet`);
     }
     value = value * RADIX + digit;
   }

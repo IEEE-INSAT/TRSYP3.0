@@ -11,7 +11,7 @@ import { clearNext, readNext, resolvePostAuth } from '@/lib/auth/post-auth';
 import LoadingScreen from '@/components/LoadingScreen';
 
 /**
- * Landing route for auth round-trips that leave the site — currently the Google
+ * Landing route for auth round-trips that leave the site - currently the Google
  * OAuth redirect. It establishes the session, reconciles the backend profile so
  * we know whether this is an existing participant, and then forwards to the
  * route the user was originally heading for.
@@ -35,7 +35,7 @@ export default function AuthCallbackPage() {
     if (!supabase) return;
 
     let cancelled = false;
-    // Read before anything async — the URL is about to change.
+    // Read before anything async - the URL is about to change.
     const next = readNext();
 
     void (async () => {

@@ -365,7 +365,7 @@ export class RegistrationController {
   /**
    * Get every team the current user belongs to, keyed by activity.
    * Preferred over `GET /registration/team` for clients that render both the
-   * competition and the technical challenge — one request, no 404 handling.
+   * competition and the technical challenge - one request, no 404 handling.
    */
   @Get('teams')
   @ApiOperation({ summary: 'Get all of the current user\'s teams, keyed by activity' })
@@ -386,7 +386,7 @@ export class RegistrationController {
   /**
    * Get the current user's team for one activity.
    * Returns full team info including members.
-   * Note: the join code is only useful to the leader — consider omitting it
+   * Note: the join code is only useful to the leader - consider omitting it
    * from the response for non-leaders in a future iteration.
    */
   @Get('team')
@@ -406,7 +406,7 @@ export class RegistrationController {
 
   /**
    * Leave the current user's team (member path).
-   * Team leaders cannot leave their own team — they must disband it instead.
+   * Team leaders cannot leave their own team - they must disband it instead.
    */
   @Delete('team/leave')
   @HttpCode(HttpStatus.NO_CONTENT)

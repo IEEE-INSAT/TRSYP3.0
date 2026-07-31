@@ -5,14 +5,14 @@
  * site and come back as a *fresh page load*, so the route the user was heading
  * for cannot be kept in React state. It travels two ways instead:
  *
- * 1. a `?next=` param on the redirect URL — survives anything, including the
+ * 1. a `?next=` param on the redirect URL - survives anything, including the
  *    link being opened on another device;
- * 2. a localStorage copy — survives the mail client opening the link in a brand
+ * 2. a localStorage copy - survives the mail client opening the link in a brand
  *    new tab (which would wipe sessionStorage), and covers the case where
  *    Supabase drops the query string.
  *
  * Everything here is deliberately free of store imports so it stays a pure,
- * cycle-free module — callers pass `isRegistered` in.
+ * cycle-free module - callers pass `isRegistered` in.
  */
 
 const NEXT_PARAM = 'next';
@@ -23,7 +23,7 @@ const AUTH_CALLBACK_PATH = '/auth/callback/';
 
 /**
  * Where a freshly authenticated user goes when nothing more specific was
- * requested. Never `/` — someone who just signed in has unfinished business,
+ * requested. Never `/` - someone who just signed in has unfinished business,
  * and the landing page reads as "nothing happened".
  */
 const DEFAULT_NEXT = '/register';
@@ -37,7 +37,7 @@ export function sanitizeNext(value: string | null | undefined): string | null {
   if (!value) return null;
   if (!value.startsWith('/')) return null;
   if (value.startsWith('//') || value.startsWith('/\\')) return null;
-  // Never point back at the callback — that would loop.
+  // Never point back at the callback - that would loop.
   if (value.startsWith(AUTH_CALLBACK_PATH)) return null;
   return value;
 }
@@ -49,13 +49,13 @@ export function rememberNext(route: string | null | undefined): void {
     if (safe) window.localStorage.setItem(NEXT_STORAGE_KEY, safe);
     else window.localStorage.removeItem(NEXT_STORAGE_KEY);
   } catch {
-    // Storage blocked (private mode) — the ?next= param still carries the intent.
+    // Storage blocked (private mode) - the ?next= param still carries the intent.
   }
 }
 
 /**
  * Read the pending destination: `?next=` first, then the stored copy.
- * Non-destructive on purpose — a React effect may run twice in development, and
+ * Non-destructive on purpose - a React effect may run twice in development, and
  * consuming on read would lose the value on the second pass. Call `clearNext()`
  * once, immediately before navigating.
  */

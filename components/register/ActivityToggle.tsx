@@ -21,7 +21,7 @@ const PHASE_BADGE: Record<RegistrationPhase, string | null> = {
 
 /**
  * Switch between the competition and the technical challenge.
- * Both tabs always render — a tab whose window is not open is still selectable
+ * Both tabs always render - a tab whose window is not open is still selectable
  * so members of an existing team can manage it, and it carries a Soon/Closed
  * badge so the state is obvious before the panel explains it.
  */

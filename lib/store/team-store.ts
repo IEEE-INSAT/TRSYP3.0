@@ -7,7 +7,7 @@ import type { Team, TeamActivity } from '../api/types';
 
 export type TeamRole = 'leader' | 'member';
 
-/** Per-activity map — one slot for the competition, one for the challenge. */
+/** Per-activity map - one slot for the competition, one for the challenge. */
 type ByActivity<T> = Record<TeamActivity, T>;
 
 const emptyByActivity = <T,>(value: T): ByActivity<T> => ({
@@ -20,7 +20,7 @@ interface TeamState {
   activity: TeamActivity;
   teams: ByActivity<Team | null>;
   roles: ByActivity<TeamRole | null>;
-  /** Whether a fetch has completed — gates the "no team yet" empty state. */
+  /** Whether a fetch has completed - gates the "no team yet" empty state. */
   loaded: boolean;
   loading: boolean;
   submitting: boolean;
@@ -54,12 +54,12 @@ async function currentToken(): Promise<string> {
   return (await useAuthStore.getState().getAccessToken()) ?? '';
 }
 
-/** Selectors for the currently selected activity — the common read path. */
+/** Selectors for the currently selected activity - the common read path. */
 export const selectTeam = (s: TeamState): Team | null => s.teams[s.activity];
 export const selectRole = (s: TeamState): TeamRole | null => s.roles[s.activity];
 
 /**
- * Team store — drives Page 2 of the registration flow (create / join / status)
+ * Team store - drives Page 2 of the registration flow (create / join / status)
  * for both the competition and the technical challenge. A participant can hold
  * one team per activity, so state is keyed by activity throughout and each
  * action falls back to whichever activity the UI has selected.
@@ -227,7 +227,7 @@ export const useTeamStore = create<TeamState>()(
     }),
     {
       // Cache the teams so the dashboard renders instantly on reload and merely
-      // refreshes in the background — avoids the "info pops in / takes time to
+      // refreshes in the background - avoids the "info pops in / takes time to
       // change" flash. `loaded`/`loading` stay transient so a refetch still runs.
       name: 'trsyp_team_store',
       version: 2,

@@ -144,8 +144,8 @@ export class AuthService {
 
     /**
      * Verify the domain part of an email can actually receive mail by checking
-     * for MX records. This lives on the backend (not the frontend) because the
-     * frontend is a static export with no Node runtime to do DNS lookups.
+     * for MX records. This stays on the backend so DNS checks are centralized
+     * and do not expose an extra browser-side dependency.
      *
      * Always resolves (never throws) so the caller can treat it as advisory and
      * never hard-block signup on a transient DNS hiccup.
@@ -191,7 +191,7 @@ export class AuthService {
                     reason: 'This email domain does not exist.',
                 };
             }
-            // Unknown/transient DNS error — don't block the user.
+            // Unknown/transient DNS error - don't block the user.
             this.logger.warn(
                 `validateEmailDomain DNS error for ${domain}: ${String(err)}`,
             );

@@ -7,7 +7,7 @@ import { useTeamStore, selectTeam, selectRole } from '@/lib/store';
 import { ACTIVITY_LABELS } from '@/lib/api/types';
 import ActivityToggle, { isActivityOpen, phaseOf } from './ActivityToggle';
 
-/** Page 2 of the registration flow — team leader / member + team status. */
+/** Page 2 of the registration flow - team leader / member + team status. */
 export default function TeamStep() {
   const activity = useTeamStore((s) => s.activity);
   const setActivity = useTeamStore((s) => s.setActivity);
@@ -186,7 +186,7 @@ export default function TeamStep() {
     );
   }
 
-  // ── Window not open — nothing to create or join yet ────────────────────────
+  // ── Window not open - nothing to create or join yet ────────────────────────
   if (!activityOpen) {
     return (
       <motion.div className="reg-form" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
@@ -195,7 +195,7 @@ export default function TeamStep() {
         <div className="reg-section-label">{activityLabel}</div>
         <p className="reg-account-hint">
           {phaseOf(activity) === 'soon'
-            ? `${activityLabel} team registration opens soon. Check back shortly — you can still register for the other track in the meantime.`
+            ? `${activityLabel} team registration opens soon. Check back shortly - you can still register for the other track in the meantime.`
             : `${activityLabel} team registration is now closed.`}
         </p>
       </motion.div>

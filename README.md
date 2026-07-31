@@ -2,10 +2,10 @@
 
 TRSYP's production application:
 
-- repository root — Next.js static export hosted on Render
-- `backend/` — NestJS API hosted on Render
-- Supabase — PostgreSQL and authentication
-- Prisma — the API's typed ORM for the Supabase PostgreSQL database
+- repository root - Next.js application hosted on Render
+- `backend/` - NestJS API hosted on Render
+- Supabase - PostgreSQL and authentication
+- Prisma - the API's typed ORM for the Supabase PostgreSQL database
 
 `old_trs/` is intentionally retained for future work and is not part of the
 active application.
@@ -50,8 +50,8 @@ npm run build
 Blueprint and provide every environment variable marked `sync: false`.
 Render automatically redeploys each service on commits to its linked branch.
 
-The frontend variables are compiled into the static bundle, so changing a
-`NEXT_PUBLIC_*` value requires a frontend redeploy.
+The public frontend variables are compiled into the browser bundle, so changing
+a `NEXT_PUBLIC_*` value requires a frontend redeploy.
 
 Supabase authentication emails are configured in the Supabase dashboard, not
 in Render. Set the public frontend as the Auth Site URL and allow:
@@ -70,8 +70,3 @@ http://localhost:3000/**
 
 Without this allow-list entry Supabase ignores the localhost `redirectTo`
 requested by the app and falls back to the production Site URL.
-
-Moving `rtc.ieee.tn` from the current FTP host to Render requires one DNS
-change after the Render site is verified. The application can be deployed and
-tested first at its `onrender.com` URL, but the existing domain cannot serve
-the Render site until its DNS record points to Render.

@@ -17,7 +17,7 @@ export default function VerifyEmailPage() {
   );
   const [destination, setDestination] = useState('/register');
   // The verification link already establishes a session, so there is nothing
-  // left for the user to do by hand — continue them into the flow they were in.
+  // left for the user to do by hand - continue them into the flow they were in.
   const continued = useRef(false);
 
   useEffect(() => {

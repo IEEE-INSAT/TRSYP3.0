@@ -39,7 +39,7 @@ import {
 export class RoomingController {
   constructor(private readonly roomingService: RoomingService) {}
 
-  // US3.1 — Create Room
+  // US3.1 - Create Room
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -56,7 +56,7 @@ export class RoomingController {
     return plainToInstance(RoomResponseDto, room, { excludeExtraneousValues: true });
   }
 
-  // GET — My Room
+  // GET - My Room
 
   @Get('my-room')
   @HttpCode(HttpStatus.OK)
@@ -68,7 +68,7 @@ export class RoomingController {
     return plainToInstance(RoomResponseDto, room, { excludeExtraneousValues: true });
   }
 
-  // DELETE — Delete Room (Owner only)
+  // DELETE - Delete Room (Owner only)
 
   @Delete(':roomId')
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -83,7 +83,7 @@ export class RoomingController {
     await this.roomingService.deleteRoom(userId, roomId);
   }
 
-  // US3.2 — Invite Participant
+  // US3.2 - Invite Participant
 
   @Post(':roomId/invite')
   @HttpCode(HttpStatus.CREATED)
@@ -119,7 +119,7 @@ export class RoomingController {
     return plainToInstance(RoomResponseDto, room, { excludeExtraneousValues: true });
   }
 
-  // US3.3 — Get My Invitations
+  // US3.3 - Get My Invitations
 
   @Get('invitations')
   @HttpCode(HttpStatus.OK)
@@ -130,7 +130,7 @@ export class RoomingController {
     return plainToInstance(InvitationResponseDto, invitations, { excludeExtraneousValues: true });
   }
 
-  // US3.3 — Respond to Invitation
+  // US3.3 - Respond to Invitation
 
   @Post('invitations/:invitationId/respond')
   @HttpCode(HttpStatus.OK)
@@ -148,7 +148,7 @@ export class RoomingController {
     return plainToInstance(InvitationResponseDto, invitation, { excludeExtraneousValues: true });
   }
 
-  // US3.4 — Request Room Confirmation
+  // US3.4 - Request Room Confirmation
 
   @Post(':roomId/confirm')
   @HttpCode(HttpStatus.OK)

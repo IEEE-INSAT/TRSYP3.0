@@ -16,7 +16,7 @@ export default function ThemeSection() {
         <Image
           className="theme-banner-img theme-banner-desktop"
           src="/b.png"
-          alt="Human and robot facing each other — Human-Robot Symbiosis"
+          alt="Human and robot facing each other - Human-Robot Symbiosis"
           fill
           style={{ objectFit: 'cover', objectPosition: 'center' }}
           priority={false}
@@ -24,7 +24,7 @@ export default function ThemeSection() {
         <Image
           className="theme-banner-img theme-banner-mobile"
           src="/b2.png"
-          alt="Human and robot facing each other — Human-Robot Symbiosis"
+          alt="Human and robot facing each other - Human-Robot Symbiosis"
           fill
           style={{ objectFit: 'cover', objectPosition: 'center' }}
           priority={false}

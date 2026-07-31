@@ -40,7 +40,7 @@ const PHASE_LABEL = {
 } as const;
 
 /**
- * Track 02's three focus areas — labels only.
+ * Track 02's three focus areas - labels only.
  *
  * These are already public (they're the track's own summary), so nothing here
  * is invented. Rendered as locked tiles: it gives the section the same
@@ -299,7 +299,7 @@ export default function ChallengePage() {
                 </div>
                 <span className="why-bento-tag">{g.tag}</span>
                 <h3 className="why-bento-title">{g.title}</h3>
-                {/* One scannable line before the narrative — readers who don't
+                {/* One scannable line before the narrative - readers who don't
                     want the full story still learn what the mission asks. */}
                 <p className="challenge-game-objective">{g.objective}</p>
                 <p className="challenge-game-desc">{g.desc}</p>
@@ -383,7 +383,7 @@ export default function ChallengePage() {
 
             <div className="challenge-technical-badge">
               <span className="challenge-technical-dot" />
-              Full rules &amp; scoring — coming soon
+              Full rules &amp; scoring - coming soon
             </div>
           </div>
         </div>

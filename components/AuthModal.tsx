@@ -147,15 +147,15 @@ function validateEmailFormat(value: string): string | null {
   return null;
 }
 
-/** Async check — verifies the domain has real MX records via the backend (DNS). */
+/** Async check - verifies the domain has real MX records via the backend (DNS). */
 async function validateEmailDomain(email: string): Promise<string | null> {
-  if (!isApiConfigured) return null; // backend not wired — don't block signup
+  if (!isApiConfigured) return null; // backend not wired - don't block signup
   try {
     const data = await authService.validateEmailDomain(email);
     if (!data.valid) return data.reason || 'This email domain is not valid.';
     return null;
   } catch {
-    // Network / backend error — don't block the user.
+    // Network / backend error - don't block the user.
     return null;
   }
 }
@@ -193,7 +193,7 @@ interface AuthModalProps {
   onSuccess: () => void;
   /**
    * Which form to open on. Entry points that say "Register" must open on the
-   * signup form — opening on "Log In" is what made the register CTA feel like
+   * signup form - opening on "Log In" is what made the register CTA feel like
    * it had sent the user somewhere else.
    */
   initialMode?: 'login' | 'signup';
@@ -299,7 +299,7 @@ export default function AuthModal({ onClose, onSuccess, initialMode = 'login', p
       setError(oauthError.message);
       setLoading(false);
     }
-    // On success, Supabase redirects to Google — the page will reload after callback
+    // On success, Supabase redirects to Google - the page will reload after callback
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -431,7 +431,7 @@ export default function AuthModal({ onClose, onSuccess, initialMode = 'login', p
   }
   };
   
-  // Log-in temporarily closed — block every surface that opens this modal
+  // Log-in temporarily closed - block every surface that opens this modal
   // (navbar, /register direct navigation, etc.).
   if (!LOGIN_OPEN) {
     return (
@@ -827,7 +827,7 @@ export default function AuthModal({ onClose, onSuccess, initialMode = 'login', p
                       )}
                     </button>
                   </div>
-                  {/* Password strength checklist — always visible once user starts typing */}
+                  {/* Password strength checklist - always visible once user starts typing */}
                   {password.length > 0 && (
                     <ul className="trsyp-pw-checklist">
                       {passwordChecks.map((check) => (
@@ -910,7 +910,7 @@ export default function AuthModal({ onClose, onSuccess, initialMode = 'login', p
 }
 
 /**
- * The modal shell: backdrop, card, close button — portaled to <body> so it
+ * The modal shell: backdrop, card, close button - portaled to <body> so it
  * cannot be trapped under the navbar or the footer by the page's stacking
  * context. Both the normal and the "log-in closed" states render through it.
  */

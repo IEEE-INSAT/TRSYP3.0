@@ -71,7 +71,7 @@ export default function AboutSection() {
 
         {/* Two-column hero */}
         <div className="ab-hero-grid">
-          {/* Left — Title */}
+          {/* Left - Title */}
           <div className="ab-title-col">
             <div className="ab-vline-accent" aria-hidden="true" />
             <h2 className="ab-main-title">
@@ -86,7 +86,7 @@ export default function AboutSection() {
             </p>
           </div>
 
-          {/* Right — Description + Pillars */}
+          {/* Right - Description + Pillars */}
           <div className="ab-desc-col">
             <p className="ab-desc-text">
               The <strong>Tunisian RAS Student and Young Professional Congress</strong>,

@@ -1,7 +1,8 @@
-import { Controller, Post, Body, UseGuards, Req, Res, HttpStatus, Get, UnauthorizedException } from "@nestjs/common";
+import { Controller, Post, Body, UseGuards, Req, Res, HttpStatus, Get } from "@nestjs/common";
 import { AdminService } from "../service/admin.service";
 import { CreateAdminDto } from "../dto/create-admin.dto";
-import { Response, Request } from "express";
+import { Response } from "express";
+import { RequestWithUser } from "../../../common/guards/jwt-auth.guard";
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from "@nestjs/swagger";
 import { SupabaseAuthGuard } from "../../auth/guards/supabase-auth.guard";
 import { AdminGuard } from "../../auth/guards/admin.guard";
@@ -16,11 +17,10 @@ export class AdminController{
     @ApiBearerAuth()
     @ApiOperation({ summary: 'Verify admin status and get admin profile' })
     @ApiResponse({ status: 200, description: 'User is an admin.' })
-    @ApiResponse({ status: 401, description: 'Unauthorized — not logged in.' })
-    @ApiResponse({ status: 403, description: 'Forbidden — not an admin.' })
-    async getMe(@Req() req: Request, @Res() res: Response) {
-        const user = req.user as any;
-        const admin = await this.adminService.findBySupabaseId(user._supabaseId);
+    @ApiResponse({ status: 401, description: 'Unauthorized - not logged in.' })
+    @ApiResponse({ status: 403, description: 'Forbidden - not an admin.' })
+    async getMe(@Req() req: RequestWithUser, @Res() res: Response) {
+        const admin = await this.adminService.findBySupabaseId(req.user._supabaseId);
         return res.status(HttpStatus.OK).json(admin);
     }
 

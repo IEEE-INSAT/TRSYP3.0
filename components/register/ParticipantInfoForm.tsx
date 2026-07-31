@@ -33,7 +33,7 @@ const initial: FormState = {
   country: '',
 };
 
-/** Page 1 of the registration flow — participant info (POST /registration). */
+/** Page 1 of the registration flow - participant info (POST /registration). */
 export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => void }) {
   const registerParticipant = useRegistrationStore((s) => s.registerParticipant);
   const submitting = useRegistrationStore((s) => s.submitting);
@@ -194,7 +194,7 @@ export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => vo
         {errors.country && <span className="reg-error">{errors.country}</span>}
       </div>
       
-      {/* Student vs Young Professional — IEEE members only */}
+      {/* Student vs Young Professional - IEEE members only */}
       <AnimatePresence>
         {isIeeeMember === true && (
           <motion.div
@@ -226,7 +226,7 @@ export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => vo
         )}
       </AnimatePresence>
 
-      {/* IEEE ID — IEEE members only */}
+      {/* IEEE ID - IEEE members only */}
       <AnimatePresence>
         {isIeee && (
           <motion.div
@@ -252,7 +252,7 @@ export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => vo
         )}
       </AnimatePresence>
 
-      {/* Student branch — students only */}
+      {/* Student branch - students only */}
       <AnimatePresence>
         {isStudent && (
           <motion.div

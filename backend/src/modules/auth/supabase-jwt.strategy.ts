@@ -76,7 +76,7 @@ export class SupabaseJwtStrategy extends PassportStrategy(Strategy, 'supabase-jw
         // inside the signup transaction, so the row already exists here. This
         // lazy upsert is a self-healing safety net for the rare case where the
         // trigger is missing/disabled or the auth.users row was created out of
-        // band — so a user with a valid token is never locked out.
+        // band - so a user with a valid token is never locked out.
         if (!user) {
             this.logger.warn(`No DB user for supabaseId=${supabaseId}; provisioning lazily`);
             const { name, lastName } = this.resolveName(payload);

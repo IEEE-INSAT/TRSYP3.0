@@ -42,7 +42,7 @@ export default function MatrixText({ text, className, speed = 40, pauseMs = 2200
           if (!cancelled) rafRef.current = requestAnimationFrame(tick);
         }, speed);
       } else {
-        // fully revealed — pause then restart
+        // fully revealed - pause then restart
         timerRef.current = setTimeout(() => {
           if (cancelled) return;
           revealedRef.current = 0;

@@ -9,8 +9,8 @@ import { useTeamStore } from '@/lib/store';
 
 export default function PaymentPage() {
   const { user, submitPayment } = useAuth();
-  // Teams are optional — a participant may hold a competition team, a challenge
-  // team, both, or neither — so payment is not gated on team membership. The
+  // Teams are optional - a participant may hold a competition team, a challenge
+  // team, both, or neither - so payment is not gated on team membership. The
   // teams are still refreshed here to keep the dashboard warm.
   const fetchTeams = useTeamStore((s) => s.fetchTeams);
   const [file, setFile] = useState<File | null>(null);

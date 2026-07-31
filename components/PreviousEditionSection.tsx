@@ -3,9 +3,9 @@
 import Image from 'next/image';
 
 const IMAGES = [
-  { src: '/prev-1.jpg', alt: 'TRSYP 2.0 — 1st Place Winners' },
-  { src: '/prev-2.jpg', alt: 'TRSYP 2.0 — Main Stage' },
-  { src: '/prev-3.jpg', alt: 'TRSYP 2.0 — Team Members' },
+  { src: '/prev-1.jpg', alt: 'TRSYP 2.0 - 1st Place Winners' },
+  { src: '/prev-2.jpg', alt: 'TRSYP 2.0 - Main Stage' },
+  { src: '/prev-3.jpg', alt: 'TRSYP 2.0 - Team Members' },
 ];
 
 export default function PreviousEditionSection() {

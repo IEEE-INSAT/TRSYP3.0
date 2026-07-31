@@ -22,7 +22,7 @@ export interface SignUpInput {
 }
 
 interface AuthState {
-  /** Supabase access token (Bearer) — null when signed out. */
+  /** Supabase access token (Bearer) - null when signed out. */
   accessToken: string | null;
   /** Backend user row from /auth/me or /auth/sync-user. */
   account: BackendUser | null;
@@ -91,7 +91,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               try {
                 await supabase.auth.signOut({ scope: 'local' });
               } catch {
-                /* storage already inconsistent — nothing more to do */
+                /* storage already inconsistent - nothing more to do */
               }
             } else {
               set({
@@ -132,7 +132,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const supabase = getSupabaseClient();
       if (!supabase) {
-        // Offline placeholder — no real account yet.
+        // Offline placeholder - no real account yet.
         set({ accessToken: `offline:${email}`, email, loading: false });
         return;
       }
@@ -146,7 +146,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         },
       });
       if (error) {
-        // Supabase enforces email uniqueness — translate its error into a
+        // Supabase enforces email uniqueness - translate its error into a
         // friendly, actionable message instead of a pre-flight check.
         if (
           error.code === 'user_already_exists' ||
@@ -207,7 +207,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   signOut: async () => {
     // Mark sign-out in progress FIRST so route-guarded pages (e.g. the
-    // dashboard) don't fire their own redirect and race the one below —
+    // dashboard) don't fire their own redirect and race the one below -
     // two competing navigations abort each other ("this page couldn't load").
     set({ signingOut: true, accessToken: null, account: null, email: null });
     const supabase = getSupabaseClient();
@@ -216,7 +216,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         // `scope: 'local'` wipes the persisted browser session without the
         // network POST to GoTrue that the default 'global' scope performs. For a
         // long-lived session the access token is already expired, so that POST
-        // can hang or reject — and on rejection supabase-js may leave the session
+        // can hang or reject - and on rejection supabase-js may leave the session
         // in localStorage. The redirect below then reloads into a stale session
         // that reads back as "still logged in". Local scope clears storage
         // reliably; the timeout guarantees a hung call can never block the

@@ -18,7 +18,7 @@ describe('RegistrationService', () => {
 
   /**
    * Build the membership-shaped team row Prisma returns, from a flat list of
-   * member participant ids — keeps the team specs readable.
+   * member participant ids - keeps the team specs readable.
    */
   const teamRow = (
     team: Record<string, any>,

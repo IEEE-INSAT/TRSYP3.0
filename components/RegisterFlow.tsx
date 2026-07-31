@@ -23,7 +23,7 @@ const SUBTITLES: Record<Step, string> = {
  * Unified registration flow (spec: auth → Page 1 participant → Page 2 team).
  *
  * `initialChallenge` skips the "join the challenge?" prompt and goes straight to
- * the team step — used by the /register/challenger entry point.
+ * the team step - used by the /register/challenger entry point.
  */
 export default function RegisterFlow({ initialChallenge = false }: { initialChallenge?: boolean }) {
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -45,7 +45,7 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
 
   // A user who reaches the registration flow already registered (e.g. an
   // existing account signing in via Google, which redirects back here) has no
-  // reason to see Step 1/2 — send them to their dashboard. We wait for the
+  // reason to see Step 1/2 - send them to their dashboard. We wait for the
   // backend profile reconciliation to settle (`initialized && !hydrating`) so
   // we act on the real status, not a stale persisted flag, and we skip it once
   // the user has progressed past Step 1 here (a genuine new registration).
@@ -63,7 +63,7 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
     return () => clearTimeout(t);
   }, [currentStep]);
 
-  // Registration temporarily closed — block every /register entry point,
+  // Registration temporarily closed - block every /register entry point,
   // including direct URL navigation (regardless of auth state).
   if (!REGISTRATION_OPEN) {
     return (
@@ -108,7 +108,7 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
 
   const onParticipantDone = () => {
     progressedStep1.current = true;
-    // After Step 1 go straight to the dashboard — no intermediate screens.
+    // After Step 1 go straight to the dashboard - no intermediate screens.
     window.location.href = '/dashboard';
   };
 
@@ -140,7 +140,7 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
             <div className="reg-section-label">Compete as a team</div>
             <p className="reg-account-hint">
               Would you like to compete at TRSYP 3.0 as part of a team? You pick the
-              track — the competition or the technical challenge — on the next step.
+              track - the competition or the technical challenge - on the next step.
             </p>
             <div className="reg-toggle-group">
               <button type="button" className="reg-toggle reg-toggle-active-green" onClick={() => setStep('team')}>

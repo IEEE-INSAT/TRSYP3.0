@@ -1,12 +1,21 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "export",
-  trailingSlash: true,
-  images: {
-    unoptimized: true,
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: '(?:www\\.)?trsyp\\.ieee\\.tn',
+          },
+        ],
+        destination: 'https://rtc.ieee.tn/:path*',
+        permanent: true,
+      },
+    ];
   },
-  /* config options here */
 };
 
 export default nextConfig;

@@ -11,7 +11,7 @@ import ActivityToggle, { isActivityOpen, phaseOf } from './register/ActivityTogg
 import LoadingScreen from './LoadingScreen';
 import UserAvatar from './UserAvatar';
 
-// TEMP: payment step disabled for now — flip back to true to re-enable.
+// TEMP: payment step disabled for now - flip back to true to re-enable.
 // (Keeps the "Submit Payment Proof" button/code intact, just hidden.)
 const PAYMENT_ENABLED = false;
 
@@ -76,16 +76,16 @@ export default function Dashboard() {
   useEffect(() => {
     // Don't judge the session until it has actually settled. `hydrateFromBackend`
     // briefly leaves `user` null while it reconciles the profile, and acting on
-    // that gap fired a redirect *into* the in-flight navigation to this page —
+    // that gap fired a redirect *into* the in-flight navigation to this page -
     // two competing navigations abort each other ("this page couldn't load").
     // Same guard RegisterFlow uses before its own dashboard redirect.
     if (!initialized || hydrating) return;
 
     // During an explicit sign-out, let auth-store's signOut() own the single
-    // redirect — issuing our own here would race it and abort the navigation.
+    // redirect - issuing our own here would race it and abort the navigation.
     // Only redirect for genuine no-session access.
     if (!user && !useAuthStore.getState().signingOut) {
-      // router.replace, not window.location — a full page load here would abort
+      // router.replace, not window.location - a full page load here would abort
       // whatever client-side transition brought us in.
       router.replace('/');
     }
@@ -115,7 +115,7 @@ export default function Dashboard() {
   const isChallenger = user.userType === 'challenger' || !!team || !!otherTeam;
 
   // Teams are opt-in: plenty of participants attend TRSYP 3.0 without entering
-  // either track. So this is an invitation to join, never a required step — it
+  // either track. So this is an invitation to join, never a required step - it
   // just shows the create/join controls whenever the selected activity is open
   // and the user has no team in it. Gated on `teamLoaded` so it doesn't flash
   // while the teams are still being fetched.
@@ -127,7 +127,7 @@ export default function Dashboard() {
   const showTeam = team ? true : !teamLoaded && isChallenger;
 
   // Derive leader status at render time so it self-corrects once both the team
-  // and the participant id have loaded — the persisted `role` snapshot can be
+  // and the participant id have loaded - the persisted `role` snapshot can be
   // stale if the team fetch won the race against profile hydration.
   const isLeader =
     role === 'leader' ||
@@ -349,7 +349,7 @@ export default function Dashboard() {
           />
         </motion.div>
 
-        {/* Selected track is not taking teams yet — say so instead of offering a form */}
+        {/* Selected track is not taking teams yet - say so instead of offering a form */}
         {teamLoaded && !team && !activityOpen && (
           <motion.div className="dash-card dash-noteam-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }}>
             <div className="dash-card-title">{activityLabel}</div>
@@ -361,12 +361,12 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {/* No team in this track yet — optionally (re)join or create one */}
+        {/* No team in this track yet - optionally (re)join or create one */}
         {canJoinActivity && (
           <motion.div className="dash-card dash-noteam-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }}>
             <div className="dash-card-title">Your {activityLabel} Team</div>
             <p className="dash-noteam-msg">
-              You&apos;re not in a {activityLabel.toLowerCase()} team. Entering is optional — you&apos;re
+              You&apos;re not in a {activityLabel.toLowerCase()} team. Entering is optional - you&apos;re
               registered for TRSYP 3.0 either way. To take part, join a team with a code or create
               your own and invite members.
             </p>

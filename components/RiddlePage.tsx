@@ -188,7 +188,7 @@ export default function RiddlePage() {
                         </div>
                         {feedback === 'incorrect' && (
                           <p className="trsyp-field-error">
-                            Not quite — try again. ({riddle.attempts} attempt
+                            Not quite - try again. ({riddle.attempts} attempt
                             {riddle.attempts === 1 ? '' : 's'} so far)
                           </p>
                         )}

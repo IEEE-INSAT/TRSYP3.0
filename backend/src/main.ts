@@ -25,11 +25,11 @@ async function bootstrap() {
     // client spoof X-Forwarded-For and bypass per-IP rate limits.
     app.set('trust proxy', 1);
 
-    // Security headers — sets X-Content-Type-Options, Strict-Transport-Security,
+    // Security headers - sets X-Content-Type-Options, Strict-Transport-Security,
     // X-Frame-Options, X-XSS-Protection, Referrer-Policy, and more.
     app.use(helmet());
 
-    // CORS — allow the frontend origin (from env) to call the backend.
+    // CORS - allow the frontend origin (from env) to call the backend.
     app.enableCors({
         origin: (origin, callback) => {
             if (!origin || allowedOrigins.has(origin.replace(/\/$/, ''))) {
@@ -41,7 +41,7 @@ async function bootstrap() {
         credentials: true,
     });
 
-    // Swagger — only expose API docs in non-production environments.
+    // Swagger - only expose API docs in non-production environments.
     if (process.env.NODE_ENV !== 'production') {
         const config = new DocumentBuilder()
             .setTitle('TRSYP 3.0 API')

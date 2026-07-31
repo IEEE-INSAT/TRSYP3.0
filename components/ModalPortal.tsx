@@ -12,7 +12,7 @@ import { useHydrated } from '@/lib/store/use-hydrated';
  * everything inside it: an overlay at `z-index: 200` mounted in there still
  * loses to the navbar (`z-index: 100`) and gets painted over by the footer
  * (same `z-index: 1`, but later in the DOM). Raising the overlay's own z-index
- * cannot fix that — the number is compared inside main's context, not against
+ * cannot fix that - the number is compared inside main's context, not against
  * the navbar. Portaling to <body> lifts it out so its z-index actually applies,
  * wherever it happens to be mounted from.
  *

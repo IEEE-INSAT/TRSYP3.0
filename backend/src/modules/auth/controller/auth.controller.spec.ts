@@ -3,7 +3,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from '../service/auth.service';
 import { UnauthorizedException, HttpStatus } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { Response } from 'express';
+import { RequestWithUser } from '../../../common/guards/jwt-auth.guard';
 
 describe('AuthController', () => {
     let controller: AuthController;
@@ -41,8 +42,13 @@ describe('AuthController', () => {
     describe('getMe', () => {
         it('should return the current user profile with 200 OK', async () => {
             const req = {
-                user: { _supabaseId: 'supa-123', sub: 'db-id-123' },
-            } as unknown as Request;
+                user: {
+                    _supabaseId: 'supa-123',
+                    sub: 'db-id-123',
+                    email: 'test@test.com',
+                    role: 'User',
+                },
+            } as RequestWithUser;
             const res = mockResponse();
             const expectedUser = { id: '1', email: 'test@test.com' };
 

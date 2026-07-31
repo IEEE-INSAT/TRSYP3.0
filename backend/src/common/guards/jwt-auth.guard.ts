@@ -1,5 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import type { Request } from 'express';
 
 /**
  * JWT Authentication Guard
@@ -10,7 +11,10 @@ import { AuthGuard } from '@nestjs/passport';
  */
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('supabase-jwt') {
-  handleRequest(err: any, user: any, info: any) {
+  handleRequest<TUser = JwtPayload>(
+    err: unknown,
+    user: TUser | null | false,
+  ): TUser {
     if (err || !user) {
       throw err || new UnauthorizedException('Authentication failed');
     }
@@ -26,6 +30,7 @@ export class JwtAuthGuard extends AuthGuard('supabase-jwt') {
  */
 export interface JwtPayload {
     sub: string; // Internal database User ID (resolved from Supabase ID by the strategy)
+    _supabaseId: string;
     email: string;
     role: string;
     iat?: number;
@@ -38,4 +43,3 @@ export interface JwtPayload {
 export interface RequestWithUser extends Request {
     user: JwtPayload;
 }
-    

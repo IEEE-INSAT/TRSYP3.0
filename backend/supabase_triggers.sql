@@ -32,7 +32,7 @@ begin
   --   * email signup  -> our frontend sends explicit `name` + `lastName`.
   --   * OAuth (Google) -> the `name` claim is the FULL display name, so we must
   --     use the OIDC `given_name` / `family_name` claims (or split `full_name`)
-  --     instead — otherwise the first name ends up holding the whole name.
+  --     instead - otherwise the first name ends up holding the whole name.
   if provider = 'email' then
     first_name := coalesce(nullif(meta->>'name', ''), 'Participant');
     last_name  := coalesce(meta->>'lastName', '');
