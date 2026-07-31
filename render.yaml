@@ -1,19 +1,37 @@
 services:
   - type: web
-    runtime: node
+    runtime: docker
     name: rtc
     plan: free
-    buildCommand: npm ci && npm run build
-    startCommand: npm run start
-    healthCheckPath: /
-    # Keep deploys manual during the FTP-to-Render cutover. Switch to
-    # `checksPass` after the Render URL, auth callbacks, and API are verified.
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
     autoDeployTrigger: off
     envVars:
-      - key: NODE_VERSION
-        value: 22.13.1
-      - key: NEXT_PUBLIC_API_URL
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
         sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: RIDDLE_CODE_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        value: https://rtc.onrender.com
+      - key: CORS_ORIGINS
+        value: https://rtc.onrender.com,https://rtc.ieee.tn,https://trsyp.ieee.tn
+      - key: COMPETITION_REGISTRATION_PHASE
+        value: open
+      - key: CHALLENGE_REGISTRATION_PHASE
+        value: soon
+      - key: NEXT_PUBLIC_API_URL
+        value: /api
       - key: NEXT_PUBLIC_SUPABASE_URL
         sync: false
       - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -25,49 +43,4 @@ services:
       - key: NEXT_PUBLIC_COMPETITION_PHASE
         value: open
       - key: NEXT_PUBLIC_CHALLENGE_PHASE
-        value: soon
-    headers:
-      - path: /*
-        name: X-Content-Type-Options
-        value: nosniff
-      - path: /*
-        name: Referrer-Policy
-        value: strict-origin-when-cross-origin
-      - path: /*
-        name: Permissions-Policy
-        value: camera=(), microphone=(), geolocation=()
-
-  - type: web
-    runtime: docker
-    name: TRSYP3.0
-    rootDir: backend
-    plan: free
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
-    healthCheckPath: /health
-    autoDeployTrigger: off
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: NODE_VERSION
-        value: 22.13.1
-      - key: DATABASE_URL
-        sync: false
-      - key: DIRECT_URL
-        sync: false
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
-      - key: SUPABASE_JWT_SECRET
-        sync: false
-      - key: FRONTEND_URL
-        sync: false
-      - key: CORS_ORIGINS
-        sync: false
-      - key: RIDDLE_CODE_SECRET
-        sync: false
-      - key: COMPETITION_REGISTRATION_PHASE
-        value: open
-      - key: CHALLENGE_REGISTRATION_PHASE
         value: soon

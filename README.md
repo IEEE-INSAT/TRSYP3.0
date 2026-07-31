@@ -2,8 +2,9 @@
 
 TRSYP's production application:
 
-- repository root - Next.js application hosted on Render
-- `backend/` - NestJS API hosted on Render
+- repository root - Next.js application
+- `backend/` - NestJS API
+- root `Dockerfile` - runs both applications in one Render web service
 - Supabase - PostgreSQL and authentication
 - Prisma - the API's typed ORM for the Supabase PostgreSQL database
 
@@ -44,11 +45,16 @@ npm run lint
 npm run build
 ```
 
-## Render deployment
+## Container deployment
 
-[`render.yaml`](render.yaml) defines both services. Import it as a Render
-Blueprint and provide every environment variable marked `sync: false`.
-Render automatically redeploys each service on commits to its linked branch.
+The root [`Dockerfile`](Dockerfile) builds both applications. Next.js listens on
+Render's public `PORT`; NestJS listens internally on port `3001`. Next proxies
+`/api/*` and `/health` to Nest, so the entire application uses one origin and
+one Render web service. [`docker-compose.yml`](docker-compose.yml) provides the
+same topology for local container testing.
+
+[`render.yaml`](render.yaml) defines that single Docker service. Provide every
+environment variable marked `sync: false` before deploying it.
 
 The public frontend variables are compiled into the browser bundle, so changing
 a `NEXT_PUBLIC_*` value requires a frontend redeploy.

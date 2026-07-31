@@ -1,0 +1,22 @@
+services:
+  app:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_API_URL: /api
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+        NEXT_PUBLIC_FEATURE_REGISTRATION_API: ${NEXT_PUBLIC_FEATURE_REGISTRATION_API:-true}
+        NEXT_PUBLIC_FEATURE_ADMIN_API: ${NEXT_PUBLIC_FEATURE_ADMIN_API:-false}
+        NEXT_PUBLIC_COMPETITION_PHASE: ${NEXT_PUBLIC_COMPETITION_PHASE:-open}
+        NEXT_PUBLIC_CHALLENGE_PHASE: ${NEXT_PUBLIC_CHALLENGE_PHASE:-soon}
+    env_file:
+      - path: backend/.env
+        required: false
+    environment:
+      NODE_ENV: production
+      PORT: 10000
+      RIDDLE_CODE_SECRET: ${RIDDLE_CODE_SECRET:-local-compose-only-riddle-secret}
+    ports:
+      - "3000:10000"
+    restart: unless-stopped
