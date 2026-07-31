@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -60,26 +60,33 @@ export default function Navbar() {
   // Dismiss the global auth error (e.g. after OAuth 409)
   const dismissAuthError = () => useAuthStore.setState({ error: null });
 
-  const handleScroll = useCallback(() => {
-    setScrolled(window.scrollY > 50);
-  }, []);
-
   const isActiveLink = (href: string) =>
   href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`);
 
   useEffect(() => {
-    const initialScrollCheck = window.requestAnimationFrame(handleScroll);
+    let frame = 0;
+    const updateNavbar = () => {
+      frame = 0;
+      setScrolled((wasScrolled) =>
+        wasScrolled ? window.scrollY > 28 : window.scrollY > 72,
+      );
+    };
+    const handleScroll = () => {
+      if (!frame) frame = window.requestAnimationFrame(updateNavbar);
+    };
+
+    updateNavbar();
     window.addEventListener('scroll', handleScroll, { passive: true });
 
     const handleOpenModal = () => { if (REGISTRATION_OPEN) setShowRegister(true); };
     window.addEventListener('open-register-modal', handleOpenModal);
 
     return () => {
-      window.cancelAnimationFrame(initialScrollCheck);
+      if (frame) window.cancelAnimationFrame(frame);
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('open-register-modal', handleOpenModal);
     };
-  }, [handleScroll]);
+  }, []);
 
   return (
     <>
