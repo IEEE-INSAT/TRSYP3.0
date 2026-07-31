@@ -3,6 +3,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { resolve } from 'node:path';
 import * as Joi from 'joi';
 import { AppController } from './app.controller';
 import { PrismaModule } from './prisma/prisma.module';
@@ -16,6 +17,13 @@ import { ChallengeModule } from './modules/challenge/challenge.module';
     imports: [
         ConfigModule.forRoot({
             isGlobal: true,
+            // npm runs backend scripts with backend/ as the working directory,
+            // while the production container starts from the repository root.
+            // Support both without maintaining a second environment file.
+            envFilePath: [
+                resolve(process.cwd(), '.env'),
+                resolve(process.cwd(), '../.env'),
+            ],
             validationSchema: Joi.object({
                 DATABASE_URL: Joi.string().required(),
                 SUPABASE_URL: Joi.string().uri().required(),

@@ -16,18 +16,19 @@ active application.
 Requires Node.js 20 or newer.
 
 ```bash
-cd backend
 cp .env.example .env
-npm ci
+npm --prefix backend ci
+cd backend
 npx prisma generate
 npm run start:dev
 ```
 
 ```bash
-cp .env.example .env.local
 npm ci
 npm run dev
 ```
+
+Both applications and Prisma read the single root `.env` file.
 
 The frontend runs at `http://localhost:3000`; the API runs at
 `http://localhost:3001`.

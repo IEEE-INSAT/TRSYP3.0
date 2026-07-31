@@ -11,7 +11,7 @@ services:
         NEXT_PUBLIC_COMPETITION_PHASE: ${NEXT_PUBLIC_COMPETITION_PHASE:-open}
         NEXT_PUBLIC_CHALLENGE_PHASE: ${NEXT_PUBLIC_CHALLENGE_PHASE:-soon}
     env_file:
-      - path: backend/.env
+      - path: .env
         required: false
     environment:
       NODE_ENV: production

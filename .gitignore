@@ -9,6 +9,7 @@ Thumbs.db
 # Environment variables — NEVER commit secrets
 .env
 .env.*
+!.env.example
 .env.local
 .env.production
 
