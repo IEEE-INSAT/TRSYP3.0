@@ -1,11 +1,14 @@
 services:
   - type: web
     runtime: node
-    name: trsyp-frontend
+    name: rtc
+    plan: free
     buildCommand: npm ci && npm run build
     startCommand: npm run start
     healthCheckPath: /
-    autoDeployTrigger: commit
+    # Keep deploys manual during the FTP-to-Render cutover. Switch to
+    # `checksPass` after the Render URL, auth callbacks, and API are verified.
+    autoDeployTrigger: off
     envVars:
       - key: NODE_VERSION
         value: 22.13.1
@@ -19,6 +22,10 @@ services:
         value: "true"
       - key: NEXT_PUBLIC_FEATURE_ADMIN_API
         value: "false"
+      - key: NEXT_PUBLIC_COMPETITION_PHASE
+        value: open
+      - key: NEXT_PUBLIC_CHALLENGE_PHASE
+        value: soon
     headers:
       - path: /*
         name: X-Content-Type-Options
@@ -31,14 +38,14 @@ services:
         value: camera=(), microphone=(), geolocation=()
 
   - type: web
-    runtime: node
-    name: trsyp-backend
+    runtime: docker
+    name: TRSYP3.0
     rootDir: backend
     plan: free
-    buildCommand: npm ci && npm run prisma:deploy && npm run build
-    startCommand: npm run start:prod
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     healthCheckPath: /health
-    autoDeployTrigger: commit
+    autoDeployTrigger: off
     envVars:
       - key: NODE_ENV
         value: production
@@ -56,3 +63,11 @@ services:
         sync: false
       - key: FRONTEND_URL
         sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: RIDDLE_CODE_SECRET
+        sync: false
+      - key: COMPETITION_REGISTRATION_PHASE
+        value: open
+      - key: CHALLENGE_REGISTRATION_PHASE
+        value: soon
