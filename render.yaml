@@ -6,7 +6,7 @@ services:
     dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /health
-    autoDeployTrigger: off
+    autoDeployTrigger: commit
     envVars:
       - key: NODE_ENV
         value: production
@@ -23,9 +23,9 @@ services:
       - key: RIDDLE_CODE_SECRET
         sync: false
       - key: FRONTEND_URL
-        value: https://rtc.onrender.com
+        value: https://trsyp3-0.onrender.com
       - key: CORS_ORIGINS
-        value: https://rtc.onrender.com,https://rtc.ieee.tn,https://trsyp.ieee.tn
+        value: https://trsyp3-0.onrender.com,https://rtc.ieee.tn,https://trsyp.ieee.tn
       - key: COMPETITION_REGISTRATION_PHASE
         value: open
       - key: CHALLENGE_REGISTRATION_PHASE
