@@ -27,6 +27,7 @@ const SUBTITLES: Record<Step, string> = {
  */
 export default function RegisterFlow({ initialChallenge = false }: { initialChallenge?: boolean }) {
   const accessToken = useAuthStore((s) => s.accessToken);
+  const account = useAuthStore((s) => s.account);
   const initialized = useAuthStore((s) => s.initialized);
   const isAuthenticated = !!accessToken;
   const isRegistered = useRegistrationStore((s) => s.isRegistered);
@@ -37,6 +38,7 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
     isRegistered ? (initialChallenge ? 'team' : 'choosePath') : 'participant',
   );
   const currentStep = isRegistered ? step : 'participant';
+  const firstName = account?.name.trim();
 
   // Set once the user completes Step 1 in this session, so the "arrived already
   // registered → dashboard" redirect below doesn't fire for a brand-new
@@ -129,7 +131,9 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
           transition={{ duration: 0.4 }}
         >
           <div className="reg-info-badge">REGISTRATION</div>
-          <h2 className="reg-info-title">TRSYP 3.0</h2>
+          <h2 className="reg-info-title">
+            {firstName ? `Welcome, ${firstName}!` : 'Welcome!'}
+          </h2>
           <p className="reg-info-subtitle">{SUBTITLES[currentStep]}</p>
         </motion.div>
 
