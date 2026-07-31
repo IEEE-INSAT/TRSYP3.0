@@ -2,7 +2,7 @@
 
 TRSYP's production application:
 
-- `frontend/` — Next.js static export hosted on Render
+- repository root — Next.js static export hosted on Render
 - `backend/` — NestJS API hosted on Render
 - Supabase — PostgreSQL and authentication
 - Prisma — the API's typed ORM for the Supabase PostgreSQL database
@@ -23,7 +23,6 @@ npm run start:dev
 ```
 
 ```bash
-cd frontend
 cp .env.example .env.local
 npm ci
 npm run dev
@@ -39,7 +38,7 @@ cd backend
 npm run build
 npm test -- --runInBand
 
-cd ../frontend
+cd ..
 npm run typecheck
 npm run lint
 npm run build

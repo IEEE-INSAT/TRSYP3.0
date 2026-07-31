@@ -2,8 +2,7 @@ services:
   - type: web
     runtime: static
     name: trsyp-frontend
-    rootDir: frontend
-    buildCommand: npm ci && npx prisma generate && npm run build
+    buildCommand: npm ci && npm run build
     staticPublishPath: ./out
     autoDeployTrigger: commit
     envVars:
