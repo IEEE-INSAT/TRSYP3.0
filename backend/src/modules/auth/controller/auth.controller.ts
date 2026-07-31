@@ -7,6 +7,7 @@ import {
     Res,
     HttpStatus,
     Get,
+    Patch,
     NotFoundException,
 } from '@nestjs/common';
 import { AuthService } from '../service/auth.service';
@@ -17,7 +18,7 @@ import {
     ApiResponse,
     ApiBearerAuth,
 } from '@nestjs/swagger';
-import { ResetPasswordDto, SignUpDto } from '../dto';
+import { AvatarDto, ResetPasswordDto, SignUpDto } from '../dto';
 import { JwtAuthGuard } from '@common/guards/jwt-auth.guard';
 
 @ApiTags('Auth')
@@ -43,6 +44,18 @@ export class AuthController {
             throw new NotFoundException('User not found');
         }
         return res.status(HttpStatus.OK).json(user);
+    }
+
+    @Patch('avatar')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Set the current user hybrid avatar' })
+    @ApiResponse({ status: 200, description: 'Avatar saved.' })
+    async setAvatar(@Req() req: Request, @Body() dto: AvatarDto) {
+        return this.authService.setAvatar(
+            (req.user as { sub: string }).sub,
+            dto,
+        );
     }
 
     @Post('sign-up')

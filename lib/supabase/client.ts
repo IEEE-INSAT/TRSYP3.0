@@ -18,7 +18,10 @@ export function getSupabaseClient(): SupabaseClient | null {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
-        detectSessionInUrl: true,
+        // Callback pages consume OAuth/email/recovery URLs explicitly. Letting
+        // supabase-js consume them too creates a race where the same code is
+        // exchanged twice and the first render incorrectly sees no session.
+        detectSessionInUrl: false,
         // Email confirmation and password-recovery links are often opened in
         // a different browser or device from the one that requested them.
         // PKCE requires the original browser's verifier and therefore treats

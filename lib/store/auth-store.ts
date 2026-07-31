@@ -80,12 +80,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           // survived a failed sign-out). Clear it so the UI shows guest actions
           // instead of a phantom logged-in state.
           if (err instanceof ApiError && err.status === 401) {
-            tokenValid = false;
-            set({ accessToken: null, account: null, email: null });
-            try {
-              await supabase.auth.signOut({ scope: 'local' });
-            } catch {
-              /* storage already inconsistent — nothing more to do */
+            // A backend 401 can also mean its public.users row/activation flag
+            // is still being reconciled. Only destroy the browser session when
+            // Supabase itself confirms that the token is invalid.
+            const { data: userData, error: userError } =
+              await supabase.auth.getUser(token);
+            if (userError || !userData.user) {
+              tokenValid = false;
+              set({ accessToken: null, account: null, email: null });
+              try {
+                await supabase.auth.signOut({ scope: 'local' });
+              } catch {
+                /* storage already inconsistent — nothing more to do */
+              }
+            } else {
+              set({
+                account: null,
+                error:
+                  'Your sign-in is valid, but the TRSYP API could not verify it. Please try again.',
+              });
             }
           } else {
             console.error('[auth] getMe failed during init:', err);
@@ -97,7 +110,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         if (tokenValid)
           void useRegistrationStore.getState().hydrateFromBackend();
       }
-      supabase.auth.onAuthStateChange(async (event, session) => {
+      supabase.auth.onAuthStateChange((_event, session) => {
         const token = session?.access_token ?? null;
         set({
           accessToken: token,
@@ -107,16 +120,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
         if (!token) {
           useRegistrationStore.getState().reset();
-          return;
-        }
-
-        if (event === 'SIGNED_IN' && token && isApiConfigured) {
-          try {
-            set({ account: await authService.getMe(token) });
-          } catch (err: unknown) {
-            console.error('[auth] getMe failed in onAuthStateChange:', err);
-          }
-          void useRegistrationStore.getState().hydrateFromBackend();
         }
       });
     } else {
@@ -160,11 +163,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ accessToken: token, email });
 
       if (token && isApiConfigured) {
-        try {
-          set({ account: await authService.getMe(token) });
-        } catch (err: unknown) {
-          console.error('[auth] getMe failed during signUp:', err);
-        }
+        set({ account: await authService.getMe(token) });
       }
       set({ loading: false });
     } catch (e) {
@@ -191,11 +190,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const token = data.session?.access_token ?? null;
       set({ accessToken: token, email });
       if (token && isApiConfigured) {
-        try {
-          set({ account: await authService.getMe(token) });
-        } catch (getErr) {
-          console.error('[auth] getMe failed during signIn:', getErr);
-        }
+        set({ account: await authService.getMe(token) });
         // Reconcile the registration profile before we hand control back to the
         // caller, so post-login routing can tell an already-registered user
         // (→ dashboard) from a new one (→ registration flow). hydrateFromBackend

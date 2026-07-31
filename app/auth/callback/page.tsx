@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { waitForEmailCallbackSession } from '@/lib/supabase/email-callback';
 import { useRegistrationStore } from '@/lib/store';
+import { useAuthStore } from '@/lib/store/auth-store';
+import { authService } from '@/lib/api/auth.service';
 import { clearNext, readNext, resolvePostAuth } from '@/lib/auth/post-auth';
 import LoadingScreen from '@/components/LoadingScreen';
 
@@ -22,7 +24,11 @@ import LoadingScreen from '@/components/LoadingScreen';
 export default function AuthCallbackPage() {
   // Resolved during render rather than in the effect: with no Supabase client
   // there is nothing to wait for, and the answer is already known.
-  const [failed, setFailed] = useState(() => getSupabaseClient() === null);
+  const [failure, setFailure] = useState<string | null>(() =>
+    getSupabaseClient()
+      ? null
+      : 'Supabase authentication is not configured.',
+  );
 
   useEffect(() => {
     const supabase = getSupabaseClient();
@@ -33,21 +39,35 @@ export default function AuthCallbackPage() {
     const next = readNext();
 
     void (async () => {
-      const { session } = await waitForEmailCallbackSession(supabase);
+      const { session, error } = await waitForEmailCallbackSession(supabase);
       if (cancelled) return;
       if (!session) {
-        setFailed(true);
+        setFailure(error ?? 'Supabase did not return a session.');
         return;
       }
+      useAuthStore.setState({
+        accessToken: session.access_token,
+        email: session.user.email ?? null,
+      });
 
-      // Settle the registration profile first, so an existing participant goes
-      // to their dashboard instead of being walked through Step 1 again.
+      try {
+        const account = await authService.getMe(session.access_token);
+        useAuthStore.setState({ account });
+      } catch {
+        setFailure(
+          'Your session was created, but the TRSYP API could not load your account.',
+        );
+        return;
+      }
+      // Settle the registration profile so an existing participant goes to
+      // their dashboard instead of being walked through Step 1 again.
       await useRegistrationStore.getState().hydrateFromBackend();
       if (cancelled) return;
 
       clearNext();
       const destination = resolvePostAuth({
         isRegistered: useRegistrationStore.getState().isRegistered,
+        hasAvatar: !!useAuthStore.getState().account?.avatar,
         next,
       });
       // `replace` so Back doesn't bounce the user through the callback again.
@@ -59,15 +79,14 @@ export default function AuthCallbackPage() {
     };
   }, []);
 
-  if (!failed) return <LoadingScreen message="Signing you in…" />;
+  if (!failure) return <LoadingScreen message="Signing you in…" />;
 
   return (
     <main className="trsyp-auth-page">
       <section className="trsyp-auth-card" aria-live="polite">
-        <h1>Sign-in link unavailable</h1>
+        <h1>Could not finish signing in</h1>
         <p>
-          We could not complete your sign-in. The link may have expired — please
-          try again from the TRSYP 3.0 home page.
+          {failure} Return to the home page and try signing in again.
         </p>
         <Link className="trsyp-auth-page-link" href="/">
           Return to TRSYP 3.0

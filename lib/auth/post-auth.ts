@@ -102,11 +102,14 @@ export function authCallbackUrl(next?: string | null): string {
  */
 export function resolvePostAuth({
   isRegistered,
+  hasAvatar = true,
   next,
 }: {
   isRegistered: boolean;
+  hasAvatar?: boolean;
   next?: string | null;
 }): string {
+  if (!hasAvatar) return '/avatar';
   if (isRegistered) return '/dashboard';
   return sanitizeNext(next) ?? DEFAULT_NEXT;
 }

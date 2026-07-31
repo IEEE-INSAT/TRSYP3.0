@@ -61,6 +61,16 @@ https://rtc.ieee.tn/verify-email/
 https://rtc.ieee.tn/reset-password/
 ```
 
+For local development, also add the following under **Supabase Dashboard →
+Authentication → URL Configuration → Redirect URLs**:
+
+```text
+http://localhost:3000/**
+```
+
+Without this allow-list entry Supabase ignores the localhost `redirectTo`
+requested by the app and falls back to the production Site URL.
+
 Moving `rtc.ieee.tn` from the current FTP host to Render requires one DNS
 change after the Render site is verified. The application can be deployed and
 tested first at its `onrender.com` URL, but the existing domain cannot serve

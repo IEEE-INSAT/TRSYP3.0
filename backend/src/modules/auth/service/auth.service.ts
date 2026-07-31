@@ -8,7 +8,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { ConfigService } from '@nestjs/config';
 import { resolveMx } from 'dns/promises';
-import { SignUpDto } from '../dto';
+import { AvatarDto, SignUpDto } from '../dto';
 
 // Reserved / documentation domains that can never receive email (RFC 2606).
 const RESERVED_DOMAINS = [
@@ -52,6 +52,13 @@ export class AuthService {
     async findByEmail(email: string) {
         return this.prisma.user.findUnique({
             where: { email },
+        });
+    }
+
+    async setAvatar(userId: string, avatar: AvatarDto) {
+        return this.prisma.user.update({
+            where: { id: userId },
+            data: { avatar: { ...avatar } },
         });
     }
 

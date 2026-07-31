@@ -34,7 +34,7 @@ services:
     name: trsyp-backend
     rootDir: backend
     plan: free
-    buildCommand: npm ci && npm run build
+    buildCommand: npm ci && npm run prisma:deploy && npm run build
     startCommand: npm run start:prod
     healthCheckPath: /health
     autoDeployTrigger: commit
@@ -50,6 +50,8 @@ services:
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
         sync: false
       - key: FRONTEND_URL
         sync: false

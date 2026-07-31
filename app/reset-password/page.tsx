@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { waitForEmailCallbackSession } from '@/lib/supabase/email-callback';
+import { useAuthStore } from '@/lib/store/auth-store';
 
 function validatePassword(password: string): string | null {
   if (password.length < 8) return 'Use at least 8 characters.';
@@ -41,6 +42,10 @@ export default function ResetPasswordPage() {
         return;
       }
 
+      useAuthStore.setState({
+        accessToken: session.access_token,
+        email: session.user.email ?? null,
+      });
       setReady(true);
     };
 

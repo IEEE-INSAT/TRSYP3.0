@@ -9,6 +9,7 @@ import { useTeamStore, useRegistrationStore, useAuthStore, selectTeam, selectRol
 import { ACTIVITY_LABELS } from '@/lib/api/types';
 import ActivityToggle, { isActivityOpen, phaseOf } from './register/ActivityToggle';
 import LoadingScreen from './LoadingScreen';
+import UserAvatar from './UserAvatar';
 
 // TEMP: payment step disabled for now — flip back to true to re-enable.
 // (Keeps the "Submit Payment Proof" button/code intact, just hidden.)
@@ -30,6 +31,7 @@ export default function Dashboard() {
 
   // Gate the session check below on a settled auth state.
   const initialized = useAuthStore((s) => s.initialized);
+  const account = useAuthStore((s) => s.account);
   const hydrating = useRegistrationStore((s) => s.hydrating);
 
   const activity = useTeamStore((s) => s.activity);
@@ -268,6 +270,31 @@ export default function Dashboard() {
             </span>
           </div>
         </motion.div>
+
+        <motion.section
+          className="dash-card dash-profile-card"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.08 }}
+          aria-labelledby="profile-heading"
+        >
+          <UserAvatar account={account} className="dash-profile-avatar" />
+          <div className="dash-profile-copy">
+            <span className="dash-profile-kicker">Your profile</span>
+            <h2 id="profile-heading">
+              {account
+                ? `${account.name} ${account.lastName}`.trim()
+                : user.fullName}
+            </h2>
+            <p>{account?.email ?? user.email}</p>
+            <span className="dash-profile-role">
+              {isChallenger ? 'Challenger' : 'Participant'}
+            </span>
+          </div>
+          <Link className="dash-profile-edit" href="/avatar">
+            Change avatar
+          </Link>
+        </motion.section>
 
         {/* Status Card */}
         {PAYMENT_ENABLED && (

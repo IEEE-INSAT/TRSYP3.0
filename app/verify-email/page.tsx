@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { waitForEmailCallbackSession } from '@/lib/supabase/email-callback';
 import { useRegistrationStore } from '@/lib/store';
+import { useAuthStore } from '@/lib/store/auth-store';
+import { authService } from '@/lib/api/auth.service';
 import { clearNext, readNext, resolvePostAuth } from '@/lib/auth/post-auth';
 
 type VerificationState = 'checking' | 'verified' | 'invalid';
@@ -35,13 +37,25 @@ export default function VerifyEmailPage() {
       setState(verified ? 'verified' : 'invalid');
       if (!verified || continued.current) return;
       continued.current = true;
+      useAuthStore.setState({
+        accessToken: session.access_token,
+        email: session.user.email ?? null,
+      });
 
+      try {
+        const account = await authService.getMe(session.access_token);
+        useAuthStore.setState({ account });
+      } catch {
+        setState('invalid');
+        return;
+      }
       await useRegistrationStore.getState().hydrateFromBackend();
       if (!mounted) return;
 
       clearNext();
       const target = resolvePostAuth({
         isRegistered: useRegistrationStore.getState().isRegistered,
+        hasAvatar: !!useAuthStore.getState().account?.avatar,
         next,
       });
       setDestination(target);

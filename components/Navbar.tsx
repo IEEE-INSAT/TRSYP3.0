@@ -12,6 +12,7 @@ import { useAuthStore } from '@/lib/store/auth-store';
 import { useRegistrationStore } from '@/lib/store/registration-store';
 import { REGISTRATION_OPEN, LOGIN_OPEN } from '@/lib/config';
 import { resolvePostAuth } from '@/lib/auth/post-auth';
+import UserAvatar from './UserAvatar';
 
 // Shared fade/slide used to crossfade the auth actions so state changes
 // (login → dashboard, etc.) don't pop.
@@ -41,6 +42,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const { isRegistered, logout } = useAuth();
   const { accessToken, initialized, error: authError } = useAuthStore();
+  const account = useAuthStore((state) => state.account);
   const hydrating = useRegistrationStore((s) => s.hydrating);
   const isAuthenticated = !!accessToken;
   const pathname = usePathname();
@@ -50,9 +52,8 @@ export default function Navbar() {
   // dashboard link appears.
   const authResolving =
     !initialized || (isAuthenticated && !isRegistered && hydrating);
-  const showGuestActions =
+  const showRegistrationActions =
     initialized &&
-    !isAuthenticated &&
     !isRegistered &&
     !pathname.startsWith('/register');
 
@@ -136,13 +137,9 @@ export default function Navbar() {
               <motion.span key="resolving" className="navbar-auth-loading" aria-hidden {...AUTH_FADE} />
             ) : isRegistered ? (
               <MotionLink key="dashboard" className="navbar-dashboard" href="/dashboard" {...AUTH_FADE}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
                 My Dashboard
               </MotionLink>
-            ) : showGuestActions ? (
+            ) : showRegistrationActions ? (
               <motion.div
                 key="guest"
                 className={`navbar-guest-actions ${isAuthenticated ? 'navbar-guest-actions--single' : ''}`}
@@ -172,6 +169,17 @@ export default function Navbar() {
               </motion.div>
             ) : null}
           </AnimatePresence>
+
+          {isAuthenticated && account && (
+            <Link
+              className="navbar-profile-icon"
+              href={isRegistered ? '/dashboard' : '/avatar'}
+              aria-label={`${account.name}'s profile`}
+              title={`${account.name} ${account.lastName}`.trim()}
+            >
+              <UserAvatar account={account} className="navbar-user-avatar" />
+            </Link>
+          )}
         </div>
 
         <button
@@ -206,7 +214,7 @@ export default function Navbar() {
           <Link className="navbar-mobile-register navbar-mobile-dashboard" href="/dashboard" onClick={() => setOpen(false)}>
             My Dashboard
           </Link>
-        ) : showGuestActions && (
+        ) : showRegistrationActions && (
           <>
             {!isAuthenticated && (
               <button
@@ -227,6 +235,19 @@ export default function Navbar() {
               {REGISTRATION_OPEN ? 'Register Now' : 'Registration Soon'}
             </button>
           </>
+        )}
+        {isAuthenticated && account && (
+          <Link
+            className="navbar-mobile-profile"
+            href={isRegistered ? '/dashboard' : '/avatar'}
+            onClick={() => setOpen(false)}
+          >
+            <UserAvatar account={account} className="navbar-user-avatar" />
+            <span>
+              <strong>{`${account.name} ${account.lastName}`.trim()}</strong>
+              <small>{account.email}</small>
+            </span>
+          </Link>
         )}
         {isAuthenticated && (
           <button
@@ -289,6 +310,7 @@ export default function Navbar() {
             // page — that reads as "nothing happened".
             window.location.href = resolvePostAuth({
               isRegistered: useRegistrationStore.getState().isRegistered,
+              hasAvatar: !!useAuthStore.getState().account?.avatar,
             });
           }}
         />

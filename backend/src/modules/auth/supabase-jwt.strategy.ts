@@ -1,4 +1,4 @@
-import { Injectable, Logger, UnauthorizedException } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
 import { Strategy, ExtractJwt } from "passport-jwt";
 import { ConfigService } from "@nestjs/config";
@@ -14,30 +14,52 @@ export class SupabaseJwtStrategy extends PassportStrategy(Strategy, 'supabase-jw
         private readonly prisma: PrismaService
     ) {
         const supabaseUrl = configService.get<string>('SUPABASE_URL');
+        const legacyJwtSecret =
+            configService.get<string>('SUPABASE_JWT_SECRET');
         if (!supabaseUrl) {
             throw new Error('SUPABASE_URL is not defined in environment variables');
         }
 
+        const jwksProvider = passportJwtSecret({
+            cache: true,
+            rateLimit: true,
+            jwksRequestsPerMinute: 5,
+            jwksUri: `${supabaseUrl}/auth/v1/.well-known/jwks.json`,
+        });
+
         super({
-            jwtFromRequest: (req: any) => {
-                const token = ExtractJwt.fromAuthHeaderAsBearerToken()(req);
-                if (token) {
-                    this.logger.debug('Extracted Token');
-                    // Note: We bypass manual jwt.verify() because jwks-rsa handles asynchronous secret fetching natively via passport-jwt.
-                    // If it throws a 401, Nest's built-in AuthGuard intercepts it.
-                } else {
-                    this.logger.warn(`No Bearer token found in request headers`);
+            jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+            secretOrKeyProvider: (request, rawToken, done) => {
+                try {
+                    const encodedHeader = rawToken.split('.')[0];
+                    const header = JSON.parse(
+                        Buffer.from(encodedHeader, 'base64url').toString('utf8'),
+                    ) as { alg?: string };
+
+                    if (header.alg === 'HS256') {
+                        if (!legacyJwtSecret) {
+                            done(
+                                new Error(
+                                    'SUPABASE_JWT_SECRET is required for HS256 tokens',
+                                ),
+                            );
+                            return;
+                        }
+                        done(null, legacyJwtSecret);
+                        return;
+                    }
+
+                    jwksProvider(request, rawToken, done);
+                } catch (error) {
+                    done(
+                        error instanceof Error
+                            ? error
+                            : new Error('Invalid JWT header'),
+                    );
                 }
-                return token;
             },
             ignoreExpiration: false,
-            secretOrKeyProvider: passportJwtSecret({
-                cache: true,
-                rateLimit: true,
-                jwksRequestsPerMinute: 5,
-                jwksUri: `${supabaseUrl}/auth/v1/.well-known/jwks.json`,
-            }),
-            algorithms: ['ES256'],
+            algorithms: ['ES256', 'HS256'],
         });
     }
 
@@ -75,9 +97,15 @@ export class SupabaseJwtStrategy extends PassportStrategy(Strategy, 'supabase-jw
         }
 
         if (!user.active) {
-            throw new UnauthorizedException(
-                'Verify your email address before accessing TRSYP 3.0.',
-            );
+            // Reaching this strategy means Supabase has already issued a valid,
+            // unexpired JWT for the account. The public.users activation trigger
+            // can lag behind the auth callback (or be missing in older
+            // deployments), so self-heal instead of rejecting the valid session
+            // and causing the frontend to log the user straight back out.
+            user = await this.prisma.user.update({
+                where: { id: user.id },
+                data: { active: true },
+            });
         }
 
         // Replace the Supabase ID with the real internal database ID.

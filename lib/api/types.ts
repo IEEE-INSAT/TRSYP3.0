@@ -25,8 +25,32 @@ export interface BackendUser {
   lastName: string;
   supabaseId: string;
   provider: string;
+  avatar: AvatarConfig | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AvatarConfig {
+  avatarStyle: 'Circle' | 'Transparent';
+  topType: string;
+  accessoriesType: string;
+  hatColor: string;
+  hairColor: string;
+  facialHairType: string;
+  facialHairColor: string;
+  clotheType: string;
+  clotheColor: string;
+  graphicType: string;
+  eyeType: string;
+  eyebrowType: string;
+  mouthType: string;
+  skinColor: string;
+  robotColor: 'Cobalt' | 'Ember' | 'Jade' | 'Violet' | 'Graphite';
+  robotEyes: 'Dual' | 'Mono' | 'Sensor';
+  robotMouth: 'Speaker' | 'Smile' | 'Signal';
+  robotAntenna: 'Single' | 'Twin' | 'None';
+  robotAccessory: 'None' | 'Halo' | 'Visor';
+  robotBackground: 'Aurora' | 'Sunset' | 'Mint' | 'Lavender' | 'Night';
 }
 
 // ── Registration (backend module not wired yet) ──────────────────────────────

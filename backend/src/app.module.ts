@@ -20,6 +20,7 @@ import { ChallengeModule } from './modules/challenge/challenge.module';
                 DATABASE_URL: Joi.string().required(),
                 SUPABASE_URL: Joi.string().uri().required(),
                 SUPABASE_SERVICE_ROLE_KEY: Joi.string().required(),
+                SUPABASE_JWT_SECRET: Joi.string().optional(),
                 FRONTEND_URL: Joi.string().uri().required(),
                 CORS_ORIGINS: Joi.string().optional(),
                 RIDDLE_CODE_SECRET: Joi.string().required(),
