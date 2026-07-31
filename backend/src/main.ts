@@ -21,12 +21,9 @@ async function bootstrap() {
             .map((origin) => origin.replace(/\/$/, '')),
     );
 
-    // The request path is: client → Cloudflare → Render proxy → app, so
-    // X-Forwarded-For carries 3 hops (client, CF, Render). Trust 3 hops from the
-    // server side so req.ip resolves to the real client (the left-most XFF entry)
-    // instead of Render's internal 10.x address — otherwise ThrottlerGuard would
-    // rate-limit every user as if they were one client.
-    app.set('trust proxy', 3);
+    // Render is the API's only trusted reverse proxy. Trusting extra hops lets a
+    // client spoof X-Forwarded-For and bypass per-IP rate limits.
+    app.set('trust proxy', 1);
 
     // Security headers — sets X-Content-Type-Options, Strict-Transport-Security,
     // X-Frame-Options, X-XSS-Protection, Referrer-Policy, and more.

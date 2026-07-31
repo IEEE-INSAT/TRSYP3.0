@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'motion/react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 
 const TUNISIA_PLACES = [
@@ -25,17 +25,7 @@ const RATES: Record<string, number> = {
 function CurrencyConverter() {
   const [amount, setAmount] = useState('100');
   const [currency, setCurrency] = useState('USD');
-  const [result, setResult] = useState(0);
-  const [typing, setTyping] = useState(false);
-
-  useEffect(() => {
-    const rate = RATES[currency] || 1;
-    const val = parseFloat(amount) || 0;
-    setResult(val * rate);
-    setTyping(true);
-    const t = setTimeout(() => setTyping(false), 600);
-    return () => clearTimeout(t);
-  }, [amount, currency]);
+  const result = (parseFloat(amount) || 0) * (RATES[currency] || 1);
 
   return (
     <div className="converter">
@@ -43,12 +33,12 @@ function CurrencyConverter() {
         <div className="converter-robot-head">
           <div className="converter-robot-eye left" />
           <div className="converter-robot-eye right" />
-          <div className={`converter-robot-mouth ${typing ? 'is-talking' : ''}`} />
+          <div className="converter-robot-mouth" />
         </div>
         <div className="converter-robot-body">
           <div className="converter-robot-screen">
             <span className="converter-robot-screen-label">PROCESSING</span>
-            <div className={`converter-robot-bars ${typing ? 'is-active' : ''}`}>
+            <div className="converter-robot-bars">
               {Array.from({ length: 5 }).map((_, i) => (
                 <span key={i} />
               ))}
@@ -64,9 +54,7 @@ function CurrencyConverter() {
       <div className="converter-panel">
         <div className="converter-speech">
           <p>
-            {typing
-              ? 'Computing exchange rate...'
-              : `${parseFloat(amount) || 0} ${currency} = ${result.toFixed(2)} TND`}
+            {`${parseFloat(amount) || 0} ${currency} = ${result.toFixed(2)} TND`}
           </p>
         </div>
 

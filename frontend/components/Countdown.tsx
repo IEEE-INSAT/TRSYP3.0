@@ -20,9 +20,12 @@ function pad(n: number) { return String(n).padStart(2, '0'); }
 export default function Countdown() {
   const [t, setT] = useState<ReturnType<typeof getTimeLeft> | null>(null);
   useEffect(() => {
-    setT(getTimeLeft());
+    const initial = window.setTimeout(() => setT(getTimeLeft()), 0);
     const id = setInterval(() => setT(getTimeLeft()), 1000);
-    return () => clearInterval(id);
+    return () => {
+      clearTimeout(initial);
+      clearInterval(id);
+    };
   }, []);
 
   const units = [

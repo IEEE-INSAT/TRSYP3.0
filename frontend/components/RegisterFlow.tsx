@@ -36,27 +36,12 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
   const [step, setStep] = useState<Step>(() =>
     isRegistered ? (initialChallenge ? 'team' : 'choosePath') : 'participant',
   );
+  const currentStep = isRegistered ? step : 'participant';
 
   // Set once the user completes Step 1 in this session, so the "arrived already
   // registered → dashboard" redirect below doesn't fire for a brand-new
   // registration the moment it flips `isRegistered` true.
   const progressedStep1 = useRef(false);
-
-  // Keep the step in sync with the backend-reconciled `isRegistered` flag: if a
-  // stale persisted flag is revoked by backend reconciliation while the user is
-  // past Step 1, send them back to Step 1.
-  //
-  // We deliberately do NOT auto-advance when `isRegistered` flips true on Step 1:
-  // a fresh registration is driven explicitly by `onParticipantDone`, and an
-  // already-registered arrival is handled by the dashboard redirect below. Doing
-  // it here caused a brief flash of the team/challenge choice, because
-  // `registerParticipant` flips `isRegistered` a render before `onParticipantDone`
-  // sets the step.
-  useEffect(() => {
-    if (!isRegistered && step !== 'participant') {
-      setStep('participant');
-    }
-  }, [isRegistered, step]);
 
   // A user who reaches the registration flow already registered (e.g. an
   // existing account signing in via Google, which redirects back here) has no
@@ -73,10 +58,10 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
   // play its success animation as a short transition, then send the user to
   // their dashboard automatically.
   useEffect(() => {
-    if (step !== 'done') return;
+    if (currentStep !== 'done') return;
     const t = setTimeout(() => { window.location.href = '/dashboard'; }, 1600);
     return () => clearTimeout(t);
-  }, [step]);
+  }, [currentStep]);
 
   // Registration temporarily closed — block every /register entry point,
   // including direct URL navigation (regardless of auth state).
@@ -145,12 +130,12 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
         >
           <div className="reg-info-badge">REGISTRATION</div>
           <h2 className="reg-info-title">TRSYP 3.0</h2>
-          <p className="reg-info-subtitle">{SUBTITLES[step]}</p>
+          <p className="reg-info-subtitle">{SUBTITLES[currentStep]}</p>
         </motion.div>
 
-        {step === 'participant' && <ParticipantInfoForm onSuccess={onParticipantDone} />}
+        {currentStep === 'participant' && <ParticipantInfoForm onSuccess={onParticipantDone} />}
 
-        {step === 'choosePath' && (
+        {currentStep === 'choosePath' && (
           <motion.div className="reg-form" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
             <div className="reg-section-label">Compete as a team</div>
             <p className="reg-account-hint">
@@ -168,9 +153,9 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
           </motion.div>
         )}
 
-        {step === 'team' && <TeamStep />}
+        {currentStep === 'team' && <TeamStep />}
 
-        {step === 'done' && (
+        {currentStep === 'done' && (
           <motion.div
             className="reg-form reg-success-popup"
             initial={{ opacity: 0, scale: 0.9 }}

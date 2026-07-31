@@ -14,3 +14,10 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Dependencies and build output
+node_modules/
+.next/
+out/
+dist/
+coverage/

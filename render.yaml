@@ -1,27 +1,53 @@
 services:
   - type: web
+    runtime: static
+    name: trsyp-frontend
+    rootDir: frontend
+    buildCommand: npm ci && npx prisma generate && npm run build
+    staticPublishPath: ./out
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: 22.13.1
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: NEXT_PUBLIC_FEATURE_REGISTRATION_API
+        value: "true"
+      - key: NEXT_PUBLIC_FEATURE_ADMIN_API
+        value: "false"
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(), microphone=(), geolocation=()
+
+  - type: web
     runtime: node
     name: trsyp-backend
     rootDir: backend
     plan: free
-    buildCommand: npm ci && npx prisma generate && npm run build
-    preDeployCommand: npx prisma migrate deploy
+    buildCommand: npm ci && npm run build
     startCommand: npm run start:prod
     healthCheckPath: /health
     autoDeployTrigger: commit
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NODE_VERSION
+        value: 22.13.1
       - key: DATABASE_URL
         sync: false
       - key: DIRECT_URL
         sync: false
-      - key: SUPABASE_JWT_SECRET
-        sync: false
-      - key: JWT_SECRET
-        sync: false
-      - key: JWT_EXPIRES_IN
-        value: 7d
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY

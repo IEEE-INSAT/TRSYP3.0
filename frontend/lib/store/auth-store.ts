@@ -65,7 +65,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (supabase) {
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token ?? null;
-      set({ accessToken: token, email: data.session?.user.email ?? null });
+      set({
+        accessToken: token,
+        email: data.session?.user.email ?? null,
+        initialized: true,
+      });
+      if (!token) useRegistrationStore.getState().reset();
       if (token && isApiConfigured) {
         let tokenValid = true;
         try {
@@ -96,20 +101,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const token = session?.access_token ?? null;
         set({
           accessToken: token,
+          account: token ? get().account : null,
           email: session?.user.email ?? null,
         });
+
+        if (!token) {
+          useRegistrationStore.getState().reset();
+          return;
+        }
 
         if (event === 'SIGNED_IN' && token && isApiConfigured) {
           try {
             set({ account: await authService.getMe(token) });
-          } catch (err: any) {
+          } catch (err: unknown) {
             console.error('[auth] getMe failed in onAuthStateChange:', err);
           }
           void useRegistrationStore.getState().hydrateFromBackend();
         }
       });
+    } else {
+      set({ initialized: true });
     }
-    set({ initialized: true });
   },
 
   signUp: async ({ email, password, name, lastName, next }) => {
@@ -150,7 +162,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (token && isApiConfigured) {
         try {
           set({ account: await authService.getMe(token) });
-        } catch (err: any) {
+        } catch (err: unknown) {
           console.error('[auth] getMe failed during signUp:', err);
         }
       }

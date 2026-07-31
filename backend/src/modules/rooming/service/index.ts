@@ -11,7 +11,6 @@ import { CreateRoomDto, InviteParticipantDto, RespondInvitationDto } from '../dt
 import { RoomCreatedEvent, RoomInvitationCreatedEvent, RoomInvitationRespondedEvent, RoomConfirmedEvent, RoomDeletedEvent } from '../events/rooming.events';
 import { DomainEvents } from '../../../common/events/event-names';
 import { RoomStatus, InvitationStatus, Prisma } from '@prisma/client';
-import { PaymentStatusUpdatedEvent } from '../../payment/events/payment.events';
 
 @Injectable()
 export class RoomingService {

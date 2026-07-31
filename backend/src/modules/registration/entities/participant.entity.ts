@@ -1,7 +1,6 @@
 import { User } from '../../auth/entities/user.entity';
 import type { InternationalInfo } from './international-participant.entity';
 import { SB, Country, ParticipantType } from '../domain/registration.types';
-import { Payment } from '../../payment/entities/payment.entity';
 
 export class Participant extends User {
   ieeeId!: number;
@@ -15,6 +14,4 @@ export class Participant extends User {
   participantType!: ParticipantType;
   // Participant "1" -- "0..1" InternationalInfo
   internationalInfo?: InternationalInfo;
-  // Participant "1" -- "0..1" Payment
-  payment?: Payment;
 }

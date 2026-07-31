@@ -1,5 +1,4 @@
 import Image from 'next/image';
-import { getHeapCodeStatistics } from 'node:v8';
 
 const HOSTS = [
   { id: 1, src: "/partners/RASINSAT.webp", label: "IEEE RAS INSAT Student Branch Chapter", scale: 0.7 },

@@ -13,12 +13,6 @@ import {
   type SB,
 } from '@/lib/api/types';
 
-const PARTICIPANT_TYPES: { value: ParticipantType; label: string }[] = [
-  { value: 'NonIEEE', label: 'Non-IEEE' },
-  { value: 'Student', label: 'Student' },
-  { value: 'YoungProfessional', label: 'Young Professional' },
-];
-
 interface FormState {
   participantType: ParticipantType | null;
   gender: Gender | null;

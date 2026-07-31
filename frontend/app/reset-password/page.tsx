@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { waitForEmailCallbackSession } from '@/lib/supabase/email-callback';
 
@@ -17,16 +18,15 @@ export default function ResetPasswordPage() {
   const [ready, setReady] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(() =>
+    getSupabaseClient() ? null : 'Password reset is not configured.',
+  );
   const [submitting, setSubmitting] = useState(false);
   const [complete, setComplete] = useState(false);
 
   useEffect(() => {
     const supabase = getSupabaseClient();
-    if (!supabase) {
-      setError('Password reset is not configured.');
-      return;
-    }
+    if (!supabase) return;
 
     let mounted = true;
     const checkSession = async () => {
@@ -98,16 +98,16 @@ export default function ResetPasswordPage() {
               Your TRSYP 3.0 password has been updated. You can now log in with
               it.
             </p>
-            <a className="trsyp-auth-page-link" href="/">
+            <Link className="trsyp-auth-page-link" href="/">
               Go to TRSYP 3.0
-            </a>
+            </Link>
           </>
         ) : error && !ready ? (
           <>
             <p>{error}</p>
-            <a className="trsyp-auth-page-link" href="/">
+            <Link className="trsyp-auth-page-link" href="/">
               Return to Log In
-            </a>
+            </Link>
           </>
         ) : !ready ? (
           <p>Preparing your secure password reset…</p>

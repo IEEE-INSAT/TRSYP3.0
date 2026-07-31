@@ -1,7 +1,18 @@
 import type { Metadata } from 'next';
-import { AuthProvider } from '@/components/AuthContext';
+import { Host_Grotesk, Orbitron } from 'next/font/google';
+import { AuthProvider } from '@/lib/store/auth-provider';
 import { CanonicalHostRedirect } from '@/components/CanonicalHostRedirect';
 import './globals.css';
+
+const hostGrotesk = Host_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-host-grotesk',
+});
+
+const orbitron = Orbitron({
+  subsets: ['latin'],
+  variable: '--font-orbitron',
+});
 
 export const metadata: Metadata = {
   title: 'TRSYP 3.0 — IEEE Tunisian RAS',
@@ -10,15 +21,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@300;400;500;600;700;800&family=Orbitron:wght@400;500;600;700;800;900&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="en" className={`${hostGrotesk.variable} ${orbitron.variable}`}>
       <body>
         <CanonicalHostRedirect />
         <AuthProvider>{children}</AuthProvider>

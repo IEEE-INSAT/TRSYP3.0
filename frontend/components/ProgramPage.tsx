@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
-import { useAuth } from './AuthContext';
+import { useAuth } from '@/lib/store/use-auth';
 import { REGISTRATION_OPEN } from '@/lib/config';
 
 const PROGRAM = [

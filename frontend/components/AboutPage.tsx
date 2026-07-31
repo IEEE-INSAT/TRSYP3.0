@@ -19,6 +19,11 @@ const TEAM = [
   { name: 'Khalil Khadraoui', role: 'Sponsorship Team Leader', email: 'Khalil.kkhadraoui@gmail.com', unit: 'SP-013', image:  "/team/khalil.jpg" },
 ];
 
+const BARCODE_WIDTHS = Array.from(
+  { length: 24 },
+  (_, index) => (index * 7) % 11 < 5 ? '3px' : '1.5px',
+);
+
 function IdCard({ member, index }: { member: typeof TEAM[0]; index: number }) {
   return (
     <motion.div
@@ -61,8 +66,8 @@ function IdCard({ member, index }: { member: typeof TEAM[0]; index: number }) {
 
           <div className="id-card-footer">
             <div className="id-card-barcode">
-              {Array.from({ length: 24 }).map((_, i) => (
-                <span key={i} style={{ width: Math.random() > 0.5 ? '3px' : '1.5px' }} />
+              {BARCODE_WIDTHS.map((width, i) => (
+                <span key={i} style={{ width }} />
               ))}
             </div>
             <span className="id-card-flip-hint">TAP TO FLIP</span>
@@ -115,8 +120,8 @@ function IdCard({ member, index }: { member: typeof TEAM[0]; index: number }) {
 
           <div className="id-card-footer">
             <div className="id-card-barcode">
-              {Array.from({ length: 24 }).map((_, i) => (
-                <span key={i} style={{ width: Math.random() > 0.5 ? '3px' : '1.5px' }} />
+              {BARCODE_WIDTHS.map((width, i) => (
+                <span key={i} style={{ width }} />
               ))}
             </div>
             <span className="id-card-flip-hint">TAP TO FLIP BACK</span>
