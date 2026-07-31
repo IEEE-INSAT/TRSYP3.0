@@ -10,9 +10,6 @@ dist/
 .DS_Store
 Thumbs.db
 
-# Prisma
-prisma/migrations/
-
 # Logs
 *.log
 npm-debug.log*
