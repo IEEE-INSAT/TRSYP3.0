@@ -10,10 +10,8 @@ import { ACTIVITY_LABELS } from '@/lib/api/types';
 import ActivityToggle, { isActivityOpen, phaseOf } from './register/ActivityToggle';
 import LoadingScreen from './LoadingScreen';
 import UserAvatar from './UserAvatar';
-
-// TEMP: payment step disabled for now - flip back to true to re-enable.
-// (Keeps the "Submit Payment Proof" button/code intact, just hidden.)
-const PAYMENT_ENABLED = false;
+// Single source of truth, shared with the dashboard section nav.
+import { PAYMENT_ENABLED } from '@/lib/dashboard/sections';
 
 const STATUS_MAP = {
   waiting_for_payment: { label: 'Waiting for Payment', color: '#f59e0b', icon: '🟡', msg: 'Your registration is pending. Please submit your payment proof to confirm your spot.' },
@@ -291,7 +289,7 @@ export default function Dashboard() {
               {isChallenger ? 'Challenger' : 'Participant'}
             </span>
           </div>
-          <Link className="dash-profile-edit" href="/avatar">
+          <Link className="dash-profile-edit" href="/dashboard/avatar">
             Change avatar
           </Link>
         </motion.section>

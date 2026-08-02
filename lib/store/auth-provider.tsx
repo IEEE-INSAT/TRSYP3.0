@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, type ReactNode } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from './auth-store';
 import { useHydrated } from './use-hydrated';
 
@@ -10,32 +9,18 @@ import { useHydrated } from './use-hydrated';
  * hydrated. Returning `null` on the first paint keeps the server markup and the
  * first client render identical (both empty), which avoids hydration mismatches
  * for components that read the persisted registration store.
+ *
+ * Note: this used to also force every avatar-less user to `/avatar` from
+ * anywhere on the site. That gate now lives in `DashboardGate` and only applies
+ * inside the dashboard, so the avatar is asked for after registration rather
+ * than as the price of signing in.
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const hydrated = useHydrated();
-  const router = useRouter();
-  const pathname = usePathname();
-  const initialized = useAuthStore((state) => state.initialized);
-  const accessToken = useAuthStore((state) => state.accessToken);
-  const account = useAuthStore((state) => state.account);
 
   useEffect(() => {
     void useAuthStore.getState().initialize();
   }, []);
-
-  useEffect(() => {
-    if (
-      initialized &&
-      accessToken &&
-      account &&
-      !account.avatar &&
-      pathname !== '/avatar' &&
-      !pathname.startsWith('/verify-email') &&
-      !pathname.startsWith('/auth/callback')
-    ) {
-      router.replace('/avatar');
-    }
-  }, [account, accessToken, initialized, pathname, router]);
 
   if (!hydrated) return null;
   return <>{children}</>;

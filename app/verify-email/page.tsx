@@ -55,7 +55,6 @@ export default function VerifyEmailPage() {
       clearNext();
       const target = resolvePostAuth({
         isRegistered: useRegistrationStore.getState().isRegistered,
-        hasAvatar: !!useAuthStore.getState().account?.avatar,
         next,
       });
       setDestination(target);

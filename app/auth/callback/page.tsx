@@ -67,7 +67,6 @@ export default function AuthCallbackPage() {
       clearNext();
       const destination = resolvePostAuth({
         isRegistered: useRegistrationStore.getState().isRegistered,
-        hasAvatar: !!useAuthStore.getState().account?.avatar,
         next,
       });
       // `replace` so Back doesn't bounce the user through the callback again.

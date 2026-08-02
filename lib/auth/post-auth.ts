@@ -99,17 +99,18 @@ export function authCallbackUrl(next?: string | null): string {
  * An already-registered participant belongs on their dashboard; anyone else
  * continues to the route they asked for, and failing that to the registration
  * flow. `/` is never an answer here.
+ *
+ * The avatar deliberately plays no part in this. It is required, but only once
+ * the user is registered, and `DashboardGate` enforces that inside the
+ * dashboard - so signing in never detours through a character editor.
  */
 export function resolvePostAuth({
   isRegistered,
-  hasAvatar = true,
   next,
 }: {
   isRegistered: boolean;
-  hasAvatar?: boolean;
   next?: string | null;
 }): string {
-  if (!hasAvatar) return '/avatar';
   if (isRegistered) return '/dashboard';
   return sanitizeNext(next) ?? DEFAULT_NEXT;
 }

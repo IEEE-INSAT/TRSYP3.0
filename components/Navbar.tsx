@@ -13,6 +13,7 @@ import { useRegistrationStore } from '@/lib/store/registration-store';
 import { REGISTRATION_OPEN, LOGIN_OPEN } from '@/lib/config';
 import { resolvePostAuth } from '@/lib/auth/post-auth';
 import UserAvatar from './UserAvatar';
+import ProfileMenu from './ProfileMenu';
 
 // Shared fade/slide used to crossfade the auth actions so state changes
 // (login → dashboard, etc.) don't pop.
@@ -22,9 +23,6 @@ const AUTH_FADE = {
   exit: { opacity: 0, y: 4 },
   transition: { duration: 0.18, ease: [0.4, 0, 0.2, 1] as const },
 };
-
-// Client-side navigable dashboard link that still crossfades via motion.
-const MotionLink = motion.create(Link);
 
 const NAV_LINKS = [
   { label: 'Home', href: '/' },
@@ -120,33 +118,12 @@ export default function Navbar() {
         </ul>
 
         <div className="navbar-right-group">
-          <AnimatePresence initial={false}>
-            {isAuthenticated && (
-              <motion.button
-                key="signout"
-                className="navbar-signout"
-                onClick={() => logout()}
-                aria-label="Sign out"
-                {...AUTH_FADE}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
-                <span>Sign Out</span>
-              </motion.button>
-            )}
-          </AnimatePresence>
-
+          {/* Sign Out and My Dashboard used to stand here as two permanent
+              buttons; they now live inside the avatar's account menu below. */}
           <AnimatePresence mode="wait" initial={false}>
             {authResolving ? (
               <motion.span key="resolving" className="navbar-auth-loading" aria-hidden {...AUTH_FADE} />
-            ) : isRegistered ? (
-              <MotionLink key="dashboard" className="navbar-dashboard" href="/dashboard" {...AUTH_FADE}>
-                My Dashboard
-              </MotionLink>
-            ) : showRegistrationActions ? (
+            ) : isRegistered ? null : showRegistrationActions ? (
               <motion.div
                 key="guest"
                 className={`navbar-guest-actions ${isAuthenticated ? 'navbar-guest-actions--single' : ''}`}
@@ -178,14 +155,11 @@ export default function Navbar() {
           </AnimatePresence>
 
           {isAuthenticated && account && (
-            <Link
-              className="navbar-profile-icon"
-              href={isRegistered ? '/dashboard' : '/avatar'}
-              aria-label={`${account.name}'s profile`}
-              title={`${account.name} ${account.lastName}`.trim()}
-            >
-              <UserAvatar account={account} className="navbar-user-avatar" />
-            </Link>
+            <ProfileMenu
+              account={account}
+              isRegistered={isRegistered}
+              onSignOut={() => logout()}
+            />
           )}
         </div>
 
@@ -218,9 +192,9 @@ export default function Navbar() {
             <span className="ld-spinner-dot ld-spinner-dot--green" />
           </div>
         ) : isRegistered ? (
-          <Link className="navbar-mobile-register navbar-mobile-dashboard" href="/dashboard" onClick={() => setOpen(false)}>
-            My Dashboard
-          </Link>
+          // Nothing: the profile row below is itself the way into the dashboard,
+          // so a separate "My Dashboard" button would just say it twice.
+          null
         ) : showRegistrationActions && (
           <>
             {!isAuthenticated && (
@@ -246,7 +220,7 @@ export default function Navbar() {
         {isAuthenticated && account && (
           <Link
             className="navbar-mobile-profile"
-            href={isRegistered ? '/dashboard' : '/avatar'}
+            href={isRegistered ? '/dashboard' : '/register'}
             onClick={() => setOpen(false)}
           >
             <UserAvatar account={account} className="navbar-user-avatar" />
@@ -317,7 +291,6 @@ export default function Navbar() {
             // page - that reads as "nothing happened".
             window.location.href = resolvePostAuth({
               isRegistered: useRegistrationStore.getState().isRegistered,
-              hasAvatar: !!useAuthStore.getState().account?.avatar,
             });
           }}
         />
