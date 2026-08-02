@@ -217,6 +217,33 @@ button {
   list-style: none;
 }
 
+/* A dashboard section that isn't reachable yet - "Soon" (not built) or
+   "Locked" (avatar still missing). Matches the link's type so the row reads
+   evenly, but stays dimmer and unclickable. */
+.navbar-links-locked {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 15.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.28);
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: not-allowed;
+  padding-bottom: 5px;
+}
+.navbar-links-locked em {
+  font-size: 9.5px;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 3px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
 .navbar-links a {
   text-decoration: none;
   font-size: 15.5px;
@@ -7449,87 +7476,14 @@ select.reg-input option {
   display: flex;
 }
 
-/* ── Dashboard hub: section nav + shared shell ── */
-.dash-shell {
-  display: block;
-}
+/* ── Dashboard hub ── */
+.dash-shell { display: block; }
 
-.dash-nav {
-  padding: calc(var(--nav-height) + 28px) 24px 0;
-}
-
-.dash-nav-list {
-  max-width: 760px;
-  margin: 0 auto;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding: 6px;
-  list-style: none;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 18px;
-  background: rgba(14, 18, 29, 0.72);
-}
-
-/* Every section gets an equal share of the bar, so the tabs sit apart instead
-   of bunching at the left edge. */
-.dash-nav-list > li {
-  flex: 1 1 0;
-  min-width: 0;
-}
-
-.dash-nav-item {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 10px 14px;
-  /* Each section is its own bordered cell, so the bar reads as a grid rather
-     than as a strip of floating labels. */
-  border: 1px solid rgba(255, 255, 255, 0.11);
-  border-radius: 12px;
-  color: #9da8bb;
-  font-size: 0.88rem;
-  font-weight: 650;
-  text-decoration: none;
-  white-space: nowrap;
-  transition: color 0.18s ease, background 0.18s ease, border-color 0.18s ease;
-}
-
-.dash-nav-item:hover {
-  color: #f5f7fb;
-  border-color: rgba(255, 255, 255, 0.22);
-}
-
-.dash-nav-item--active,
-.dash-nav-item--active:hover {
-  color: #07120e;
-  background: #51e5af;
-  border-color: #51e5af;
-}
-
-.dash-nav-item--disabled,
-.dash-nav-item--disabled:hover {
-  color: #5c6678;
-  border-color: rgba(255, 255, 255, 0.06);
-  cursor: not-allowed;
-}
-
-.dash-nav-chip {
-  font-size: 0.6rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  padding: 3px 7px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #7d879a;
-}
-
-/* The shell already clears the fixed navbar, so sections must not repeat it. */
+/* No section strip of its own: inside /dashboard the navbar swaps the site
+   links for the sections, so the page only has to clear the fixed navbar. */
 .dash-shell .dash-page {
   min-height: auto;
-  padding-top: 24px;
+  padding-top: calc(var(--nav-height) + 36px);
   background: transparent;
 }
 
@@ -7611,11 +7565,6 @@ select.reg-input option {
   .avatar-fields { grid-template-columns: 1fr; }
   .avatar-actions { flex-wrap: wrap; }
   .avatar-saved { width: 100%; margin: 0 0 4px; }
-  .dash-nav { padding-left: 14px; padding-right: 14px; }
-  .dash-nav-list { border-radius: 18px; gap: 8px; }
-  /* Four equal columns would crush "Rooming · Soon" - drop to two per row. */
-  .dash-nav-list > li { flex: 1 1 calc(50% - 8px); }
-  .dash-nav-item { padding-left: 10px; padding-right: 10px; }
 }
 
 /* Avatar + account menu (My Dashboard / Sign Out) */

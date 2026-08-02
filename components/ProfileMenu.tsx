@@ -16,10 +16,13 @@ import UserAvatar from './UserAvatar';
 export default function ProfileMenu({
   account,
   isRegistered,
+  inDashboard = false,
   onSignOut,
 }: {
   account: BackendUser;
   isRegistered: boolean;
+  /** Inside the dashboard the first item leads out instead of further in. */
+  inDashboard?: boolean;
   onSignOut: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -80,21 +83,33 @@ export default function ProfileMenu({
               <small>{account.email}</small>
             </div>
 
-            {/* An unregistered account has no dashboard to go to yet, so the
-                first item points at the thing they actually still owe us. */}
+            {/* Inside the dashboard the exit is the useful action; outside it,
+                the way in. An unregistered account has no dashboard to go to
+                yet, so it points at what they still owe us instead. */}
             <Link
-              href={isRegistered ? '/dashboard' : '/register'}
+              href={inDashboard ? '/' : isRegistered ? '/dashboard' : '/register'}
               className="navbar-profile-dropdown-item"
               role="menuitem"
               onClick={() => setOpen(false)}
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="17" height="17">
-                <rect x="3" y="3" width="7" height="9" rx="1.5" />
-                <rect x="14" y="3" width="7" height="5" rx="1.5" />
-                <rect x="14" y="12" width="7" height="9" rx="1.5" />
-                <rect x="3" y="16" width="7" height="5" rx="1.5" />
-              </svg>
-              {isRegistered ? 'My Dashboard' : 'Complete registration'}
+              {inDashboard ? (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="17" height="17">
+                  <path d="M19 12H5" />
+                  <polyline points="11 18 5 12 11 6" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="17" height="17">
+                  <rect x="3" y="3" width="7" height="9" rx="1.5" />
+                  <rect x="14" y="3" width="7" height="5" rx="1.5" />
+                  <rect x="14" y="12" width="7" height="9" rx="1.5" />
+                  <rect x="3" y="16" width="7" height="5" rx="1.5" />
+                </svg>
+              )}
+              {inDashboard
+                ? 'Back to main website'
+                : isRegistered
+                  ? 'My Dashboard'
+                  : 'Complete registration'}
             </Link>
 
             <button

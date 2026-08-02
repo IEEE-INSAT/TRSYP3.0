@@ -14,6 +14,8 @@ import { REGISTRATION_OPEN, LOGIN_OPEN } from '@/lib/config';
 import { resolvePostAuth } from '@/lib/auth/post-auth';
 import UserAvatar from './UserAvatar';
 import ProfileMenu from './ProfileMenu';
+import { hasFullAvatar } from '@/lib/avatar';
+import { DASHBOARD_SECTIONS, activeSection } from '@/lib/dashboard/sections';
 
 // Shared fade/slide used to crossfade the auth actions so state changes
 // (login → dashboard, etc.) don't pop.
@@ -54,6 +56,14 @@ export default function Navbar() {
     initialized &&
     !isRegistered &&
     !pathname.startsWith('/register');
+
+  // Inside the dashboard the navbar stops being the site's menu and becomes the
+  // dashboard's own: the marketing links step aside for the sections, and the
+  // avatar menu offers the way back out. Leaving via "Back to main website"
+  // restores the normal navbar simply by leaving /dashboard.
+  const inDashboard = pathname.startsWith('/dashboard');
+  const sectionsLocked = !!account && !hasFullAvatar(account.avatar);
+  const currentSection = activeSection(pathname);
 
   // Dismiss the global auth error (e.g. after OAuth 409)
   const dismissAuthError = () => useAuthStore.setState({ error: null });
@@ -105,16 +115,47 @@ export default function Navbar() {
         </Link>
 
         <ul className="navbar-links">
-          {NAV_LINKS.map((l) => (
-            <li key={l.label}>
-              <Link
-                href={l.href}
-                className={isActiveLink(l.href) ? 'active' : ''}
-              >
-                {l.label}
-              </Link>
-            </li>
-          ))}
+          {inDashboard
+            ? DASHBOARD_SECTIONS.map((section) => {
+                const unavailable =
+                  !section.enabled || (sectionsLocked && section.gated);
+                return (
+                  <li key={section.id}>
+                    {unavailable ? (
+                      <span
+                        className="navbar-links-locked"
+                        aria-disabled="true"
+                        title={
+                          !section.enabled
+                            ? `${section.label} is not open yet`
+                            : 'Create your avatar first'
+                        }
+                      >
+                        {section.label}
+                        <em>{!section.enabled ? 'Soon' : 'Locked'}</em>
+                      </span>
+                    ) : (
+                      <Link
+                        href={section.href}
+                        className={currentSection?.id === section.id ? 'active' : ''}
+                        aria-current={currentSection?.id === section.id ? 'page' : undefined}
+                      >
+                        {section.label}
+                      </Link>
+                    )}
+                  </li>
+                );
+              })
+            : NAV_LINKS.map((l) => (
+                <li key={l.label}>
+                  <Link
+                    href={l.href}
+                    className={isActiveLink(l.href) ? 'active' : ''}
+                  >
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
         </ul>
 
         <div className="navbar-right-group">
@@ -158,6 +199,7 @@ export default function Navbar() {
             <ProfileMenu
               account={account}
               isRegistered={isRegistered}
+              inDashboard={inDashboard}
               onSignOut={() => logout()}
             />
           )}
@@ -175,16 +217,36 @@ export default function Navbar() {
       </nav>
 
       <div className={`navbar-mobile-menu ${open ? 'open' : ''}`}>
-        {NAV_LINKS.map((l) => (
-          <Link
-            key={l.label}
-            href={l.href}
-            className={isActiveLink(l.href) ? 'active' : ''}
-            onClick={() => setOpen(false)}
-          >
-            {l.label}
-          </Link>
-        ))}
+        {inDashboard
+          ? DASHBOARD_SECTIONS.map((section) => {
+              const unavailable =
+                !section.enabled || (sectionsLocked && section.gated);
+              return unavailable ? (
+                <span key={section.id} className="navbar-links-locked" aria-disabled="true">
+                  {section.label}
+                  <em>{!section.enabled ? 'Soon' : 'Locked'}</em>
+                </span>
+              ) : (
+                <Link
+                  key={section.id}
+                  href={section.href}
+                  className={currentSection?.id === section.id ? 'active' : ''}
+                  onClick={() => setOpen(false)}
+                >
+                  {section.label}
+                </Link>
+              );
+            })
+          : NAV_LINKS.map((l) => (
+              <Link
+                key={l.label}
+                href={l.href}
+                className={isActiveLink(l.href) ? 'active' : ''}
+                onClick={() => setOpen(false)}
+              >
+                {l.label}
+              </Link>
+            ))}
         {authResolving ? (
           <div className="ld-spinner navbar-mobile-loading" aria-label="Loading" role="status">
             <span className="ld-spinner-dot ld-spinner-dot--green" />
@@ -228,6 +290,19 @@ export default function Navbar() {
               <strong>{`${account.name} ${account.lastName}`.trim()}</strong>
               <small>{account.email}</small>
             </span>
+          </Link>
+        )}
+        {inDashboard && (
+          <Link
+            className="navbar-mobile-register navbar-mobile-login"
+            href="/"
+            onClick={() => setOpen(false)}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+              <path d="M19 12H5" />
+              <polyline points="11 18 5 12 11 6" />
+            </svg>
+            Back to main website
           </Link>
         )}
         {isAuthenticated && (
