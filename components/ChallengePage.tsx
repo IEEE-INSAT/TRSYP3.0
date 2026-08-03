@@ -29,7 +29,7 @@ const TRACKS = [
     summary:
       'Autonomous navigation, embedded systems, and hands-on engineering tasks.',
     points: ['Autonomous navigation', 'Embedded systems', 'Engineering tasks'],
-    href: '/register/challenger',
+    href: 'https://drive.google.com/file/d/1qtixTEgNhvlKSnxkAGL2xf_IyEZ_6tbQ/view?usp=sharing',
   },
 ];
 
