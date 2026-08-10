@@ -30,6 +30,7 @@ const NAV_LINKS = [
   { label: 'Home', href: '/' },
   { label: 'Challenge', href: '/challenge' },
   { label: 'Program', href: '/program' },
+  { label: 'Speakers', href: '/speakers' },
   { label: 'Venue', href: '/venue' },
   { label: 'Visa', href: '/visa' },
   { label: 'About Us', href: '/about' },
