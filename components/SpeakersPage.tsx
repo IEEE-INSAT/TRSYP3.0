@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'motion/react';
 import Image from 'next/image';
 
@@ -51,13 +52,23 @@ const SPEAKERS = [
 ];
 
 function SpeakerCard({ speaker, index }: { speaker: (typeof SPEAKERS)[0]; index: number }) {
+  const [flipped, setFlipped] = useState(false);
+
+  const unflip = useCallback(() => setFlipped(false), []);
+
+  useEffect(() => {
+    if (!flipped) return;
+    window.addEventListener('scroll', unflip, { passive: true });
+    return () => window.removeEventListener('scroll', unflip);
+  }, [flipped, unflip]);
   return (
     <motion.div
-      className="spk-card-wrap"
+      className={`spk-card-wrap${flipped ? ' flipped' : ''}`}
       initial={{ opacity: 0, y: 50 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-60px' }}
       transition={{ duration: 0.55, delay: index * 0.1, ease: [0.22, 1, 0.36, 1] }}
+      onClick={() => setFlipped((f) => !f)}
     >
       <div className="spk-card">
         {/* ─── FRONT ─── */}

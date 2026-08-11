@@ -7962,7 +7962,7 @@ body.auth-modal-open .trsyp-overlay * {
   transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.spk-card-wrap:hover .spk-card {
+.spk-card-wrap.flipped .spk-card {
   transform: rotateY(180deg);
 }
 
@@ -7988,7 +7988,9 @@ body.auth-modal-open .trsyp-overlay * {
 }
 
 .spk-card-wrap:hover .spk-card-front,
-.spk-card-wrap:hover .spk-card-back {
+.spk-card-wrap:hover .spk-card-back,
+.spk-card-wrap.flipped .spk-card-front,
+.spk-card-wrap.flipped .spk-card-back {
   border-color: rgba(0, 232, 122, 0.3);
   box-shadow:
     0 20px 60px -12px rgba(0, 0, 0, 0.5),
@@ -8000,7 +8002,7 @@ body.auth-modal-open .trsyp-overlay * {
   inset: 0;
   transform: rotateY(180deg);
   padding: 28px 24px;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 /* ─── Glow line ─── */
@@ -8021,7 +8023,8 @@ body.auth-modal-open .trsyp-overlay * {
   transition: opacity 0.4s ease;
 }
 
-.spk-card-wrap:hover .spk-card-glow {
+.spk-card-wrap:hover .spk-card-glow,
+.spk-card-wrap.flipped .spk-card-glow {
   opacity: 0.6;
 }
 
@@ -8039,7 +8042,8 @@ body.auth-modal-open .trsyp-overlay * {
   transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.spk-card-wrap:hover .spk-card-photo img {
+.spk-card-wrap:hover .spk-card-photo img,
+.spk-card-wrap.flipped .spk-card-photo img {
   transform: scale(1.06);
 }
 
@@ -8172,7 +8176,7 @@ body.auth-modal-open .trsyp-overlay * {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .spk-card-contact-row {
