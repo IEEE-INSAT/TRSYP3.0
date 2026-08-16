@@ -119,6 +119,10 @@ export class ParticipantResponseDto {
   @Expose()
   isInternational!: boolean;
 
+  @ApiProperty({ description: 'Whether participant is an IEEE RAS member' })
+  @Expose()
+  isRas!: boolean;
+
   @ApiProperty({ description: 'Participant type', enum: ParticipantType })
   @Expose()
   participantType!: ParticipantType;

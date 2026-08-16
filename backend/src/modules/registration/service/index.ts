@@ -156,6 +156,8 @@ export class RegistrationService {
             paid: false,
             banned: false,
             isInternational,
+            // RAS is an IEEE society: non-IEEE participants can never be members.
+            isRas: dto.participantType !== 'NonIEEE' && (dto.isRas ?? false),
             ...(isInternational && {
               internationalInfo: {
                 create: {
@@ -267,6 +269,11 @@ export class RegistrationService {
         if (dto.ieeeId !== undefined) updateData.ieeeId = dto.ieeeId;
         if (dto.phone !== undefined) updateData.phone = dto.phone;
         if (dto.gender !== undefined) updateData.gender = dto.gender;
+        if (dto.isRas !== undefined) {
+          // `participantType` is immutable, so the current row decides whether
+          // a RAS membership is even possible.
+          updateData.isRas = current.participantType !== 'NonIEEE' && dto.isRas;
+        }
 
         if (dto.internationalInfo && current.internationalInfo) {
           const intlUpdate: Prisma.InternationalInfoUpdateInput = {};

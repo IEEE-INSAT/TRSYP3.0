@@ -8,6 +8,7 @@ export class Participant extends User {
   gender!: string;
   paid!: boolean;
   isInternational!: boolean;
+  isRas!: boolean;
   banned!: boolean;
   sb!: SB;
   country!: Country;

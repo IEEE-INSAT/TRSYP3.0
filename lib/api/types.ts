@@ -247,6 +247,8 @@ export interface RegisterParticipantPayload {
   participantType: ParticipantType;
   sb?: SB;
   country: Country;
+  /** IEEE RAS society membership - only sent for IEEE members. */
+  isRas?: boolean;
 }
 
 /** Participant row returned by /registration (Prisma `Participant`). */
@@ -257,6 +259,7 @@ export interface BackendParticipant {
   gender: string;
   paid: boolean;
   isInternational: boolean;
+  isRas: boolean;
   banned: boolean;
   participantType: ParticipantType;
   sb?: string;

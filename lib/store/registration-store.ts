@@ -5,6 +5,7 @@ import { registrationService } from '../api/registration.service';
 import { ApiError } from '../api/http';
 import { features } from '../config';
 import type {
+  BackendParticipant,
   Country,
   Gender,
   ParticipantType,
@@ -59,6 +60,8 @@ export interface ParticipantRegistrationInput {
   ieeeId?: number;
   sb?: SB;
   country: Country;
+  /** IEEE RAS society membership - answered at registration, defaults to false. */
+  isRas: boolean;
 }
 
 interface RegistrationState {
@@ -86,6 +89,8 @@ function toPayload(input: ParticipantRegistrationInput): RegisterParticipantPayl
     ieeeId: isIeee ? input.ieeeId : undefined,
     sb: input.participantType === 'Student' ? input.sb : undefined,
     country: input.country,
+    // RAS is an IEEE society - never claim it for a non-IEEE participant.
+    isRas: isIeee && input.isRas,
   };
 }
 
@@ -110,17 +115,16 @@ export const useRegistrationStore = create<RegistrationState>()(
           const auth = useAuthStore.getState();
           const token = await auth.getAccessToken();
 
-          let participantId: string | undefined;
+          let saved: BackendParticipant | null = null;
           if (token) {
             try {
-              const participant = await registrationService.register(toPayload(input), token);
-              participantId = participant?.id;
+              saved = await registrationService.register(toPayload(input), token);
             } catch (e) {
               if (!(e instanceof ApiError && e.status === 409)) throw e;
-              const existing = await registrationService.getProfile(token);
-              participantId = existing?.id;
+              saved = await registrationService.getProfile(token);
             }
           }
+          const participantId = saved?.id;
 
           // When the backend API is live, "registered" must be backed by a real
           // participant row. Otherwise local state drifts from the server and
@@ -148,7 +152,9 @@ export const useRegistrationStore = create<RegistrationState>()(
               university: input.sb ?? '',
               isIeee: input.participantType !== 'NonIEEE',
               ieeeId: input.ieeeId ? String(input.ieeeId) : '',
-              isRas: false,
+              // Prefer the stored row - the server normalises RAS membership
+              // (never true for a non-IEEE participant).
+              isRas: saved?.isRas ?? (input.participantType !== 'NonIEEE' && input.isRas),
               status: 'waiting_for_payment',
               paymentProofSubmitted: false,
               paymentFileName: '',
@@ -228,7 +234,7 @@ export const useRegistrationStore = create<RegistrationState>()(
               university: participant.sb ?? '',
               isIeee: participant.participantType !== 'NonIEEE',
               ieeeId: participant.ieeeId ? String(participant.ieeeId) : '',
-              isRas: false,
+              isRas: participant.isRas ?? false,
               status: participant.paid ? 'approved' : 'waiting_for_payment',
               paymentProofSubmitted: false,
               paymentFileName: '',

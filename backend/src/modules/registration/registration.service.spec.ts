@@ -200,6 +200,64 @@ describe('RegistrationService', () => {
 
       await expect(service.register('account-1', dto)).rejects.toThrow(ConflictException);
     });
+
+    it('should persist RAS membership for an IEEE member', async () => {
+      const dto: RegisterLocalDto = {
+        phone: '+21612345678',
+        gender: 'male',
+        participantType: ParticipantType.Student,
+        sb: SB.INSAT,
+        country: COUNTRY.Tunisia,
+        isRas: true,
+      };
+
+      mockPrismaService.participant.findUnique.mockResolvedValue(null);
+      mockPrismaService.participant.create.mockResolvedValue(mockParticipant);
+
+      await service.register('account-1', dto);
+
+      expect(mockPrismaService.participant.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ isRas: true }) }),
+      );
+    });
+
+    it('should default RAS membership to false when it is not answered', async () => {
+      const dto: RegisterLocalDto = {
+        phone: '+21612345678',
+        gender: 'male',
+        participantType: ParticipantType.Student,
+        sb: SB.INSAT,
+        country: COUNTRY.Tunisia,
+      };
+
+      mockPrismaService.participant.findUnique.mockResolvedValue(null);
+      mockPrismaService.participant.create.mockResolvedValue(mockParticipant);
+
+      await service.register('account-1', dto);
+
+      expect(mockPrismaService.participant.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ isRas: false }) }),
+      );
+    });
+
+    it('should never store RAS membership for a non-IEEE participant', async () => {
+      const dto: RegisterLocalDto = {
+        phone: '+21612345678',
+        gender: 'male',
+        participantType: ParticipantType.NonIEEE,
+        country: COUNTRY.Tunisia,
+        isRas: true,
+      };
+
+      mockPrismaService.participant.findUnique.mockResolvedValue(null);
+      mockPrismaService.participant.create.mockResolvedValue(mockParticipant);
+
+      await service.register('account-1', dto);
+
+      expect(mockPrismaService.participant.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ isRas: false }) }),
+      );
+    });
   });
 
   describe('updateProfile', () => {

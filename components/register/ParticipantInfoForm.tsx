@@ -19,6 +19,7 @@ interface FormState {
   dialCode: string;
   phone: string;
   ieeeId: string;
+  isRas: boolean;
   sb: SB | '';
   country: Country | '';
 }
@@ -29,6 +30,7 @@ const initial: FormState = {
   dialCode: DIAL_CODES[0].dial, // Tunisia (+216)
   phone: '',
   ieeeId: '',
+  isRas: false, // RAS membership always starts as "No"
   sb: '',
   country: '',
 };
@@ -81,6 +83,7 @@ export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => vo
         ieeeId: isIeee && form.ieeeId ? Number(form.ieeeId) : undefined,
         sb: isStudent && form.sb ? (form.sb as SB) : undefined,
         country: form.country as Country,
+        isRas: isIeee && form.isRas,
       });
       onSuccess();
     } catch (err) {
@@ -130,6 +133,7 @@ export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => vo
               set('participantType', 'NonIEEE');
               set('ieeeId', '');
               set('sb', '');
+              set('isRas', false);
             }}
           >
             No
@@ -248,6 +252,38 @@ export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => vo
               onChange={(e) => set('ieeeId', e.target.value)}
             />
             {errors.ieeeId && <span className="reg-error">{errors.ieeeId}</span>}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* RAS membership - IEEE members only (RAS is an IEEE society).
+          Defaults to No, so the question is never blocking. */}
+      <AnimatePresence>
+        {isIeee && (
+          <motion.div
+            className="reg-field"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <label className="reg-label">Are you a RAS member?</label>
+            <div className="reg-toggle-group">
+              <button
+                type="button"
+                className={`reg-toggle ${form.isRas ? 'reg-toggle-active-green' : ''}`}
+                onClick={() => set('isRas', true)}
+              >
+                Yes
+              </button>
+              <button
+                type="button"
+                className={`reg-toggle ${!form.isRas ? 'reg-toggle-active-green' : ''}`}
+                onClick={() => set('isRas', false)}
+              >
+                No
+              </button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

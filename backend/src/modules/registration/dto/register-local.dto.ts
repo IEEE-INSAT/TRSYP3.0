@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+  IsBoolean,
   IsEnum,
   IsInt,
   IsOptional,
@@ -28,6 +29,9 @@ export const RegisterLocalSchema = z.object({
   participantType: z.nativeEnum(ParticipantType),
   sb: z.nativeEnum(SB).optional(),
   country: z.nativeEnum(COUNTRY),
+  // RAS is an IEEE society, so this only ever applies to IEEE members.
+  // Absent means "no" - the service normalises it.
+  isRas: z.boolean().optional(),
 });
 
 export type RegisterLocalInput = z.infer<typeof RegisterLocalSchema>;
@@ -95,4 +99,13 @@ export class RegisterLocalDto {
   })
   @IsEnum(COUNTRY, { message: 'Invalid country' })
   country!: COUNTRY;
+
+  @ApiPropertyOptional({
+    description: 'IEEE RAS society membership (IEEE members only)',
+    example: false,
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean({ message: 'RAS membership must be a boolean' })
+  isRas?: boolean;
 }
