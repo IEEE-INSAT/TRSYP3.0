@@ -16,7 +16,12 @@ export const PAYMENT_ENABLED = false;
  */
 export const ROOMING_ENABLED = false;
 
-export type DashboardSectionId = 'overview' | 'avatar' | 'rooming' | 'payment';
+export type DashboardSectionId =
+  | 'overview'
+  | 'profile'
+  | 'avatar'
+  | 'rooming'
+  | 'payment';
 
 export type DashboardSection = {
   id: DashboardSectionId;
@@ -33,6 +38,7 @@ export type DashboardSection = {
 
 export const DASHBOARD_SECTIONS: DashboardSection[] = [
   { id: 'overview', label: 'Overview', href: '/dashboard', enabled: true, gated: true },
+  { id: 'profile', label: 'Profile', href: '/dashboard/profile', enabled: true, gated: true },
   { id: 'avatar', label: 'Avatar', href: '/dashboard/avatar', enabled: true, gated: false },
   { id: 'rooming', label: 'Rooming', href: '/dashboard/rooming', enabled: ROOMING_ENABLED, gated: true },
   { id: 'payment', label: 'Payment', href: '/dashboard/payment', enabled: PAYMENT_ENABLED, gated: true },

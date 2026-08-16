@@ -7,6 +7,7 @@ import type {
   RegisterParticipantPayload,
   Team,
   TeamActivity,
+  UpdateParticipantPayload,
 } from './types';
 
 /**
@@ -73,6 +74,24 @@ export const registrationService = {
     if (!features.registrationApi) return null;
     return apiFetch<BackendParticipant>('/registration', {
       method: 'POST',
+      body: payload,
+      token,
+    });
+  },
+
+  /**
+   * PATCH /registration/profile - edit the participant record.
+   *
+   * Returns `null` while the registration API is off, mirroring `register`:
+   * the store keeps the profile locally in that mode.
+   */
+  async updateProfile(
+    payload: UpdateParticipantPayload,
+    token: string,
+  ): Promise<BackendParticipant | null> {
+    if (!features.registrationApi) return null;
+    return apiFetch<BackendParticipant>('/registration/profile', {
+      method: 'PATCH',
       body: payload,
       token,
     });

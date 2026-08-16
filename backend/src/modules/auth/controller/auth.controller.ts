@@ -18,7 +18,7 @@ import {
     ApiResponse,
     ApiBearerAuth,
 } from '@nestjs/swagger';
-import { AvatarDto, ResetPasswordDto, SignUpDto } from '../dto';
+import { AvatarDto, ResetPasswordDto, SignUpDto, UpdateMeDto } from '../dto';
 import {
     JwtAuthGuard,
     RequestWithUser,
@@ -47,6 +47,16 @@ export class AuthController {
             throw new NotFoundException('User not found');
         }
         return res.status(HttpStatus.OK).json(user);
+    }
+
+    @Patch('me')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Update the current user display name' })
+    @ApiResponse({ status: 200, description: 'Profile updated.' })
+    @ApiResponse({ status: 401, description: 'Unauthorized.' })
+    async updateMe(@Req() req: RequestWithUser, @Body() dto: UpdateMeDto) {
+        return this.authService.updateMe(req.user.sub, dto);
     }
 
     @Patch('avatar')

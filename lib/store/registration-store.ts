@@ -11,6 +11,7 @@ import type {
   ParticipantType,
   RegisterParticipantPayload,
   SB,
+  UpdateParticipantPayload,
 } from '../api/types';
 
 export type UserType = 'participant' | 'challenger';
@@ -43,6 +44,15 @@ export interface UserData {
   isIeee: boolean;
   ieeeId: string;
   isRas: boolean;
+  /**
+   * Raw participant fields, kept so the profile editor can prefill itself
+   * without a second round trip. Optional because profiles persisted by older
+   * builds predate them.
+   */
+  gender?: Gender;
+  participantType?: ParticipantType;
+  sb?: SB | '';
+  country?: Country;
   status: RegStatus;
   paymentProofSubmitted: boolean;
   paymentFileName: string;
@@ -74,6 +84,8 @@ interface RegistrationState {
   error: string | null;
 
   registerParticipant: (input: ParticipantRegistrationInput) => Promise<void>;
+  /** Edit an existing participant - only the changed fields need to be passed. */
+  updateProfile: (patch: Partial<ParticipantRegistrationInput>) => Promise<void>;
   submitPayment: (fileName: string) => Promise<void>;
   updateStatus: (status: RegStatus) => void;
   hydrateFromBackend: () => Promise<void>;
@@ -91,6 +103,44 @@ function toPayload(input: ParticipantRegistrationInput): RegisterParticipantPayl
     country: input.country,
     // RAS is an IEEE society - never claim it for a non-IEEE participant.
     isRas: isIeee && input.isRas,
+  };
+}
+
+/**
+ * The participant half of `UserData`, read off a saved backend row. Identity
+ * (name/email) is not in here - that half comes from the auth store.
+ */
+function participantFields(p: BackendParticipant) {
+  return {
+    whatsapp: p.phone,
+    university: p.sb ?? '',
+    isIeee: p.participantType !== 'NonIEEE',
+    ieeeId: p.ieeeId ? String(p.ieeeId) : '',
+    isRas: p.isRas ?? false,
+    gender: p.gender as Gender,
+    participantType: p.participantType,
+    sb: (p.sb ?? '') as SB | '',
+    country: p.country,
+    participantId: p.id,
+  };
+}
+
+/**
+ * Same shape, derived from what the user typed. Used only when the registration
+ * API is off (`features.registrationApi`), where there is no saved row to read.
+ */
+function participantFieldsFromInput(input: ParticipantRegistrationInput) {
+  const isIeee = input.participantType !== 'NonIEEE';
+  return {
+    whatsapp: input.phone,
+    university: input.sb ?? '',
+    isIeee,
+    ieeeId: input.ieeeId ? String(input.ieeeId) : '',
+    isRas: isIeee && input.isRas,
+    gender: input.gender,
+    participantType: input.participantType,
+    sb: (input.sb ?? '') as SB | '',
+    country: input.country,
   };
 }
 
@@ -148,13 +198,9 @@ export const useRegistrationStore = create<RegistrationState>()(
               userType: 'participant',
               fullName,
               email,
-              whatsapp: input.phone,
-              university: input.sb ?? '',
-              isIeee: input.participantType !== 'NonIEEE',
-              ieeeId: input.ieeeId ? String(input.ieeeId) : '',
-              // Prefer the stored row - the server normalises RAS membership
-              // (never true for a non-IEEE participant).
-              isRas: saved?.isRas ?? (input.participantType !== 'NonIEEE' && input.isRas),
+              // Prefer the stored row: the server normalises what it keeps
+              // (e.g. RAS is never true for a non-IEEE participant).
+              ...(saved ? participantFields(saved) : participantFieldsFromInput(input)),
               status: 'waiting_for_payment',
               paymentProofSubmitted: false,
               paymentFileName: '',
@@ -167,6 +213,62 @@ export const useRegistrationStore = create<RegistrationState>()(
           set({
             submitting: false,
             error: e instanceof Error ? e.message : 'Registration failed',
+          });
+          throw e;
+        }
+      },
+
+      updateProfile: async (patch) => {
+        const { user, submitting } = get();
+        if (!user || submitting) return;
+        set({ submitting: true, error: null });
+        try {
+          const token = await useAuthStore.getState().getAccessToken();
+          if (features.registrationApi && !token) {
+            throw new Error('You must be signed in to edit your profile.');
+          }
+
+          // Send only what changed. The server derives `sb`/`ieeeId`/`isRas`
+          // from the resulting membership type, so a switch to NonIEEE clears
+          // them without the client having to ask.
+          const body: UpdateParticipantPayload = {};
+          if (patch.phone !== undefined) body.phone = patch.phone;
+          if (patch.gender !== undefined) body.gender = patch.gender;
+          if (patch.country !== undefined) body.country = patch.country;
+          if (patch.participantType !== undefined) {
+            body.participantType = patch.participantType;
+          }
+          if (patch.ieeeId !== undefined) body.ieeeId = patch.ieeeId;
+          if (patch.sb !== undefined) body.sb = patch.sb;
+          if (patch.isRas !== undefined) body.isRas = patch.isRas;
+
+          const saved = token
+            ? await registrationService.updateProfile(body, token)
+            : null;
+
+          set({
+            user: saved
+              ? { ...user, ...participantFields(saved) }
+              : // API off: fold the patch in locally so the UI still reflects it.
+                {
+                  ...user,
+                  ...participantFieldsFromInput({
+                    participantType: patch.participantType ?? user.participantType ?? 'NonIEEE',
+                    gender: patch.gender ?? user.gender ?? 'male',
+                    phone: patch.phone ?? user.whatsapp,
+                    ieeeId: patch.ieeeId ?? (user.ieeeId ? Number(user.ieeeId) : undefined),
+                    sb: patch.sb ?? (user.sb || undefined),
+                    country: patch.country ?? user.country ?? 'Tunisia',
+                    isRas: patch.isRas ?? user.isRas,
+                  }),
+                  participantId: user.participantId,
+                },
+            submitting: false,
+          });
+        } catch (e) {
+          set({
+            submitting: false,
+            error: e instanceof Error ? e.message : 'Could not save your profile',
           });
           throw e;
         }
@@ -230,15 +332,10 @@ export const useRegistrationStore = create<RegistrationState>()(
               userType: 'participant',
               fullName,
               email,
-              whatsapp: participant.phone,
-              university: participant.sb ?? '',
-              isIeee: participant.participantType !== 'NonIEEE',
-              ieeeId: participant.ieeeId ? String(participant.ieeeId) : '',
-              isRas: participant.isRas ?? false,
+              ...participantFields(participant),
               status: participant.paid ? 'approved' : 'waiting_for_payment',
               paymentProofSubmitted: false,
               paymentFileName: '',
-              participantId: participant.id,
             },
             isRegistered: true,
           });

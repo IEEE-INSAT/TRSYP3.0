@@ -7516,6 +7516,173 @@ select.reg-input option {
   font-size: 0.95rem;
 }
 
+/* ── Profile editor (dashboard section) ── */
+.dash-section .reg-form { margin-top: 22px; }
+
+/* Read-only field: the email, which lives in Supabase auth, not in the form. */
+.reg-input-locked,
+.reg-input:disabled {
+  color: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.02);
+  cursor: not-allowed;
+}
+
+.reg-field-hint {
+  color: rgba(255, 255, 255, 0.38);
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Save confirmation: a banner rather than a line of green text, so the result
+   of pressing Save is unmissable without stealing focus from the form. */
+.dash-profile-saved {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 14px 18px;
+  border: 1px solid rgba(0, 232, 122, 0.28);
+  border-left: 3px solid var(--color-green);
+  border-radius: 12px;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 232, 122, 0.12) 0%,
+    rgba(0, 232, 122, 0.04) 55%,
+    rgba(0, 232, 122, 0) 100%
+  );
+  box-shadow: 0 6px 22px rgba(0, 232, 122, 0.08);
+}
+
+.dash-profile-saved-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  color: #000;
+  background: var(--color-green);
+}
+.dash-profile-saved-icon svg { width: 16px; height: 16px; }
+
+.dash-profile-saved-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  font-family: var(--font-body);
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+.dash-profile-saved-copy strong {
+  font-family: var(--font-heading);
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-green);
+}
+
+.dash-profile-locked-note { margin-top: 18px; }
+
+/* Action row: sits below a hairline so it reads as a footer to the form
+   rather than as one more field. */
+.dash-profile-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 10px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.dash-profile-save,
+.dash-profile-reset {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 26px;
+  border-radius: 11px;
+  font-family: var(--font-heading);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background 0.22s ease,
+    border-color 0.22s ease,
+    color 0.22s ease,
+    box-shadow 0.22s ease,
+    transform 0.22s ease;
+}
+
+.dash-profile-save {
+  min-width: 176px;
+  border: 1px solid transparent;
+  background: var(--color-green);
+  color: #000;
+  font-weight: 800;
+}
+.dash-profile-save:hover:not(:disabled) {
+  background: #00cc6a;
+  box-shadow: 0 8px 24px rgba(0, 232, 122, 0.18);
+  transform: translateY(-1px);
+}
+.dash-profile-save:active:not(:disabled) {
+  box-shadow: none;
+  transform: translateY(0);
+}
+
+/* Reset discards edits, so it borrows the pink the dashboard already uses for
+   undoing things - muted until hovered, so it never competes with Save. */
+.dash-profile-reset {
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+}
+.dash-profile-reset:hover:not(:disabled) {
+  border-color: rgba(255, 29, 120, 0.4);
+  background: rgba(255, 29, 120, 0.07);
+  color: var(--color-pink);
+}
+
+.dash-profile-save:disabled,
+.dash-profile-reset:disabled {
+  opacity: 0.4;
+  box-shadow: none;
+  transform: none;
+  cursor: not-allowed;
+}
+
+/* Spinner replaces the label's leading edge while the save is in flight. */
+.dash-profile-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(0, 0, 0, 0.25);
+  border-top-color: rgba(0, 0, 0, 0.75);
+  border-radius: 50%;
+  animation: dash-profile-spin 0.7s linear infinite;
+}
+
+@keyframes dash-profile-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-profile-spinner { animation-duration: 2s; }
+  .dash-profile-save:hover:not(:disabled) { transform: none; }
+}
+
+@media (max-width: 520px) {
+  .dash-section .reg-row { grid-template-columns: 1fr; }
+  .dash-profile-form-actions { flex-direction: column; align-items: stretch; }
+  .dash-profile-save { min-width: 0; }
+}
+
 /* ── Hybrid-avatar editor (dashboard section) ── */
 .dash-avatar-card { padding: clamp(20px, 4vw, 32px); }
 
@@ -7768,6 +7935,12 @@ select.reg-input option {
   transition: border-color 0.2s ease, color 0.2s ease;
 }
 .dash-profile-edit:hover { color: #51e5af; border-color: rgba(81, 229, 175, 0.42); }
+.dash-profile-actions {
+  display: grid;
+  gap: 8px;
+  justify-items: stretch;
+}
+.dash-profile-actions .dash-profile-edit { text-align: center; }
 
 @media (max-width: 620px) {
   .avatar-card { grid-template-columns: 1fr; }
@@ -7777,6 +7950,7 @@ select.reg-input option {
   .dash-profile-card { grid-template-columns: 96px minmax(0, 1fr); gap: 14px; }
   .dash-profile-avatar { width: 96px !important; height: 96px !important; }
   .dash-profile-edit { grid-column: 1 / -1; text-align: center; }
+  .dash-profile-actions { grid-column: 1 / -1; grid-auto-flow: column; }
 }
 
 .ld-logo {

@@ -289,9 +289,14 @@ export default function Dashboard() {
               {isChallenger ? 'Challenger' : 'Participant'}
             </span>
           </div>
-          <Link className="dash-profile-edit" href="/dashboard/avatar">
-            Change avatar
-          </Link>
+          <div className="dash-profile-actions">
+            <Link className="dash-profile-edit" href="/dashboard/profile">
+              Edit profile
+            </Link>
+            <Link className="dash-profile-edit" href="/dashboard/avatar">
+              Change avatar
+            </Link>
+          </div>
         </motion.section>
 
         {/* Status Card */}

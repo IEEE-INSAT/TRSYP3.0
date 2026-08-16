@@ -35,6 +35,8 @@ interface AuthState {
   error: string | null;
 
   initialize: () => Promise<void>;
+  /** Rename the signed-in user (PATCH /auth/me). Email is not editable here. */
+  updateName: (name: string, lastName: string) => Promise<void>;
   signUp: (input: SignUpInput) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -124,6 +126,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
     } else {
       set({ initialized: true });
+    }
+  },
+
+  updateName: async (name, lastName) => {
+    const token = await get().getAccessToken();
+    if (!token || !isApiConfigured) {
+      // Offline placeholder - reflect the change locally so the UI still moves.
+      const account = get().account;
+      if (account) set({ account: { ...account, name, lastName } });
+    } else {
+      set({ account: await authService.updateMe({ name, lastName }, token) });
+    }
+
+    // The dashboard profile carries its own copy of the display name (it is
+    // built once at registration/hydrate time), so keep the two in step.
+    const registration = useRegistrationStore.getState();
+    const user = registration.user;
+    if (user) {
+      useRegistrationStore.setState({
+        user: { ...user, fullName: `${name} ${lastName}`.trim() },
+      });
     }
   },
 

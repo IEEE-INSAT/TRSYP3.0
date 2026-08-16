@@ -302,6 +302,120 @@ describe('RegistrationService', () => {
       expect(result).toEqual(updated);
       expect(mockPrismaService.participant.update).toHaveBeenCalled();
     });
+
+    it('should allow changing participantType, sb and country after registration', async () => {
+      const dto: UpdateProfileDto = {
+        participantType: ParticipantType.Student,
+        sb: SB.ENSI,
+        country: COUNTRY.Algeria,
+        ieeeId: 99887766,
+      };
+
+      mockPrismaService.participant.findUnique.mockResolvedValue(mockParticipant);
+      mockPrismaService.participant.update.mockResolvedValue(mockParticipant);
+
+      await service.updateProfile('participant-1', dto);
+
+      expect(mockPrismaService.participant.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            sb: SB.ENSI,
+            country: COUNTRY.Algeria,
+            ieeeId: 99887766,
+          }),
+        }),
+      );
+    });
+
+    it('should clear IEEE ID, branch and RAS when switching to NonIEEE', async () => {
+      const rasStudent = { ...mockParticipant, ieeeId: 12345678, isRas: true };
+      const dto: UpdateProfileDto = { participantType: ParticipantType.NonIEEE };
+
+      mockPrismaService.participant.findUnique.mockResolvedValue(rasStudent);
+      mockPrismaService.participant.update.mockResolvedValue(rasStudent);
+
+      await service.updateProfile('participant-1', dto);
+
+      expect(mockPrismaService.participant.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            participantType: ParticipantType.NonIEEE,
+            sb: null,
+            ieeeId: null,
+            isRas: false,
+          }),
+        }),
+      );
+    });
+
+    it('should drop the student branch when switching to Young Professional', async () => {
+      const student = { ...mockParticipant, ieeeId: 12345678 };
+      const dto: UpdateProfileDto = {
+        participantType: ParticipantType.YoungProfessional,
+      };
+
+      mockPrismaService.participant.findUnique.mockResolvedValue(student);
+      mockPrismaService.participant.update.mockResolvedValue(student);
+
+      await service.updateProfile('participant-1', dto);
+
+      expect(mockPrismaService.participant.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            participantType: ParticipantType.YoungProfessional,
+            sb: null,
+          }),
+        }),
+      );
+    });
+
+    it('should reject becoming a student without a branch', async () => {
+      const nonIeee = {
+        ...mockParticipant,
+        participantType: ParticipantType.NonIEEE,
+        sb: null,
+      };
+      const dto: UpdateProfileDto = {
+        participantType: ParticipantType.Student,
+        ieeeId: 12345678,
+      };
+
+      mockPrismaService.participant.findUnique.mockResolvedValue(nonIeee);
+
+      await expect(service.updateProfile('participant-1', dto)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should reject becoming an IEEE member without an IEEE ID', async () => {
+      const nonIeee = {
+        ...mockParticipant,
+        participantType: ParticipantType.NonIEEE,
+        sb: null,
+        ieeeId: null,
+      };
+      const dto: UpdateProfileDto = {
+        participantType: ParticipantType.Student,
+        sb: SB.INSAT,
+      };
+
+      mockPrismaService.participant.findUnique.mockResolvedValue(nonIeee);
+
+      await expect(service.updateProfile('participant-1', dto)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should not demand IEEE fields when the membership type is untouched', async () => {
+      // A legacy row missing its IEEE ID must still be able to edit its phone.
+      const legacy = { ...mockParticipant, ieeeId: null };
+      const dto: UpdateProfileDto = { phone: '+21699999999' };
+
+      mockPrismaService.participant.findUnique.mockResolvedValue(legacy);
+      mockPrismaService.participant.update.mockResolvedValue(legacy);
+
+      await expect(service.updateProfile('participant-1', dto)).resolves.toBeDefined();
+    });
   });
 
   describe('requestVisaLetter', () => {

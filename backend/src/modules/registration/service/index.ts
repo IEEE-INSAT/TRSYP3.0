@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import {
   Prisma,
   Participant,
+  ParticipantType,
   Team,
   TeamActivity,
   VisaApplication,
@@ -236,17 +237,6 @@ export class RegistrationService {
           );
         }
 
-        // Edge case: Cannot change immutable fields after registration
-        if (
-          dto.participantType !== undefined ||
-          dto.sb !== undefined ||
-          dto.country !== undefined
-        ) {
-          throw new BadRequestException(
-            'Cannot change participantType, sb, or country after registration',
-          );
-        }
-
         // Edge case: Cannot update international info if not international
         if (dto.internationalInfo && !current.isInternational) {
           throw new BadRequestException(
@@ -266,14 +256,42 @@ export class RegistrationService {
         }
 
         const updateData: Prisma.ParticipantUpdateInput = {};
-        if (dto.ieeeId !== undefined) updateData.ieeeId = dto.ieeeId;
         if (dto.phone !== undefined) updateData.phone = dto.phone;
         if (dto.gender !== undefined) updateData.gender = dto.gender;
-        if (dto.isRas !== undefined) {
-          // `participantType` is immutable, so the current row decides whether
-          // a RAS membership is even possible.
-          updateData.isRas = current.participantType !== 'NonIEEE' && dto.isRas;
+        if (dto.country !== undefined) updateData.country = dto.country;
+
+        // Membership type drives three dependent fields, so they are always
+        // re-derived together from the *resulting* row rather than patched one
+        // by one - otherwise switching to NonIEEE would leave a stale IEEE ID,
+        // branch and RAS flag behind.
+        const nextType = dto.participantType ?? current.participantType;
+        const isIeeeMember = nextType !== ParticipantType.NonIEEE;
+
+        const nextSb =
+          nextType === ParticipantType.Student ? (dto.sb ?? current.sb) : null;
+        const nextIeeeId = isIeeeMember ? (dto.ieeeId ?? current.ieeeId) : null;
+        const nextIsRas = isIeeeMember ? (dto.isRas ?? current.isRas) : false;
+
+        // Only demanded when the membership type is actually being switched.
+        // Enforcing it on every patch would lock legacy rows that predate the
+        // rule out of unrelated edits like a phone-number change.
+        if (dto.participantType !== undefined) {
+          if (nextType === ParticipantType.Student && !nextSb) {
+            throw new BadRequestException(
+              'A student branch is required for student participants',
+            );
+          }
+          if (isIeeeMember && !nextIeeeId) {
+            throw new BadRequestException(
+              'An IEEE ID is required for IEEE members',
+            );
+          }
         }
+
+        if (nextType !== current.participantType) updateData.participantType = nextType;
+        if (nextSb !== current.sb) updateData.sb = nextSb;
+        if (nextIeeeId !== current.ieeeId) updateData.ieeeId = nextIeeeId;
+        if (nextIsRas !== current.isRas) updateData.isRas = nextIsRas;
 
         if (dto.internationalInfo && current.internationalInfo) {
           const intlUpdate: Prisma.InternationalInfoUpdateInput = {};

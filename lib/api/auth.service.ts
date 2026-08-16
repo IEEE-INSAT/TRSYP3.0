@@ -1,5 +1,5 @@
 import { apiFetch } from './http';
-import type { AvatarConfig, BackendUser } from './types';
+import type { AvatarConfig, BackendUser, UpdateMePayload } from './types';
 
 /**
  * Auth service - wired to the backend routes that already exist
@@ -10,6 +10,15 @@ export const authService = {
   /** GET /auth/me - current user profile. */
   getMe(token: string): Promise<BackendUser> {
     return apiFetch<BackendUser>('/auth/me', { token });
+  },
+
+  /** PATCH /auth/me - update the display name (email is not editable). */
+  updateMe(payload: UpdateMePayload, token: string): Promise<BackendUser> {
+    return apiFetch<BackendUser>('/auth/me', {
+      method: 'PATCH',
+      body: payload,
+      token,
+    });
   },
 
   setAvatar(avatar: AvatarConfig, token: string): Promise<BackendUser> {

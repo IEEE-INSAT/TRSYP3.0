@@ -251,6 +251,22 @@ export interface RegisterParticipantPayload {
   isRas?: boolean;
 }
 
+/**
+ * Body of PATCH /registration/profile.
+ *
+ * Every field is optional - only what the user actually changed is sent. The
+ * server re-derives the IEEE-dependent fields (`sb`, `ieeeId`, `isRas`) from
+ * the resulting `participantType`, so a membership switch cleans up after
+ * itself.
+ */
+export type UpdateParticipantPayload = Partial<RegisterParticipantPayload>;
+
+/** Body of PATCH /auth/me. Email is not editable - it is the Supabase identity. */
+export interface UpdateMePayload {
+  name?: string;
+  lastName?: string;
+}
+
 /** Participant row returned by /registration (Prisma `Participant`). */
 export interface BackendParticipant {
   id: string;
