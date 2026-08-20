@@ -29,7 +29,7 @@ services:
       - key: COMPETITION_REGISTRATION_PHASE
         value: open
       - key: CHALLENGE_REGISTRATION_PHASE
-        value: closed
+        value: soon
       - key: NEXT_PUBLIC_API_URL
         value: /api
       - key: NEXT_PUBLIC_SUPABASE_URL
@@ -43,4 +43,4 @@ services:
       - key: NEXT_PUBLIC_COMPETITION_PHASE
         value: open
       - key: NEXT_PUBLIC_CHALLENGE_PHASE
-        value: closed
+        value: soon
