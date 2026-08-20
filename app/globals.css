@@ -2768,6 +2768,16 @@ select.reg-input option {
   box-shadow: 0 0 16px rgba(255, 29, 120, 0.1);
 }
 
+.reg-count-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.reg-count-btn:disabled:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.5);
+}
+
 /* Team member cards */
 .reg-member-card {
   overflow: hidden;

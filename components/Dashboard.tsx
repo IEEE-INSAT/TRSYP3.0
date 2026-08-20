@@ -144,9 +144,10 @@ export default function Dashboard() {
       setEditTeamErr('Team name must be 2–50 characters.');
       return;
     }
-    const currentSize = team?.size || (user?.memberCount ? user.memberCount + 1 : 1);
-    if (editTeamSize < currentSize || editTeamSize > 6) {
-      setEditTeamErr(`Team size can only be increased (min ${currentSize}, max 6).`);
+    const currentMemberCount = team?.members?.length || (user?.memberCount ? user.memberCount + 1 : 1);
+    const minSize = Math.max(2, currentMemberCount);
+    if (editTeamSize < minSize || editTeamSize > 6) {
+      setEditTeamErr(`Team size must be between ${minSize} and 6.`);
       return;
     }
 
@@ -468,10 +469,25 @@ export default function Dashboard() {
             <div className="dash-detail-row">
               <span className="dash-detail-label">Team Size</span>
               {isEditingTeam ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, flexWrap: 'wrap' }}>
-                  <input type="number" min={team?.size || (user?.memberCount ? user.memberCount + 1 : 1)} max="6" className="dash-edit-input" value={editTeamSize} onChange={(e) => setEditTeamSize(parseInt(e.target.value) || 1)} style={{ width: '70px', textAlign: 'center' }} />
-                  <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>members total</span>
-                  <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1 }}>
+                  <div className="reg-count-group">
+                    {[2, 3, 4, 5, 6].map((n) => {
+                      const currentMemberCount = team?.members?.length || (user?.memberCount ? user.memberCount + 1 : 1);
+                      const disabled = n < currentMemberCount;
+                      return (
+                        <button
+                          key={n}
+                          type="button"
+                          className={`reg-count-btn ${editTeamSize === n ? 'reg-count-btn-active' : ''}`}
+                          disabled={disabled}
+                          onClick={() => setEditTeamSize(n)}
+                        >
+                          {n}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
                     <button type="button" onClick={handleSaveTeam} disabled={editTeamSubmitting} className="dash-save-btn">
                       {editTeamSubmitting ? 'Saving...' : 'Save'}
                     </button>
