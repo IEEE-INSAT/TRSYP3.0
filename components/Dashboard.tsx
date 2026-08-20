@@ -39,6 +39,7 @@ export default function Dashboard() {
   const otherTeam = useTeamStore((s) =>
     s.teams[s.activity === 'COMPETITION' ? 'CHALLENGE' : 'COMPETITION'],
   );
+  const minTeamSize = activity === 'COMPETITION' ? 3 : 2;
   const teamLoaded = useTeamStore((s) => s.loaded);
   const updateTeam = useTeamStore((s) => s.updateTeam);
   const fetchTeams = useTeamStore((s) => s.fetchTeams);
@@ -145,7 +146,7 @@ export default function Dashboard() {
       return;
     }
     const currentMemberCount = team?.members?.length || (user?.memberCount ? user.memberCount + 1 : 1);
-    const minSize = Math.max(2, currentMemberCount);
+    const minSize = Math.max(minTeamSize, currentMemberCount);
     if (editTeamSize < minSize || editTeamSize > 6) {
       setEditTeamErr(`Team size must be between ${minSize} and 6.`);
       return;
@@ -229,8 +230,8 @@ export default function Dashboard() {
       setNoTeamErr('Team name must be 2–50 characters.');
       return;
     }
-    if (newTeamSize < 2 || newTeamSize > 6) {
-      setNoTeamErr('Team size must be between 2 and 6.');
+    if (newTeamSize < minTeamSize || newTeamSize > 6) {
+      setNoTeamErr(`Team size must be between ${minTeamSize} and 6.`);
       return;
     }
     setNoTeamSubmitting(true);
@@ -423,7 +424,7 @@ export default function Dashboard() {
                   <label className="reg-label">Team Size (including you) *</label>
                   <div className="reg-count-group">
                     {[2, 3, 4, 5, 6].map((n) => (
-                      <button key={n} type="button" className={`reg-count-btn ${newTeamSize === n ? 'reg-count-btn-active' : ''}`} onClick={() => setNewTeamSize(n)}>{n}</button>
+                      <button key={n} type="button" className={`reg-count-btn ${newTeamSize === n ? 'reg-count-btn-active' : ''}`} disabled={n < minTeamSize} onClick={() => setNewTeamSize(n)}>{n}</button>
                     ))}
                   </div>
                 </div>
@@ -473,7 +474,7 @@ export default function Dashboard() {
                   <div className="reg-count-group">
                     {[2, 3, 4, 5, 6].map((n) => {
                       const currentMemberCount = team?.members?.length || (user?.memberCount ? user.memberCount + 1 : 1);
-                      const disabled = n < currentMemberCount;
+                      const disabled = n < Math.max(minTeamSize, currentMemberCount);
                       return (
                         <button
                           key={n}

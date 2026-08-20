@@ -27,6 +27,7 @@ export default function TeamStep() {
 
   const activityLabel = ACTIVITY_LABELS[activity];
   const activityOpen = isActivityOpen(activity);
+  const minSize = activity === 'COMPETITION' ? 3 : 2;
 
   const [choice, setChoice] = useState<'leader' | 'member' | null>(null);
   const [teamName, setTeamName] = useState('');
@@ -35,7 +36,7 @@ export default function TeamStep() {
   const [formErr, setFormErr] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const canCreate = teamName.trim().length >= 2 && teamName.trim().length <= 50 && size >= 2 && size <= 6;
+  const canCreate = teamName.trim().length >= 2 && teamName.trim().length <= 50 && size >= minSize && size <= 6;
   const canJoin = code.trim().length === 6;
 
   useEffect(() => {
@@ -49,8 +50,8 @@ export default function TeamStep() {
       setFormErr('Team name must be 2–50 characters.');
       return;
     }
-    if (size < 2 || size > 6) {
-      setFormErr('Team size must be between 2 and 6.');
+    if (size < minSize || size > 6) {
+      setFormErr(`Team size must be between ${minSize} and 6.`);
       return;
     }
     try {
@@ -227,7 +228,7 @@ export default function TeamStep() {
             <label className="reg-label">Team Size (including you) *</label>
             <div className="reg-count-group">
               {[2, 3, 4, 5, 6].map((n) => (
-                <button key={n} type="button" className={`reg-count-btn ${size === n ? 'reg-count-btn-active' : ''}`} onClick={() => setSize(n)}>{n}</button>
+                <button key={n} type="button" className={`reg-count-btn ${size === n ? 'reg-count-btn-active' : ''}`} disabled={n < minSize} onClick={() => setSize(n)}>{n}</button>
               ))}
             </div>
           </div>

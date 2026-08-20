@@ -35,7 +35,16 @@ export class TeamActivityQueryDto {
 // CREATE TEAM
 // ============================================================================
 
-export const CreateTeamSchema = z.object({
+/**
+ * Competition teams need at least 3 members (leader + 2); technical challenge
+ * teams can be as small as a pair.
+ */
+const MIN_TEAM_SIZE: Record<TeamActivity, number> = {
+  [TeamActivity.COMPETITION]: 3,
+  [TeamActivity.CHALLENGE]: 2,
+};
+
+const TeamFieldsSchema = z.object({
   name: z
     .string()
     .min(2, { message: 'Team name must be at least 2 characters' })
@@ -47,6 +56,16 @@ export const CreateTeamSchema = z.object({
     .min(2, { message: 'Team size must be at least 2' })
     .max(6, { message: 'Team size must be at most 6' }),
   activity: TeamActivitySchema,
+});
+
+export const CreateTeamSchema = TeamFieldsSchema.superRefine((data, ctx) => {
+  if (data.size >= MIN_TEAM_SIZE[data.activity]) return;
+  const label = data.activity === TeamActivity.COMPETITION ? 'Competition' : 'Technical challenge';
+  ctx.addIssue({
+    code: z.ZodIssueCode.custom,
+    message: `${label} team size must be at least ${MIN_TEAM_SIZE[data.activity]}`,
+    path: ['size'],
+  });
 });
 
 export type CreateTeamInput = z.infer<typeof CreateTeamSchema>;
@@ -86,7 +105,17 @@ export class CreateTeamDto {
 // UPDATE TEAM
 // ============================================================================
 
-export const UpdateTeamSchema = CreateTeamSchema.partial();
+export const UpdateTeamSchema = TeamFieldsSchema.partial().superRefine((data, ctx) => {
+  if (data.size === undefined) return;
+  const activity = data.activity ?? DEFAULT_TEAM_ACTIVITY;
+  if (data.size >= MIN_TEAM_SIZE[activity]) return;
+  const label = activity === TeamActivity.COMPETITION ? 'Competition' : 'Technical challenge';
+  ctx.addIssue({
+    code: z.ZodIssueCode.custom,
+    message: `${label} team size must be at least ${MIN_TEAM_SIZE[activity]}`,
+    path: ['size'],
+  });
+});
 
 export type UpdateTeamInput = z.infer<typeof UpdateTeamSchema>;
 
