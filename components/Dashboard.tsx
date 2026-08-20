@@ -423,8 +423,8 @@ export default function Dashboard() {
                 <div className="reg-field">
                   <label className="reg-label">Team Size (including you) *</label>
                   <div className="reg-count-group">
-                    {[2, 3, 4, 5, 6].map((n) => (
-                      <button key={n} type="button" className={`reg-count-btn ${newTeamSize === n ? 'reg-count-btn-active' : ''}`} disabled={n < minTeamSize} onClick={() => setNewTeamSize(n)}>{n}</button>
+                    {[2, 3, 4, 5, 6].filter((n) => n >= minTeamSize).map((n) => (
+                      <button key={n} type="button" className={`reg-count-btn ${newTeamSize === n ? 'reg-count-btn-active' : ''}`} onClick={() => setNewTeamSize(n)}>{n}</button>
                     ))}
                   </div>
                 </div>
@@ -472,9 +472,9 @@ export default function Dashboard() {
               {isEditingTeam ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <div className="reg-count-group">
-                    {[2, 3, 4, 5, 6].map((n) => {
+                    {[2, 3, 4, 5, 6].filter((n) => n >= minTeamSize).map((n) => {
                       const currentMemberCount = team?.members?.length || (user?.memberCount ? user.memberCount + 1 : 1);
-                      const disabled = n < Math.max(minTeamSize, currentMemberCount);
+                      const disabled = n < currentMemberCount;
                       return (
                         <button
                           key={n}

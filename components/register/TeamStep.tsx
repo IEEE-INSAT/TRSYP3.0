@@ -227,8 +227,8 @@ export default function TeamStep() {
           <div className="reg-field">
             <label className="reg-label">Team Size (including you) *</label>
             <div className="reg-count-group">
-              {[2, 3, 4, 5, 6].map((n) => (
-                <button key={n} type="button" className={`reg-count-btn ${size === n ? 'reg-count-btn-active' : ''}`} disabled={n < minSize} onClick={() => setSize(n)}>{n}</button>
+              {[2, 3, 4, 5, 6].filter((n) => n >= minSize).map((n) => (
+                <button key={n} type="button" className={`reg-count-btn ${size === n ? 'reg-count-btn-active' : ''}`} onClick={() => setSize(n)}>{n}</button>
               ))}
             </div>
           </div>
