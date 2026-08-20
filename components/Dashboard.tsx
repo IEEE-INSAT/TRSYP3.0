@@ -448,59 +448,59 @@ export default function Dashboard() {
           <div className="dash-card-title">Registration Details</div>
 
           {showTeam && (
-            <div className="dash-detail-row dash-detail-highlight" style={{ alignItems: isEditingTeam ? 'center' : 'flex-start' }}>
-              <span className="dash-detail-label">{activityLabel} Team</span>
-              {isEditingTeam ? (
-                <input className="dash-edit-input" value={editTeamName} onChange={(e) => setEditTeamName(e.target.value)} style={{ width: '100%', maxWidth: '250px' }} />
-              ) : (
-                <span className="dash-detail-value" style={{ display: 'flex', alignItems: 'center' }}>
-                  {team?.name || user.teamName}
-                  {isLeader && (
-                    <button type="button" onClick={handleEditTeam} className="dash-edit-btn">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" /></svg>
-                      Edit
-                    </button>
-                  )}
-                </span>
-              )}
-            </div>
-          )}
-          {showTeam && (
-            <div className="dash-detail-row">
-              <span className="dash-detail-label">Team Size</span>
-              {isEditingTeam ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1 }}>
-                  <div className="reg-count-group">
-                    {[2, 3, 4, 5, 6].map((n) => {
-                      const currentMemberCount = team?.members?.length || (user?.memberCount ? user.memberCount + 1 : 1);
-                      const disabled = n < currentMemberCount;
-                      return (
-                        <button
-                          key={n}
-                          type="button"
-                          className={`reg-count-btn ${editTeamSize === n ? 'reg-count-btn-active' : ''}`}
-                          disabled={disabled}
-                          onClick={() => setEditTeamSize(n)}
-                        >
-                          {n}
-                        </button>
-                      );
-                    })}
+            <div className="dash-details-grid">
+              <div className="dash-detail-row dash-detail-highlight">
+                <span className="dash-detail-label">{activityLabel} Team</span>
+                {isEditingTeam ? (
+                  <input className="dash-edit-input" value={editTeamName} onChange={(e) => setEditTeamName(e.target.value)} />
+                ) : (
+                  <span className="dash-detail-value" style={{ display: 'flex', alignItems: 'center' }}>
+                    {team?.name || user.teamName}
+                    {isLeader && (
+                      <button type="button" onClick={handleEditTeam} className="dash-edit-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" /></svg>
+                        Edit
+                      </button>
+                    )}
+                  </span>
+                )}
+              </div>
+              <div className="dash-detail-row">
+                <span className="dash-detail-label">Team Size</span>
+                {isEditingTeam ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div className="reg-count-group">
+                      {[2, 3, 4, 5, 6].map((n) => {
+                        const currentMemberCount = team?.members?.length || (user?.memberCount ? user.memberCount + 1 : 1);
+                        const disabled = n < currentMemberCount;
+                        return (
+                          <button
+                            key={n}
+                            type="button"
+                            className={`reg-count-btn ${editTeamSize === n ? 'reg-count-btn-active' : ''}`}
+                            disabled={disabled}
+                            onClick={() => setEditTeamSize(n)}
+                          >
+                            {n}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button type="button" onClick={handleSaveTeam} disabled={editTeamSubmitting} className="dash-save-btn">
+                        {editTeamSubmitting ? 'Saving...' : 'Save'}
+                      </button>
+                      <button type="button" onClick={() => setIsEditingTeam(false)} disabled={editTeamSubmitting} className="dash-cancel-btn">
+                        Cancel
+                      </button>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button type="button" onClick={handleSaveTeam} disabled={editTeamSubmitting} className="dash-save-btn">
-                      {editTeamSubmitting ? 'Saving...' : 'Save'}
-                    </button>
-                    <button type="button" onClick={() => setIsEditingTeam(false)} disabled={editTeamSubmitting} className="dash-cancel-btn">
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <span className="dash-detail-value">
-                  {team?.size ? `${team.members?.length || 1}/${team.size} spots filled` : `${user.memberCount} member${user.memberCount !== 1 ? 's' : ''} + leader`}
-                </span>
-              )}
+                ) : (
+                  <span className="dash-detail-value">
+                    {team?.size ? `${team.members?.length || 1}/${team.size} spots filled` : `${user.memberCount} member${user.memberCount !== 1 ? 's' : ''} + leader`}
+                  </span>
+                )}
+              </div>
             </div>
           )}
           {isEditingTeam && editTeamErr && (
