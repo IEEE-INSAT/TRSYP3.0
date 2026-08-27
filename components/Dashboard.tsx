@@ -117,10 +117,11 @@ export default function Dashboard() {
   // either track. So this is an invitation to join, never a required step - it
   // just shows the create/join controls whenever the selected activity is open
   // and the user has no team in it. Gated on `teamLoaded` so it doesn't flash
-  // while the teams are still being fetched, and on `isChallenger` so a plain
-  // participant is never offered the competition or the technical challenge -
-  // they enter those through /register/challenger, not from here.
-  const canJoinActivity = teamLoaded && !team && activityOpen && isChallenger;
+  // while the teams are still being fetched. Entering a track is optional and
+  // offered to every registered participant - registration itself no longer
+  // splits into participant/challenger, so the dashboard is where a team is
+  // formed, by anyone who wants one.
+  const canJoinActivity = teamLoaded && !team && activityOpen;
 
   // Team rows describe the *selected* activity only. Before the first fetch
   // resolves we still show the registration store's cached team name so the
@@ -338,8 +339,7 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {/* Which track the team panels below refer to - challengers only */}
-        {isChallenger && (
+        {/* Which track the team panels below refer to */}
         <motion.div className="dash-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.12 }}>
           <div className="dash-card-title">Your Teams</div>
           <ActivityToggle
@@ -356,10 +356,9 @@ export default function Dashboard() {
             }}
           />
         </motion.div>
-        )}
 
         {/* Selected track is not taking teams yet - say so instead of offering a form */}
-        {isChallenger && teamLoaded && !team && !activityOpen && (
+        {teamLoaded && !team && !activityOpen && (
           <motion.div className="dash-card dash-noteam-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }}>
             <div className="dash-card-title">{activityLabel}</div>
             <p className="dash-noteam-msg">

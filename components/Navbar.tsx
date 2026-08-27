@@ -2,12 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/lib/store/use-auth';
 import AuthModal from './AuthModal';
-import ModalPortal from './ModalPortal';
 import { useAuthStore } from '@/lib/store/auth-store';
 import { useRegistrationStore } from '@/lib/store/registration-store';
 import { REGISTRATION_OPEN, PARTICIPANT_REGISTRATION_OPEN, LOGIN_OPEN } from '@/lib/config';
@@ -38,7 +37,6 @@ const NAV_LINKS = [
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
-  const [showRegister, setShowRegister] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { isRegistered, logout } = useAuth();
@@ -47,6 +45,12 @@ export default function Navbar() {
   const hydrating = useRegistrationStore((s) => s.hydrating);
   const isAuthenticated = !!accessToken;
   const pathname = usePathname();
+  const router = useRouter();
+
+  // One registration path now - no participant/challenger chooser - so the CTA
+  // is only live when the master switch and the participant window both allow
+  // it. `/register` re-checks the same pair, this just avoids a dead-end click.
+  const registerOpen = REGISTRATION_OPEN && PARTICIPANT_REGISTRATION_OPEN;
 
   // Just after login we're authenticated but the profile sync hasn't resolved
   // yet - hold a neutral state instead of flashing "Register Now" before the
@@ -87,13 +91,9 @@ export default function Navbar() {
     updateNavbar();
     window.addEventListener('scroll', handleScroll, { passive: true });
 
-    const handleOpenModal = () => { if (REGISTRATION_OPEN) setShowRegister(true); };
-    window.addEventListener('open-register-modal', handleOpenModal);
-
     return () => {
       if (frame) window.cancelAnimationFrame(frame);
       window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('open-register-modal', handleOpenModal);
     };
   }, []);
 
@@ -184,13 +184,13 @@ export default function Navbar() {
                 )}
                 <button
                   className="navbar-register"
-                  onClick={() => setShowRegister(true)}
-                  disabled={!REGISTRATION_OPEN}
-                  title={REGISTRATION_OPEN ? undefined : 'Registration opens soon'}
-                  style={REGISTRATION_OPEN ? undefined : { opacity: 0.5, cursor: 'not-allowed' }}
+                  onClick={() => router.push('/register')}
+                  disabled={!registerOpen}
+                  title={registerOpen ? undefined : 'Registration opens soon'}
+                  style={registerOpen ? undefined : { opacity: 0.5, cursor: 'not-allowed' }}
                 >
-                  {REGISTRATION_OPEN && <span className="navbar-register-pulse" />}
-                  {REGISTRATION_OPEN ? 'Register Now' : 'Registration Soon'}
+                  {registerOpen && <span className="navbar-register-pulse" />}
+                  {registerOpen ? 'Register Now' : 'Registration Soon'}
                 </button>
               </motion.div>
             ) : null}
@@ -272,11 +272,11 @@ export default function Navbar() {
             )}
             <button
               className="navbar-mobile-register"
-              onClick={() => { setOpen(false); setShowRegister(true); }}
-              disabled={!REGISTRATION_OPEN}
-              style={REGISTRATION_OPEN ? undefined : { opacity: 0.5, cursor: 'not-allowed' }}
+              onClick={() => { setOpen(false); router.push('/register'); }}
+              disabled={!registerOpen}
+              style={registerOpen ? undefined : { opacity: 0.5, cursor: 'not-allowed' }}
             >
-              {REGISTRATION_OPEN ? 'Register Now' : 'Registration Soon'}
+              {registerOpen ? 'Register Now' : 'Registration Soon'}
             </button>
           </>
         )}
@@ -320,51 +320,6 @@ export default function Navbar() {
           </button>
         )}
       </div>
-
-      {showRegister && !isRegistered && (
-        <ModalPortal>
-        <div className="reg-overlay" onClick={() => setShowRegister(false)}>
-          <div className="reg-popup" onClick={(e) => e.stopPropagation()}>
-            <button className="reg-close" onClick={() => setShowRegister(false)} aria-label="Close">
-              &times;
-            </button>
-            <div className="reg-popup-header">
-              <span className="reg-popup-badge">TRSYP 3.0</span>
-              <h3 className="reg-popup-title">Register As</h3>
-              <p className="reg-popup-sub">Choose your registration type</p>
-            </div>
-            <div className="reg-popup-buttons">
-              {PARTICIPANT_REGISTRATION_OPEN ? (
-                <Link href="/register/participant" className="reg-btn reg-btn-participant" onClick={() => setShowRegister(false)}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
-                  <span>Participant</span>
-                </Link>
-              ) : (
-                <button disabled className="reg-btn reg-btn-participant" style={{ opacity: 0.5, cursor: 'not-allowed' }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
-                  <span>Participant (Closed)</span>
-                </button>
-              )}
-              {/* Straight to the registration page - it runs its own auth gate,
-                  so authenticating there keeps the user on the destination
-                  instead of bouncing them through a redirect. */}
-              <Link href="/register/challenger" className="reg-btn reg-btn-challenger" onClick={() => setShowRegister(false)}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                </svg>
-                <span>Challenger</span>
-              </Link>
-            </div>
-          </div>
-        </div>
-        </ModalPortal>
-      )}
 
       {showAuthModal && (
         <AuthModal
