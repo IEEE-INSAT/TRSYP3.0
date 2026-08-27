@@ -53,8 +53,11 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
   // the user has progressed past Step 1 here (a genuine new registration).
   useEffect(() => {
     if (!initialized || hydrating || progressedStep1.current) return;
+    // A registered challenger arrives here precisely to build a team, which the
+    // dashboard no longer offers - let them through to Step 2.
+    if (initialChallenge) return;
     if (isAuthenticated && isRegistered) window.location.href = '/dashboard';
-  }, [initialized, hydrating, isAuthenticated, isRegistered]);
+  }, [initialized, hydrating, isAuthenticated, isRegistered, initialChallenge]);
 
   // Once Step 1 is done in the non-challenge flow we land on the `done` screen,
   // play its success animation as a short transition, then send the user to
@@ -120,7 +123,13 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
 
   const onParticipantDone = () => {
     progressedStep1.current = true;
-    // After Step 1 go straight to the dashboard - no intermediate screens.
+    // The challenger route continues into team creation - it is the only place
+    // teams are made, so it must not hand off to the dashboard here.
+    if (initialChallenge) {
+      setStep('team');
+      return;
+    }
+    // A plain participant is done: straight to the dashboard, no team screens.
     window.location.href = '/dashboard';
   };
 
