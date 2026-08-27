@@ -18,7 +18,7 @@ const SPEAKERS = [
     name: 'Firas Ben Hassen',
     photo: '/speakers/Firas Ben Hassen.jpg',
     title: 'Speaker',
-    affiliation: 'Deputy Head of Data Science Services · AI Speaker & Guest Lecturer · Mentor & Entrepreneur',
+    affiliation: 'Deputy Head of Data Science Services · Artificial Intelligence Speaker · Artificial Intelligence Guest Lecturer · Mentor & Entrepreneur (Data, Data and Data)',
     topic: 'AI and Robots',
     email: 'Firas.ben-hassan@allianz.de',
     linkedin: 'https://www.linkedin.com/in/firas-ben-hassan-22bab3101/',
