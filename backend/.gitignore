@@ -16,3 +16,5 @@ npm-debug.log*
 
 # Coverage
 coverage/
+
+.env.example

@@ -10,7 +10,7 @@ import AuthModal from './AuthModal';
 import ModalPortal from './ModalPortal';
 import { useAuthStore } from '@/lib/store/auth-store';
 import { useRegistrationStore } from '@/lib/store/registration-store';
-import { REGISTRATION_OPEN, LOGIN_OPEN } from '@/lib/config';
+import { REGISTRATION_OPEN, PARTICIPANT_REGISTRATION_OPEN, LOGIN_OPEN } from '@/lib/config';
 import { resolvePostAuth } from '@/lib/auth/post-auth';
 import UserAvatar from './UserAvatar';
 import ProfileMenu from './ProfileMenu';
@@ -334,13 +334,23 @@ export default function Navbar() {
               <p className="reg-popup-sub">Choose your registration type</p>
             </div>
             <div className="reg-popup-buttons">
-              <button disabled className="reg-btn reg-btn-participant" style={{ opacity: 0.5, cursor: 'not-allowed' }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-                <span>Participant (Closed)</span>
-              </button>
+              {PARTICIPANT_REGISTRATION_OPEN ? (
+                <Link href="/register/participant" className="reg-btn reg-btn-participant" onClick={() => setShowRegister(false)}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                  <span>Participant</span>
+                </Link>
+              ) : (
+                <button disabled className="reg-btn reg-btn-participant" style={{ opacity: 0.5, cursor: 'not-allowed' }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                  <span>Participant (Closed)</span>
+                </button>
+              )}
               {/* Straight to the registration page - it runs its own auth gate,
                   so authenticating there keeps the user on the destination
                   instead of bouncing them through a redirect. */}

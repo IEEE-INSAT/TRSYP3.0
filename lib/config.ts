@@ -32,6 +32,36 @@ export const isSupabaseConfigured =
 export const REGISTRATION_OPEN = true;
 
 /**
+ * Reads a `true`/`false` env var, falling back when it is unset or malformed.
+ * Mirrors `readPhase` below - the env var is the switch, the fallback is what
+ * ships when nobody set one.
+ */
+function readBool(value: string | undefined, fallback: boolean): boolean {
+  const flag = value?.trim().toLowerCase();
+  if (flag === 'true') return true;
+  if (flag === 'false') return false;
+  return fallback;
+}
+
+/**
+ * Participant registration window, driven by
+ * `NEXT_PUBLIC_PARTICIPANT_REGISTRATION_OPEN`.
+ *
+ * Independent of the challenger entry point: closing this hides the
+ * "Participant" CTA and blocks `/register` + `/register/participant`, while
+ * `/register/challenger` keeps working. A challenger still fills in the same
+ * participant info form as Step 1 - that is part of entering the challenge,
+ * not the participant sign-up this flag governs.
+ *
+ * Note `REGISTRATION_OPEN` above still outranks this one: it closes every
+ * entry point at once.
+ */
+export const PARTICIPANT_REGISTRATION_OPEN = readBool(
+  process.env.NEXT_PUBLIC_PARTICIPANT_REGISTRATION_OPEN,
+  true,
+);
+
+/**
  * Master switch for public log-in. Set to `false` to temporarily hide the
  * Log In CTA in the navbar. Flip back to `true` to reopen.
  */
