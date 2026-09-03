@@ -6,8 +6,24 @@ import Image from 'next/image';
 
 const SPEAKERS = [
   {
+    name: 'Friederike Eyssel',
+    photo: '/speakers/FriederikeEyssel.png',
+    title: 'Distinguished Lecturer',
+    affiliation: 'Professor of Applied Social Psychology and Gender Research, Bielefeld University · Research bridging social psychology and social robotics: dehumanization and the attribution of humanlike traits to robots and technology · Pioneer in psychological approaches to anthropomorphism · IEEE-RAS Distinguished Lecturer Award (2022) · Karl-Peter Grotemeyer Prize for Excellence in Teaching (2021)',
+    topic: 'To Be Announced',
+    email: 'feyssel@uni-bielefeld.de',
+  },
+  {
+    name: 'Adel Alimi',
+    photo: '/speakers/AdelAlimi.png',
+    title: 'Speaker',
+    affiliation: 'Professor at the National Engineering School of Sfax (ENIS), University of Sfax, Tunisia · Founder and Past-Director of REGIM Lab (LR11ES48), REsearch Groups in Intelligent Machines · Past Chair of the IEEE Africa Council · Chair of the Sfax Smart City Living Lab',
+    topic: 'To Be Announced',
+    email: 'adel.alimi@enis.tn',
+  },
+  {
     name: 'Anis Koubaa',
-    photo: '/speakers/Anis Koubaa - Online Session.jpg',
+    photo: '/speakers/AnisKoubaa.jpg',
     title: 'Speaker',
     affiliation: 'Executive Leader in AI, Digital Transformation & Innovation | Professor & Research Director | Building Intelligent Organizations, Technology Ventures & Talent for Saudi Vision 2030',
     topic: 'Agentic Robotics: From LLM Tool-Calling to Vision-Language-Action Models',
@@ -16,7 +32,7 @@ const SPEAKERS = [
   },
   {
     name: 'Firas Ben Hassen',
-    photo: '/speakers/Firas Ben Hassen.jpg',
+    photo: '/speakers/FirasBenHassen.jpg',
     title: 'Speaker',
     affiliation: 'Deputy Head of Data Science Services · Artificial Intelligence Speaker · Artificial Intelligence Guest Lecturer · Mentor & Entrepreneur (Data, Data and Data)',
     topic: 'AI and Robots',
@@ -25,7 +41,7 @@ const SPEAKERS = [
   },
   {
     name: 'John McDonald',
-    photo: '/speakers/John McDonald - online session.jpg',
+    photo: '/speakers/JohnMcDonald.jpg',
     title: 'Trainer · Online Workshop',
     affiliation: 'Deputy Head of Data Science Services · AI Speaker & Guest Lecturer · Mentor & Entrepreneur · USA',
     topic: 'Online Workshop',
@@ -34,7 +50,7 @@ const SPEAKERS = [
   },
   {
     name: 'Med Ali Farhat',
-    photo: '/speakers/Med Ali Farhat.png',
+    photo: '/speakers/MedAliFarhat.png',
     title: 'Trainer',
     affiliation: 'AI Engineer | 19× Awards & Hackathons Winner | Building Agentic & Multimodal Systems',
     topic: 'Jetson Nano Cards (Workshop)',
@@ -43,7 +59,7 @@ const SPEAKERS = [
   },
   {
     name: 'Tarek Lamouchi',
-    photo: '/speakers/Tarek Lamouchi.jpg',
+    photo: '/speakers/TarekLamouchi.jpg',
     title: 'Trainer',
     affiliation: 'Deputy Head of Data Science Services · AI Speaker & Guest Lecturer · Mentor & Entrepreneur (Data, Data and Data)',
     topic: 'Pitching Workshop',
@@ -130,7 +146,7 @@ function SpeakerCard({ speaker, index }: { speaker: (typeof SPEAKERS)[0]; index:
 
           <div className="spk-card-back-content">
             {/* Email */}
-            {speaker.email && (
+            {'email' in speaker && speaker.email && (
               <a href={`mailto:${speaker.email}`} className="spk-card-contact-row" target="_blank" rel="noopener noreferrer">
                 <div className="spk-card-contact-icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
