@@ -94,5 +94,5 @@ function readPhase(value: string | undefined, fallback: RegistrationPhase): Regi
  */
 export const activityPhases = {
   competition: readPhase(process.env.NEXT_PUBLIC_COMPETITION_PHASE, 'open'),
-  challenge: readPhase(process.env.NEXT_PUBLIC_CHALLENGE_PHASE, 'soon'),
+  challenge: readPhase(process.env.NEXT_PUBLIC_CHALLENGE_PHASE, 'closed'),
 } as const satisfies Record<'competition' | 'challenge', RegistrationPhase>;
