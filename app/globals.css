@@ -2880,6 +2880,9 @@ select.reg-input option {
 
 .reg-toggle {
   flex: 1;
+  /* Flex items default to min-width:auto, which floors them at their longest
+     word and pushes the pair past the container on narrow screens. */
+  min-width: 0;
   padding: 11px 16px;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -2910,6 +2913,27 @@ select.reg-input option {
   border-color: rgba(255, 29, 120, 0.4);
   color: var(--color-pink);
   box-shadow: 0 0 16px rgba(255, 29, 120, 0.08);
+}
+
+/* Activity switcher (Competition / Technical Challenge). These labels are much
+   longer than the Yes/No pairs that share `.reg-toggle`, and each can carry a
+   Soon/Closed badge, so label and badge form a wrapping centred group: side by
+   side when there is room, badge tucked underneath once there isn't. */
+.reg-toggle-activity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2px 8px;
+  text-align: center;
+  line-height: 1.25;
+}
+
+.reg-toggle-badge {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
 }
 
 /* IEEE conditional fields */
@@ -4308,6 +4332,13 @@ select.reg-input option {
   .dash-card {
     padding: 22px 18px;
     border-radius: 16px;
+  }
+
+  /* The activity labels are the widest thing in a dash card - tighten their
+     tracking and side padding rather than let the pair overflow it. */
+  .reg-toggle-activity {
+    padding: 11px 10px;
+    letter-spacing: 0.06em;
   }
 
   .dash-details-grid {

@@ -48,25 +48,13 @@ export default function ActivityToggle({
             <button
               key={activity}
               type="button"
-              className={`reg-toggle ${active ? activeClass : ''}`}
+              className={`reg-toggle reg-toggle-activity ${active ? activeClass : ''}`}
               aria-pressed={active}
               disabled={disabled}
               onClick={() => onChange(activity)}
             >
-              {ACTIVITY_LABELS[activity]}
-              {badge && (
-                <span
-                  style={{
-                    marginLeft: '8px',
-                    fontSize: '11px',
-                    opacity: 0.7,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.08em',
-                  }}
-                >
-                  {badge}
-                </span>
-              )}
+              <span className="reg-toggle-label">{ACTIVITY_LABELS[activity]}</span>
+              {badge && <span className="reg-toggle-badge">{badge}</span>}
             </button>
           );
         })}
