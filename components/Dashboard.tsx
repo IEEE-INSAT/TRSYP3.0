@@ -563,7 +563,12 @@ export default function Dashboard() {
             <p className="dash-code-hint">Share this code with your teammates so they can join your team.</p>
           )}
 
-          <div className="dash-detail-divider">{showTeam ? 'Team Leader' : 'Personal Info'}</div>
+          {/* These rows are always the signed-in participant's own details, so
+              "Team Leader" only fits the leader - a member reading it sees
+              their teammate's name under someone else's title. */}
+          <div className="dash-detail-divider">
+            {showTeam ? (isLeader ? 'Team Leader' : 'Your Info') : 'Personal Info'}
+          </div>
 
           <div className="dash-details-grid">
             <div className="dash-detail-row">
