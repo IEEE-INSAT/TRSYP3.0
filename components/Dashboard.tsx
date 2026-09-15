@@ -12,6 +12,7 @@ import LoadingScreen from './LoadingScreen';
 import UserAvatar from './UserAvatar';
 // Single source of truth, shared with the dashboard section nav.
 import { PAYMENT_ENABLED } from '@/lib/dashboard/sections';
+import { useJustRegistered } from '@/lib/dashboard/just-registered';
 
 const STATUS_MAP = {
   waiting_for_payment: { label: 'Waiting for Payment', color: '#f59e0b', icon: '🟡', msg: 'Your registration is pending. Please submit your payment proof to confirm your spot.' },
@@ -26,6 +27,8 @@ export default function Dashboard() {
   const { user } = useAuth();
   const router = useRouter();
   const [showMembers, setShowMembers] = useState(false);
+  // True only on the visit that follows completing registration.
+  const justRegistered = useJustRegistered();
 
   // Gate the session check below on a settled auth state.
   const initialized = useAuthStore((s) => s.initialized);
@@ -294,7 +297,8 @@ export default function Dashboard() {
         <motion.div className="dash-header" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
           <div className="dash-header-left">
             <h1 className="dash-welcome">
-              Welcome back, {isChallenger ? `Team ${team?.name || otherTeam?.name || user.teamName || 'Member'}` : user.fullName}!
+              {justRegistered ? 'Your registration is complete' : 'Welcome back'},{' '}
+              {isChallenger ? `Team ${team?.name || otherTeam?.name || user.teamName || 'Member'}` : user.fullName}!
             </h1>
             <span className={`dash-type-badge ${isChallenger ? 'dash-type-challenger' : 'dash-type-participant'}`}>
               {isChallenger ? 'Challenger' : 'Participant'}

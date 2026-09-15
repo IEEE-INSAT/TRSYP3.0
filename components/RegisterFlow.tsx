@@ -5,6 +5,7 @@ import { motion } from 'motion/react';
 import Link from 'next/link';
 import { useAuthStore, useRegistrationStore } from '@/lib/store';
 import { REGISTRATION_OPEN, PARTICIPANT_REGISTRATION_OPEN } from '@/lib/config';
+import { markJustRegistered } from '@/lib/dashboard/just-registered';
 import AuthModal from './AuthModal';
 import ParticipantInfoForm from './register/ParticipantInfoForm';
 import TeamStep from './register/TeamStep';
@@ -61,6 +62,7 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
   // their dashboard automatically.
   useEffect(() => {
     if (currentStep !== 'done') return;
+    markJustRegistered();
     const t = setTimeout(() => { window.location.href = '/dashboard'; }, 1600);
     return () => clearTimeout(t);
   }, [currentStep]);
@@ -120,6 +122,9 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
 
   const onParticipantDone = () => {
     progressedStep1.current = true;
+    // Tell the dashboard this is a brand-new registration so it congratulates
+    // the participant instead of welcoming them back.
+    markJustRegistered();
     // Registration is one path now: finish the form, land on the dashboard.
     // Entering the competition is offered there, and is optional.
     window.location.href = '/dashboard';
