@@ -40,6 +40,7 @@ export default function Dashboard() {
     s.teams[s.activity === 'COMPETITION' ? 'CHALLENGE' : 'COMPETITION'],
   );
   const minTeamSize = activity === 'COMPETITION' ? 3 : 2;
+  const teams = useTeamStore((s) => s.teams);
   const teamLoaded = useTeamStore((s) => s.loaded);
   const updateTeam = useTeamStore((s) => s.updateTeam);
   const fetchTeams = useTeamStore((s) => s.fetchTeams);
@@ -104,6 +105,17 @@ export default function Dashboard() {
     if (user) void fetchTeams();
   }, [user, fetchTeams]);
 
+  // Both registration windows are closed, so the tabs are no longer a choice -
+  // they only switch between teams the participant already has. Someone entered
+  // in exactly one track is put on that track regardless of the persisted
+  // selection: a challenge-only member would otherwise open the dashboard on
+  // the competition tab (the store's default) and see none of their own team.
+  useEffect(() => {
+    if (!teamLoaded) return;
+    const entered = TEAM_ACTIVITIES.filter((a) => !!teams[a]);
+    if (entered.length === 1 && entered[0] !== activity) setActivity(entered[0]);
+  }, [teamLoaded, teams, activity, setActivity]);
+
   if (!user) return <LoadingScreen />;
 
   const status = STATUS_MAP[user.status];
@@ -123,17 +135,21 @@ export default function Dashboard() {
   // formed, by anyone who wants one.
   const canJoinActivity = teamLoaded && !team && activityOpen;
 
-  // The whole team area (track switcher + track status/join panels) only has
-  // something to say to a participant who is already in a team, or who could
-  // still form one. A participant with no team at all, with every window shut,
-  // can act on none of it - so instead of greeting them with a switcher and a
-  // "registration is closed" notice, we hide the area entirely. Reopening a
-  // window in `activityPhases` brings it back on its own.
-  const hasAnyTeam = !!team || !!otherTeam;
   const anyActivityOpen = TEAM_ACTIVITIES.some(isActivityOpen);
-  // `!teamLoaded && isChallenger` keeps the area in place during the first
-  // fetch for someone who is known to have a team, so it doesn't flash out.
-  const showTeamPanels = hasAnyTeam || anyActivityOpen || (!teamLoaded && isChallenger);
+
+  // The switcher earns its place only when there is genuinely more than one
+  // track to switch between: a participant entered in both, or a window still
+  // open to enter. Entered in one track only - the common case now that both
+  // windows are closed - it is a single dead tab in front of the team they
+  // came to see, so the team details stand on their own instead. A participant
+  // with no team at all has nothing here either way.
+  const hasBothTeams = !!team && !!otherTeam;
+  const showActivityToggle = hasBothTeams || anyActivityOpen;
+
+  // "This track is closed" only needs saying to someone who might still have
+  // been trying to enter it, i.e. while some window is open. Otherwise the
+  // switcher that could reach a closed track isn't shown in the first place.
+  const showClosedNotice = anyActivityOpen && teamLoaded && !team && !activityOpen;
 
   // Team rows describe the *selected* activity only. Before the first fetch
   // resolves we still show the registration store's cached team name so the
@@ -352,11 +368,12 @@ export default function Dashboard() {
         )}
 
         {/* Which track the team panels below refer to */}
-        {showTeamPanels && (
+        {showActivityToggle && (
         <motion.div className="dash-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.12 }}>
           <div className="dash-card-title">Your Teams</div>
           <ActivityToggle
             value={activity}
+            label={null}
             onChange={(next) => {
               // Drop any in-flight edit so it can't be applied to the other track.
               setIsEditingTeam(false);
@@ -372,7 +389,7 @@ export default function Dashboard() {
         )}
 
         {/* Selected track is not taking teams yet - say so instead of offering a form */}
-        {showTeamPanels && teamLoaded && !team && !activityOpen && (
+        {showClosedNotice && (
           <motion.div className="dash-card dash-noteam-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }}>
             <div className="dash-card-title">{activityLabel}</div>
             <p className="dash-noteam-msg">

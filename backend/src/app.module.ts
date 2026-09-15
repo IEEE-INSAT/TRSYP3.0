@@ -34,10 +34,10 @@ import { ChallengeModule } from './modules/challenge/challenge.module';
                 RIDDLE_CODE_SECRET: Joi.string().required(),
                 COMPETITION_REGISTRATION_PHASE: Joi.string()
                     .valid('soon', 'open', 'closed')
-                    .default('open'),
+                    .default('closed'),
                 CHALLENGE_REGISTRATION_PHASE: Joi.string()
                     .valid('soon', 'open', 'closed')
-                    .default('soon'),
+                    .default('closed'),
             }),
         }),
         ThrottlerModule.forRoot({

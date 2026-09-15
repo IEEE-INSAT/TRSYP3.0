@@ -29,14 +29,21 @@ export default function ActivityToggle({
   value,
   onChange,
   disabled = false,
+  label = 'Which one are you signing up for?',
 }: {
   value: TeamActivity;
   onChange: (activity: TeamActivity) => void;
   disabled?: boolean;
+  /**
+   * Prompt above the tabs. Pass `null` where the tabs are not a sign-up choice
+   * but a switch between teams the participant is already in - the dashboard,
+   * where both windows are closed and nothing is being signed up for.
+   */
+  label?: string | null;
 }) {
   return (
     <div className="reg-field">
-      <label className="reg-label">Which one are you signing up for?</label>
+      {label && <label className="reg-label">{label}</label>}
       <div className="reg-toggle-group">
         {TEAM_ACTIVITIES.map((activity) => {
           const badge = PHASE_BADGE[phaseOf(activity)];

@@ -93,6 +93,6 @@ function readPhase(value: string | undefined, fallback: RegistrationPhase): Regi
  * the UI offers, so keep the two in sync when flipping a window.
  */
 export const activityPhases = {
-  competition: readPhase(process.env.NEXT_PUBLIC_COMPETITION_PHASE, 'open'),
+  competition: readPhase(process.env.NEXT_PUBLIC_COMPETITION_PHASE, 'closed'),
   challenge: readPhase(process.env.NEXT_PUBLIC_CHALLENGE_PHASE, 'closed'),
 } as const satisfies Record<'competition' | 'challenge', RegistrationPhase>;

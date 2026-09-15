@@ -91,12 +91,12 @@ const ACTIVITY_PHASE_CONFIG: Record<
 > = {
   [TeamActivity.COMPETITION]: {
     envKey: 'COMPETITION_REGISTRATION_PHASE',
-    fallback: 'open',
+    fallback: 'closed',
     label: 'Competition',
   },
   [TeamActivity.CHALLENGE]: {
     envKey: 'CHALLENGE_REGISTRATION_PHASE',
-    fallback: 'soon',
+    fallback: 'closed',
     label: 'Technical challenge',
   },
 };
