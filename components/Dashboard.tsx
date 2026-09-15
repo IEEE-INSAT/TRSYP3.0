@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/store/use-auth';
 import { useTeamStore, useRegistrationStore, useAuthStore, selectTeam, selectRole } from '@/lib/store';
-import { ACTIVITY_LABELS } from '@/lib/api/types';
+import { ACTIVITY_LABELS, TEAM_ACTIVITIES } from '@/lib/api/types';
 import ActivityToggle, { isActivityOpen, phaseOf } from './register/ActivityToggle';
 import LoadingScreen from './LoadingScreen';
 import UserAvatar from './UserAvatar';
@@ -122,6 +122,18 @@ export default function Dashboard() {
   // splits into participant/challenger, so the dashboard is where a team is
   // formed, by anyone who wants one.
   const canJoinActivity = teamLoaded && !team && activityOpen;
+
+  // The whole team area (track switcher + track status/join panels) only has
+  // something to say to a participant who is already in a team, or who could
+  // still form one. A participant with no team at all, with every window shut,
+  // can act on none of it - so instead of greeting them with a switcher and a
+  // "registration is closed" notice, we hide the area entirely. Reopening a
+  // window in `activityPhases` brings it back on its own.
+  const hasAnyTeam = !!team || !!otherTeam;
+  const anyActivityOpen = TEAM_ACTIVITIES.some(isActivityOpen);
+  // `!teamLoaded && isChallenger` keeps the area in place during the first
+  // fetch for someone who is known to have a team, so it doesn't flash out.
+  const showTeamPanels = hasAnyTeam || anyActivityOpen || (!teamLoaded && isChallenger);
 
   // Team rows describe the *selected* activity only. Before the first fetch
   // resolves we still show the registration store's cached team name so the
@@ -340,6 +352,7 @@ export default function Dashboard() {
         )}
 
         {/* Which track the team panels below refer to */}
+        {showTeamPanels && (
         <motion.div className="dash-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.12 }}>
           <div className="dash-card-title">Your Teams</div>
           <ActivityToggle
@@ -356,9 +369,10 @@ export default function Dashboard() {
             }}
           />
         </motion.div>
+        )}
 
         {/* Selected track is not taking teams yet - say so instead of offering a form */}
-        {teamLoaded && !team && !activityOpen && (
+        {showTeamPanels && teamLoaded && !team && !activityOpen && (
           <motion.div className="dash-card dash-noteam-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }}>
             <div className="dash-card-title">{activityLabel}</div>
             <p className="dash-noteam-msg">
