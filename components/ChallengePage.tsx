@@ -35,7 +35,7 @@ const TRACKS = [
 
 const PHASE_LABEL = {
   open: 'Registration open',
-  soon: 'Opening soon',
+  soon: 'Registration closed',
   closed: 'Registration closed',
 } as const;
 
@@ -198,6 +198,7 @@ export default function ChallengePage() {
             {TRACKS.map((track, i) => {
               const phase = phaseOf(track.activity);
               const open = phase === 'open' && REGISTRATION_OPEN;
+              const specificationBookAvailable = open || track.id === 'technical';
 
               return (
                 <motion.div
@@ -225,7 +226,7 @@ export default function ChallengePage() {
                     ))}
                   </ul>
 
-                  {open ? (
+                  {specificationBookAvailable ? (
                     <Link href={track.href} className="challenge-track-cta">
                       DOWNLOAD SPECIFICATION BOOK
                       <span aria-hidden="true">→</span>
@@ -380,16 +381,45 @@ export default function ChallengePage() {
                 </motion.div>
               ))}
             </div>
-
-            <div className="challenge-technical-badge">
-              <span className="challenge-technical-dot" />
-              Full rules &amp; scoring - coming soon
-            </div>
           </div>
         </div>
       </section>
 
-      
+      {/* ── TECHNICAL CHALLENGE SPECIFICATION BOOK ── */}
+      <section className="prog-cta challenge-specbook">
+        <div className="prog-container-wide">
+          <div className="prog-cta-inner">
+            <div className="challenge-specbook-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
+              </svg>
+            </div>
+            <h2 className="prog-cta-h">
+              The Technical Challenge <span className="prog-hl">Specification Book</span>
+            </h2>
+            <p className="prog-cta-p">
+              The full terms of reference for the SymbioMed Challenge, the medical technical challenge of TRSYP 3.0.
+            </p>
+            <div className="challenge-manifesto-tags challenge-specbook-tags">
+              {['Mandatory Requirements', 'Technical Architecture', 'Phases & Validation', 'Ethics & Budget'].map((word, i, arr) => (
+                <span key={word} className="challenge-manifesto-tag">
+                  {word}
+                  {i < arr.length - 1 && <span className="challenge-manifesto-dot" aria-hidden="true" />}
+                </span>
+              ))}
+            </div>
+            <a
+              href={TRACKS[1].href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="prog-cta-btn"
+            >
+              VIEW SPECIFICATION BOOK
+            </a>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

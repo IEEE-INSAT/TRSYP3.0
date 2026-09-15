@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
 import { useAuthStore, useRegistrationStore } from '@/lib/store';
-import { REGISTRATION_OPEN } from '@/lib/config';
+import { REGISTRATION_OPEN, PARTICIPANT_REGISTRATION_OPEN } from '@/lib/config';
 import AuthModal from './AuthModal';
 import ParticipantInfoForm from './register/ParticipantInfoForm';
 import TeamStep from './register/TeamStep';
@@ -54,7 +54,7 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
   useEffect(() => {
     if (!initialized || hydrating || progressedStep1.current) return;
     if (isAuthenticated && isRegistered) window.location.href = '/dashboard';
-  }, [initialized, hydrating, isAuthenticated, isRegistered]);
+  }, [initialized, hydrating, isAuthenticated, isRegistered, initialChallenge]);
 
   // Once Step 1 is done in the non-challenge flow we land on the `done` screen,
   // play its success animation as a short transition, then send the user to
@@ -65,9 +65,15 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
     return () => clearTimeout(t);
   }, [currentStep]);
 
-  // Registration temporarily closed - block every /register entry point,
-  // including direct URL navigation (regardless of auth state).
-  if (!REGISTRATION_OPEN) {
+  // Participant sign-up can be closed on its own while the challenger entry
+  // point stays open, so this is decided per entry point rather than globally.
+  // A challenger still fills in the participant form as Step 1 - that belongs
+  // to entering the challenge, so it is not blocked here.
+  const participantEntryClosed = !initialChallenge && !PARTICIPANT_REGISTRATION_OPEN;
+
+  // Registration closed - block the entry point, including direct URL
+  // navigation (regardless of auth state).
+  if (!REGISTRATION_OPEN || participantEntryClosed) {
     return (
       <div className="reg-page">
         <div className="reg-container">
@@ -80,7 +86,11 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
           <div className="reg-info-banner">
             <div className="reg-info-badge">REGISTRATION</div>
             <h2 className="reg-info-title">Registration opens soon</h2>
-            <p className="reg-info-subtitle">Registration is temporarily closed. Please check back soon.</p>
+            <p className="reg-info-subtitle">
+              {participantEntryClosed && REGISTRATION_OPEN
+                ? 'Participant registration is currently closed. Please check back soon.'
+                : 'Registration is temporarily closed. Please check back soon.'}
+            </p>
           </div>
         </div>
       </div>
@@ -110,7 +120,8 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
 
   const onParticipantDone = () => {
     progressedStep1.current = true;
-    // After Step 1 go straight to the dashboard - no intermediate screens.
+    // Registration is one path now: finish the form, land on the dashboard.
+    // Entering the competition is offered there, and is optional.
     window.location.href = '/dashboard';
   };
 

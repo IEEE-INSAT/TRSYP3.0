@@ -27,6 +27,19 @@ export default function HeroSection() {
           IEEE Tunisian RAS<br />
           Student &amp; Young Professional Congress
         </p>
+
+        <div className="hero-date">
+          <span className="hero-date-rule" />
+          <span className="hero-date-main">
+            <span className="hero-date-num">17</span>
+            <span className="hero-date-dash">&ndash;</span>
+            <span className="hero-date-num hero-date-num-b">18</span>
+            <span className="hero-date-month">October 2026</span>
+          </span>
+          <span className="hero-date-rule" />
+        </div>
+        <p className="hero-date-venue">Le Royal &middot; Yasmine Hammamet</p>
+
         <Countdown />
       </div>
 

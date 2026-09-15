@@ -27,9 +27,9 @@ services:
       - key: CORS_ORIGINS
         value: https://trsyp3-0.onrender.com,https://rtc.ieee.tn,https://trsyp.ieee.tn
       - key: COMPETITION_REGISTRATION_PHASE
-        value: open
+        value: closed
       - key: CHALLENGE_REGISTRATION_PHASE
-        value: soon
+        value: closed
       - key: NEXT_PUBLIC_API_URL
         value: /api
       - key: NEXT_PUBLIC_SUPABASE_URL
@@ -41,6 +41,8 @@ services:
       - key: NEXT_PUBLIC_FEATURE_ADMIN_API
         value: "false"
       - key: NEXT_PUBLIC_COMPETITION_PHASE
-        value: open
+        value: closed
       - key: NEXT_PUBLIC_CHALLENGE_PHASE
-        value: soon
+        value: closed
+      - key: NEXT_PUBLIC_PARTICIPANT_REGISTRATION_OPEN
+        value: "true"

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/store/use-auth';
 import { useTeamStore, useRegistrationStore, useAuthStore, selectTeam, selectRole } from '@/lib/store';
-import { ACTIVITY_LABELS } from '@/lib/api/types';
+import { ACTIVITY_LABELS, TEAM_ACTIVITIES } from '@/lib/api/types';
 import ActivityToggle, { isActivityOpen, phaseOf } from './register/ActivityToggle';
 import LoadingScreen from './LoadingScreen';
 import UserAvatar from './UserAvatar';
@@ -40,6 +40,7 @@ export default function Dashboard() {
     s.teams[s.activity === 'COMPETITION' ? 'CHALLENGE' : 'COMPETITION'],
   );
   const minTeamSize = activity === 'COMPETITION' ? 3 : 2;
+  const teams = useTeamStore((s) => s.teams);
   const teamLoaded = useTeamStore((s) => s.loaded);
   const updateTeam = useTeamStore((s) => s.updateTeam);
   const fetchTeams = useTeamStore((s) => s.fetchTeams);
@@ -104,6 +105,17 @@ export default function Dashboard() {
     if (user) void fetchTeams();
   }, [user, fetchTeams]);
 
+  // Both registration windows are closed, so the tabs are no longer a choice -
+  // they only switch between teams the participant already has. Someone entered
+  // in exactly one track is put on that track regardless of the persisted
+  // selection: a challenge-only member would otherwise open the dashboard on
+  // the competition tab (the store's default) and see none of their own team.
+  useEffect(() => {
+    if (!teamLoaded) return;
+    const entered = TEAM_ACTIVITIES.filter((a) => !!teams[a]);
+    if (entered.length === 1 && entered[0] !== activity) setActivity(entered[0]);
+  }, [teamLoaded, teams, activity, setActivity]);
+
   if (!user) return <LoadingScreen />;
 
   const status = STATUS_MAP[user.status];
@@ -117,8 +129,27 @@ export default function Dashboard() {
   // either track. So this is an invitation to join, never a required step - it
   // just shows the create/join controls whenever the selected activity is open
   // and the user has no team in it. Gated on `teamLoaded` so it doesn't flash
-  // while the teams are still being fetched.
+  // while the teams are still being fetched. Entering a track is optional and
+  // offered to every registered participant - registration itself no longer
+  // splits into participant/challenger, so the dashboard is where a team is
+  // formed, by anyone who wants one.
   const canJoinActivity = teamLoaded && !team && activityOpen;
+
+  const anyActivityOpen = TEAM_ACTIVITIES.some(isActivityOpen);
+
+  // The switcher earns its place only when there is genuinely more than one
+  // track to switch between: a participant entered in both, or a window still
+  // open to enter. Entered in one track only - the common case now that both
+  // windows are closed - it is a single dead tab in front of the team they
+  // came to see, so the team details stand on their own instead. A participant
+  // with no team at all has nothing here either way.
+  const hasBothTeams = !!team && !!otherTeam;
+  const showActivityToggle = hasBothTeams || anyActivityOpen;
+
+  // "This track is closed" only needs saying to someone who might still have
+  // been trying to enter it, i.e. while some window is open. Otherwise the
+  // switcher that could reach a closed track isn't shown in the first place.
+  const showClosedNotice = anyActivityOpen && teamLoaded && !team && !activityOpen;
 
   // Team rows describe the *selected* activity only. Before the first fetch
   // resolves we still show the registration store's cached team name so the
@@ -337,10 +368,12 @@ export default function Dashboard() {
         )}
 
         {/* Which track the team panels below refer to */}
+        {showActivityToggle && (
         <motion.div className="dash-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.12 }}>
           <div className="dash-card-title">Your Teams</div>
           <ActivityToggle
             value={activity}
+            label={null}
             onChange={(next) => {
               // Drop any in-flight edit so it can't be applied to the other track.
               setIsEditingTeam(false);
@@ -353,9 +386,10 @@ export default function Dashboard() {
             }}
           />
         </motion.div>
+        )}
 
         {/* Selected track is not taking teams yet - say so instead of offering a form */}
-        {teamLoaded && !team && !activityOpen && (
+        {showClosedNotice && (
           <motion.div className="dash-card dash-noteam-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }}>
             <div className="dash-card-title">{activityLabel}</div>
             <p className="dash-noteam-msg">
@@ -529,7 +563,12 @@ export default function Dashboard() {
             <p className="dash-code-hint">Share this code with your teammates so they can join your team.</p>
           )}
 
-          <div className="dash-detail-divider">{showTeam ? 'Team Leader' : 'Personal Info'}</div>
+          {/* These rows are always the signed-in participant's own details, so
+              "Team Leader" only fits the leader - a member reading it sees
+              their teammate's name under someone else's title. */}
+          <div className="dash-detail-divider">
+            {showTeam ? (isLeader ? 'Team Leader' : 'Your Info') : 'Personal Info'}
+          </div>
 
           <div className="dash-details-grid">
             <div className="dash-detail-row">
