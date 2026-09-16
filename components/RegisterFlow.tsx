@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { useAuthStore, useRegistrationStore } from '@/lib/store';
 import { REGISTRATION_OPEN, PARTICIPANT_REGISTRATION_OPEN } from '@/lib/config';
 import { markJustRegistered } from '@/lib/dashboard/just-registered';
+import { hasFullAvatar } from '@/lib/avatar';
+import { AVATAR_SECTION_HREF } from '@/lib/dashboard/sections';
 import AuthModal from './AuthModal';
 import ParticipantInfoForm from './register/ParticipantInfoForm';
 import TeamStep from './register/TeamStep';
@@ -46,6 +48,14 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
   // registration the moment it flips `isRegistered` true.
   const progressedStep1 = useRef(false);
 
+  // Where registration hands off to. A brand-new participant has no avatar yet,
+  // and /dashboard only bounces them straight to the editor - so we send them
+  // there ourselves. Landing on the overview first meant it painted for a few
+  // frames and was then yanked away, which read as a glitch rather than as a
+  // step. The overview (and its congratulations) is what they come back to once
+  // the avatar is saved.
+  const postRegistrationHref = hasFullAvatar(account?.avatar) ? '/dashboard' : AVATAR_SECTION_HREF;
+
   // A user who reaches the registration flow already registered (e.g. an
   // existing account signing in via Google, which redirects back here) has no
   // reason to see Step 1/2 - send them to their dashboard. We wait for the
@@ -63,9 +73,9 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
   useEffect(() => {
     if (currentStep !== 'done') return;
     markJustRegistered();
-    const t = setTimeout(() => { window.location.href = '/dashboard'; }, 1600);
+    const t = setTimeout(() => { window.location.href = postRegistrationHref; }, 1600);
     return () => clearTimeout(t);
-  }, [currentStep]);
+  }, [currentStep, postRegistrationHref]);
 
   // Participant sign-up can be closed on its own while the challenger entry
   // point stays open, so this is decided per entry point rather than globally.
@@ -127,7 +137,7 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
     markJustRegistered();
     // Registration is one path now: finish the form, land on the dashboard.
     // Entering the competition is offered there, and is optional.
-    window.location.href = '/dashboard';
+    window.location.href = postRegistrationHref;
   };
 
   return (
