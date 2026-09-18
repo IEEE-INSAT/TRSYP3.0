@@ -139,6 +139,22 @@ export class ParticipantResponseDto {
   @Expose()
   country!: COUNTRY;
 
+  @ApiProperty({ description: 'Registration fee owed, derived from membership and team status', example: 175 })
+  @Expose()
+  fee!: number;
+
+  @ApiProperty({ description: 'Currency of `fee`', example: 'TND' })
+  @Expose()
+  currency!: string;
+
+  @ApiProperty({ description: 'Whether the participant is priced as a visitor or a challenger', enum: ['VISITOR', 'CHALLENGER'] })
+  @Expose()
+  feeRole!: string;
+
+  @ApiProperty({ description: 'Membership tier the fee is based on', enum: ['IEEE_RAS', 'IEEE', 'NON_IEEE'] })
+  @Expose()
+  feeTier!: string;
+
   @ApiProperty({ description: 'Registration timestamp', format: 'date-time' })
   @Expose()
   createdAt!: Date;

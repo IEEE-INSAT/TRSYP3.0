@@ -3457,6 +3457,32 @@ select.reg-input option {
   margin-bottom: 20px;
 }
 
+/* Fee */
+.dash-fee-amount {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--color-green);
+  line-height: 1;
+}
+
+.dash-fee-pay-link {
+  display: inline-block;
+  margin-top: 14px;
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--color-green);
+  text-decoration: none;
+}
+
+.dash-fee-pay-link:hover {
+  text-decoration: underline;
+}
+
 /* Status */
 .dash-status-card {
   border-left: 3px solid;

@@ -534,7 +534,7 @@ describe('RegistrationService', () => {
         where: {},
         skip: 0,
         take: 10,
-        include: { internationalInfo: true },
+        include: { internationalInfo: true, _count: { select: { memberships: true } } },
         orderBy: { createdAt: 'desc' },
       });
     });

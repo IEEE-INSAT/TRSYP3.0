@@ -44,7 +44,11 @@ type ParticipantWithRelations = Participant & {
     id: string;
     visaApplication?: VisaApplication | null;
   } | null;
+  _count?: { memberships: number };
 };
+
+/** Team-membership count, enough to price the participant without loading the teams. */
+const MEMBERSHIP_COUNT = { _count: { select: { memberships: true } } } satisfies Prisma.ParticipantInclude;
 
 /** Type for team with members and their user info */
 type TeamWithMembers = Team & {
@@ -334,7 +338,7 @@ export class RegistrationService {
         return tx.participant.update({
           where: { id: participantId },
           data: updateData,
-          include: { internationalInfo: true },
+          include: { internationalInfo: true, ...MEMBERSHIP_COUNT },
         });
       });
 
@@ -447,7 +451,7 @@ export class RegistrationService {
         return tx.participant.update({
           where: { id: participantId },
           data: { banned: true },
-          include: { internationalInfo: true },
+          include: { internationalInfo: true, ...MEMBERSHIP_COUNT },
         });
       });
 
@@ -489,7 +493,7 @@ export class RegistrationService {
         return tx.participant.update({
           where: { id: participantId },
           data: { banned: false },
-          include: { internationalInfo: true },
+          include: { internationalInfo: true, ...MEMBERSHIP_COUNT },
         });
       });
 
@@ -540,7 +544,7 @@ export class RegistrationService {
         return tx.participant.update({
           where: { id: participantId },
           data: { paid: true },
-          include: { internationalInfo: true },
+          include: { internationalInfo: true, ...MEMBERSHIP_COUNT },
         });
       });
 
@@ -582,7 +586,7 @@ export class RegistrationService {
         return tx.participant.update({
           where: { id: participantId },
           data: { paid: false },
-          include: { internationalInfo: true },
+          include: { internationalInfo: true, ...MEMBERSHIP_COUNT },
         });
       });
 
@@ -812,6 +816,7 @@ export class RegistrationService {
         internationalInfo: {
           include: { visaApplication: true },
         },
+        ...MEMBERSHIP_COUNT,
       },
     });
   }
@@ -828,6 +833,7 @@ export class RegistrationService {
         internationalInfo: {
           include: { visaApplication: true },
         },
+        ...MEMBERSHIP_COUNT,
       },
     });
   }
@@ -857,7 +863,7 @@ export class RegistrationService {
     isInternational?: boolean;
     skip?: number;
     take?: number;
-  }): Promise<Participant[]> {
+  }): Promise<ParticipantWithRelations[]> {
     const where: Prisma.ParticipantWhereInput = {};
     if (options?.paid !== undefined) where.paid = options.paid;
     if (options?.banned !== undefined) where.banned = options.banned;
@@ -867,7 +873,7 @@ export class RegistrationService {
       where,
       skip: options?.skip,
       take: options?.take,
-      include: { internationalInfo: true },
+      include: { internationalInfo: true, ...MEMBERSHIP_COUNT },
       orderBy: { createdAt: 'desc' },
     });
   }

@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/store/use-auth';
 import { useTeamStore, useRegistrationStore, useAuthStore, selectTeam, selectRole } from '@/lib/store';
 import { ACTIVITY_LABELS, TEAM_ACTIVITIES } from '@/lib/api/types';
+import { computeFee, formatFee } from '@/lib/fees';
 import ActivityToggle, { isActivityOpen, phaseOf } from './register/ActivityToggle';
 import LoadingScreen from './LoadingScreen';
 import UserAvatar from './UserAvatar';
@@ -127,6 +128,10 @@ export default function Dashboard() {
   const activityOpen = isActivityOpen(activity);
 
   const isChallenger = user.userType === 'challenger' || !!team || !!otherTeam;
+
+  // Priced off the same three facts the server uses, so it tracks a team
+  // join or a RAS toggle immediately instead of waiting for a profile refetch.
+  const feeInfo = computeFee({ isIeee: user.isIeee, isRas: user.isRas, isChallenger });
 
   // Teams are opt-in: plenty of participants attend TRSYP 3.0 without entering
   // either track. So this is an invitation to join, never a required step - it
@@ -334,6 +339,23 @@ export default function Dashboard() {
               Change avatar
             </Link>
           </div>
+        </motion.section>
+
+        {/* Registration Fee */}
+        <motion.section
+          className="dash-card dash-fee-card"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.09 }}
+          aria-labelledby="fee-heading"
+        >
+          <div className="dash-card-title" id="fee-heading">Registration Fee</div>
+          <span className="dash-fee-amount">{formatFee(feeInfo)}</span>
+          {PAYMENT_ENABLED && user.status === 'waiting_for_payment' && (
+            <Link href="/dashboard/payment" className="dash-fee-pay-link">
+              Submit payment proof →
+            </Link>
+          )}
         </motion.section>
 
         {/* Status Card */}

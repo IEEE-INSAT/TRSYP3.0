@@ -279,6 +279,11 @@ export interface BackendParticipant {
   isInternational: boolean;
   isRas: boolean;
   facebookLink?: string | null;
+  /** Registration fee, derived server-side from membership tier and team status. */
+  fee?: number;
+  currency?: string;
+  feeRole?: 'VISITOR' | 'CHALLENGER';
+  feeTier?: 'IEEE_RAS' | 'IEEE' | 'NON_IEEE';
   banned: boolean;
   participantType: ParticipantType;
   sb?: string;

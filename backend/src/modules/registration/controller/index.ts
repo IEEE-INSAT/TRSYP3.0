@@ -28,6 +28,7 @@ import {
 } from '@nestjs/swagger';
 import { plainToInstance } from 'class-transformer';
 import { RegistrationService } from '../service';
+import { computeFee } from '../domain';
 import {
   RegisterLocalDto,
   RegisterLocalSchema,
@@ -95,6 +96,33 @@ export class RegistrationController {
     );
   }
 
+  /**
+   * Participant row -> API response, with the registration fee attached.
+   * The fee is priced off the team-membership count the service includes;
+   * rows fetched without it (a just-created participant) cannot be on a team.
+   */
+  private toParticipantResponse<T extends ParticipantResponseDto>(
+    cls: new () => T,
+    participant: Parameters<typeof plainToInstance>[1] & {
+      participantType: string;
+      isRas: boolean;
+      _count?: { memberships: number };
+    },
+  ): T {
+    return plainToInstance(
+      cls,
+      {
+        ...participant,
+        ...computeFee({
+          isIeee: participant.participantType !== 'NonIEEE',
+          isRas: participant.isRas,
+          isChallenger: (participant._count?.memberships ?? 0) > 0,
+        }),
+      },
+      { excludeExtraneousValues: true },
+    );
+  }
+
   // ============================================================================
   // PARTICIPANT REGISTRATION ROUTES
   // ============================================================================
@@ -114,9 +142,7 @@ export class RegistrationController {
     @Body(new ZodValidationPipe(RegisterLocalSchema)) dto: RegisterLocalDto,
   ): Promise<ParticipantResponseDto> {
     const participant = await this.registrationService.register(userId, dto);
-    return plainToInstance(ParticipantResponseDto, participant, {
-      excludeExtraneousValues: true,
-    });
+    return this.toParticipantResponse(ParticipantResponseDto, participant);
   }
 
   /**
@@ -135,9 +161,7 @@ export class RegistrationController {
     dto: RegisterInternationalDto,
   ): Promise<ParticipantResponseDto> {
     const participant = await this.registrationService.register(userId, dto);
-    return plainToInstance(ParticipantResponseDto, participant, {
-      excludeExtraneousValues: true,
-    });
+    return this.toParticipantResponse(ParticipantResponseDto, participant);
   }
 
   // ============================================================================
@@ -159,9 +183,7 @@ export class RegistrationController {
     if (!participant) {
       throw new NotFoundException('Profile not found'); // Will be caught by exception filter
     }
-    return plainToInstance(ParticipantResponseDto, participant, {
-      excludeExtraneousValues: true,
-    });
+    return this.toParticipantResponse(ParticipantResponseDto, participant);
   }
 
   /**
@@ -187,9 +209,7 @@ export class RegistrationController {
       participant.id,
       dto,
     );
-    return plainToInstance(ParticipantResponseDto, updated, {
-      excludeExtraneousValues: true,
-    });
+    return this.toParticipantResponse(ParticipantResponseDto, updated);
   }
 
   /**
@@ -511,9 +531,7 @@ export class RegistrationController {
       ParticipantListResponseDto,
       {
         data: participants.map((p) =>
-          plainToInstance(ParticipantAdminResponseDto, p, {
-            excludeExtraneousValues: true,
-          }),
+          this.toParticipantResponse(ParticipantAdminResponseDto, p),
         ),
         total,
         skip,
@@ -539,9 +557,7 @@ export class RegistrationController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<ParticipantAdminResponseDto> {
     const participant = await this.registrationService.getProfile(id);
-    return plainToInstance(ParticipantAdminResponseDto, participant, {
-      excludeExtraneousValues: true,
-    });
+    return this.toParticipantResponse(ParticipantAdminResponseDto, participant);
   }
 
   /**
@@ -608,9 +624,7 @@ export class RegistrationController {
       id,
       reason || 'No reason provided',
     );
-    return plainToInstance(ParticipantAdminResponseDto, participant, {
-      excludeExtraneousValues: true,
-    });
+    return this.toParticipantResponse(ParticipantAdminResponseDto, participant);
   }
 
   /**
@@ -630,9 +644,7 @@ export class RegistrationController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<ParticipantAdminResponseDto> {
     const participant = await this.registrationService.unbanParticipant(id);
-    return plainToInstance(ParticipantAdminResponseDto, participant, {
-      excludeExtraneousValues: true,
-    });
+    return this.toParticipantResponse(ParticipantAdminResponseDto, participant);
   }
 
   /**
