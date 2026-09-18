@@ -44,6 +44,8 @@ export interface UserData {
   isIeee: boolean;
   ieeeId: string;
   isRas: boolean;
+  /** Facebook profile URL, empty string when not provided. */
+  facebookLink?: string;
   /**
    * Raw participant fields, kept so the profile editor can prefill itself
    * without a second round trip. Optional because profiles persisted by older
@@ -72,6 +74,8 @@ export interface ParticipantRegistrationInput {
   country: Country;
   /** IEEE RAS society membership - answered at registration, defaults to false. */
   isRas: boolean;
+  /** Optional Facebook profile URL; empty string means "not provided". */
+  facebookLink?: string;
 }
 
 interface RegistrationState {
@@ -103,6 +107,7 @@ function toPayload(input: ParticipantRegistrationInput): RegisterParticipantPayl
     country: input.country,
     // RAS is an IEEE society - never claim it for a non-IEEE participant.
     isRas: isIeee && input.isRas,
+    facebookLink: input.facebookLink?.trim() || undefined,
   };
 }
 
@@ -117,6 +122,7 @@ function participantFields(p: BackendParticipant) {
     isIeee: p.participantType !== 'NonIEEE',
     ieeeId: p.ieeeId ? String(p.ieeeId) : '',
     isRas: p.isRas ?? false,
+    facebookLink: p.facebookLink ?? '',
     gender: p.gender as Gender,
     participantType: p.participantType,
     sb: (p.sb ?? '') as SB | '',
@@ -137,6 +143,7 @@ function participantFieldsFromInput(input: ParticipantRegistrationInput) {
     isIeee,
     ieeeId: input.ieeeId ? String(input.ieeeId) : '',
     isRas: isIeee && input.isRas,
+    facebookLink: input.facebookLink?.trim() ?? '',
     gender: input.gender,
     participantType: input.participantType,
     sb: (input.sb ?? '') as SB | '',
@@ -241,6 +248,8 @@ export const useRegistrationStore = create<RegistrationState>()(
           if (patch.ieeeId !== undefined) body.ieeeId = patch.ieeeId;
           if (patch.sb !== undefined) body.sb = patch.sb;
           if (patch.isRas !== undefined) body.isRas = patch.isRas;
+          // Sent even when empty - that is how the link gets cleared.
+          if (patch.facebookLink !== undefined) body.facebookLink = patch.facebookLink.trim();
 
           const saved = token
             ? await registrationService.updateProfile(body, token)
@@ -260,6 +269,7 @@ export const useRegistrationStore = create<RegistrationState>()(
                     sb: patch.sb ?? (user.sb || undefined),
                     country: patch.country ?? user.country ?? 'Tunisia',
                     isRas: patch.isRas ?? user.isRas,
+                    facebookLink: patch.facebookLink ?? user.facebookLink,
                   }),
                   participantId: user.participantId,
                 },

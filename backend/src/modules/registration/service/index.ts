@@ -159,6 +159,7 @@ export class RegistrationService {
             isInternational,
             // RAS is an IEEE society: non-IEEE participants can never be members.
             isRas: dto.participantType !== 'NonIEEE' && (dto.isRas ?? false),
+            facebookLink: dto.facebookLink ?? null,
             ...(isInternational && {
               internationalInfo: {
                 create: {
@@ -259,6 +260,11 @@ export class RegistrationService {
         if (dto.phone !== undefined) updateData.phone = dto.phone;
         if (dto.gender !== undefined) updateData.gender = dto.gender;
         if (dto.country !== undefined) updateData.country = dto.country;
+        // Present-but-null clears the link; absent leaves it untouched.
+        if ('facebookLink' in dto) {
+          const nextFacebookLink = dto.facebookLink ?? null;
+          if (nextFacebookLink !== current.facebookLink) updateData.facebookLink = nextFacebookLink;
+        }
 
         // Membership type drives three dependent fields, so they are always
         // re-derived together from the *resulting* row rather than patched one

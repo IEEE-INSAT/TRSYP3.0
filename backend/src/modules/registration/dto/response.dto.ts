@@ -123,6 +123,10 @@ export class ParticipantResponseDto {
   @Expose()
   isRas!: boolean;
 
+  @ApiPropertyOptional({ description: 'Facebook profile URL', nullable: true })
+  @Expose()
+  facebookLink?: string | null;
+
   @ApiProperty({ description: 'Participant type', enum: ParticipantType })
   @Expose()
   participantType!: ParticipantType;

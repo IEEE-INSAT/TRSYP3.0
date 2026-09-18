@@ -75,7 +75,7 @@ where lower(u.email) in ('member1@example.com', 'member2@example.com')
 
 
 -- ============================================================================
--- STEP 2: participant profile + challenge team membership
+-- STEP 2: participant profile + team membership (CHALLENGE or COMPETITION)
 -- Edit ONLY the VALUES list below, then run the whole block.
 -- ============================================================================
 do $$
@@ -91,15 +91,17 @@ declare
 begin
   for r in
     select * from (values
-      -- email                | phone (E.164) | gender  | ieee_id (null if not IEEE) | is_ras | sb (null if none) | participant_type            | team code
-      ('ademkhalil815@gmail.com',    '+21624176703', 'male',   102359995::int, true, 'FST'::text, 'Student'::text, 'KVEGX6'),
-      ('Mariemmayoufi812@gmail.com', '+21694237367', 'female', 102353840::int, true, 'FST'::text, 'Student'::text, 'KVEGX6'),
+      -- email | phone (E.164) | gender | ieee_id (null if not IEEE) | is_ras | sb (null if none) | participant_type | team code | activity (CHALLENGE / COMPETITION)
+      -- NOTE: phone/gender/ieee/sb/type are only used when the participant row does
+      -- not exist yet. For someone already registered they are ignored.
+      ('ademkhalil815@gmail.com',    '+21624176703', 'male',   102359995::int, true, 'FST'::text, 'Student'::text, 'KVEGX6', 'CHALLENGE'),
+      ('Mariemmayoufi812@gmail.com', '+21694237367', 'female', 102353840::int, true, 'FST'::text, 'Student'::text, 'KVEGX6', 'CHALLENGE'),
       -- no IEEE ID on file: confirm this member is really an IEEE Student member.
       -- If not, switch to 'NonIEEE' and is_ras false (the script forces is_ras
       -- false for NonIEEE anyway, but participant_type would still be wrong).
-      ('rayenkh2004kh@gmail.com',    '+21624342710', 'male',   null::int,      true, 'FST'::text, 'Student'::text, 'KVEGX6'),
-      ('hammasaida371@gmail.com',    '+21652806551', 'female', 99753176::int,  true, 'FST'::text, 'Student'::text, 'KVEGX6')
-    ) as t(email, phone, gender, ieee_id, is_ras, sb, participant_type, team_code)
+      ('rayenkh2004kh@gmail.com',    '+21624342710', 'male',   null::int,      true, 'FST'::text, 'Student'::text, 'KVEGX6', 'CHALLENGE'),
+      ('hammasaida371@gmail.com',    '+21652806551', 'female', 99753176::int,  true, 'FST'::text, 'Student'::text, 'KVEGX6', 'CHALLENGE')
+    ) as t(email, phone, gender, ieee_id, is_ras, sb, participant_type, team_code, activity)
   loop
     ------------------------------------------------------------------
     -- 1. the user must already exist (created via STEP 1 / 1-BIS)
@@ -113,14 +115,14 @@ begin
     end if;
 
     ------------------------------------------------------------------
-    -- 2. the target challenge team
+    -- 2. the target team (code + activity - the same code never spans both)
     ------------------------------------------------------------------
     select id, size into v_team_id, v_team_size
     from public.teams
-    where code = r.team_code and activity = 'CHALLENGE';
+    where code = r.team_code and activity = r.activity::"TeamActivity";
 
     if v_team_id is null then
-      raise exception 'No CHALLENGE team with code %', r.team_code;
+      raise exception 'No % team with code %', r.activity, r.team_code;
     end if;
 
     ------------------------------------------------------------------
@@ -159,24 +161,25 @@ begin
     end if;
 
     ------------------------------------------------------------------
-    -- 4. existing challenge membership?
-    --    The unique index is (participant_id, activity), so a participant
-    --    already in ANOTHER challenge team cannot simply be inserted here -
-    --    that has to be a deliberate move, not a silent no-op.
+    -- 4. existing membership for THIS activity?
+    --    The unique index is (participant_id, activity): one team per
+    --    activity. Being in a CHALLENGE team does not block joining a
+    --    COMPETITION team, but being in ANOTHER team of the same activity
+    --    has to be a deliberate move, not a silent no-op.
     ------------------------------------------------------------------
     select tm.team_id into v_existing_team_id
     from public.team_memberships tm
     where tm.participant_id = v_participant_id
-      and tm.activity = 'CHALLENGE';
+      and tm.activity = r.activity::"TeamActivity";
 
     if v_existing_team_id = v_team_id then
-      raise notice 'SKIP: % is already in challenge team %', r.email, r.team_code;
+      raise notice 'SKIP: % is already in % team %', r.email, r.activity, r.team_code;
       continue;
     elsif v_existing_team_id is not null then
       select code into v_existing_code from public.teams where id = v_existing_team_id;
       raise exception
-        '% is already in challenge team %. To move them, first run: delete from public.team_memberships where participant_id = % and activity = ''CHALLENGE'';',
-        r.email, v_existing_code, quote_literal(v_participant_id);
+        '% is already in % team %. To move them, first run: delete from public.team_memberships where participant_id = % and activity = %;',
+        r.email, r.activity, v_existing_code, quote_literal(v_participant_id), quote_literal(r.activity);
     end if;
 
     ------------------------------------------------------------------
@@ -189,17 +192,17 @@ begin
 
     if v_member_count >= v_team_size then
       raise exception
-        'Team % is full (%/%). Raise the cap first: update public.teams set size = size + 1, updated_at = now() where code = %;',
-        r.team_code, v_member_count, v_team_size, quote_literal(r.team_code);
+        'Team % is full (%/%). Raise the cap first: update public.teams set size = size + 1, updated_at = now() where code = % and activity = %;',
+        r.team_code, v_member_count, v_team_size, quote_literal(r.team_code), quote_literal(r.activity);
     end if;
 
     ------------------------------------------------------------------
     -- 6. membership
     ------------------------------------------------------------------
     insert into public.team_memberships (id, participant_id, team_id, activity, created_at)
-    values (gen_random_uuid()::text, v_participant_id, v_team_id, 'CHALLENGE', now());
+    values (gen_random_uuid()::text, v_participant_id, v_team_id, r.activity::"TeamActivity", now());
 
-    raise notice 'added % to challenge team % (%/%)', r.email, r.team_code, v_member_count + 1, v_team_size;
+    raise notice 'added % to % team % (%/%)', r.email, r.activity, r.team_code, v_member_count + 1, v_team_size;
   end loop;
 end $$;
 
@@ -221,6 +224,5 @@ from public.teams t
 join public.team_memberships tm on tm.team_id = t.id
 join public.participants p      on p.id = tm.participant_id
 join public.users u             on u.id = p.user_id
-where t.activity = 'CHALLENGE'
-  and t.code in ('KVEGX6')
+where t.code in ('KVEGX6')   -- add more codes as needed; shows every activity
 order by is_leader desc, tm.created_at;

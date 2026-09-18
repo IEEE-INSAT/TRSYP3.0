@@ -9,6 +9,7 @@ export class Participant extends User {
   paid!: boolean;
   isInternational!: boolean;
   isRas!: boolean;
+  facebookLink!: string | null;
   banned!: boolean;
   sb!: SB;
   country!: Country;

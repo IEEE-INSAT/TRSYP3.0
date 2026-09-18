@@ -249,6 +249,8 @@ export interface RegisterParticipantPayload {
   country: Country;
   /** IEEE RAS society membership - only sent for IEEE members. */
   isRas?: boolean;
+  /** Optional Facebook profile URL. On PATCH, `""` clears it. */
+  facebookLink?: string;
 }
 
 /**
@@ -276,6 +278,7 @@ export interface BackendParticipant {
   paid: boolean;
   isInternational: boolean;
   isRas: boolean;
+  facebookLink?: string | null;
   banned: boolean;
   participantType: ParticipantType;
   sb?: string;

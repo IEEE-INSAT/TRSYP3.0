@@ -593,6 +593,19 @@ export default function Dashboard() {
                 <span className="dash-detail-value">{user.university}</span>
               </div>
             )}
+            {user.facebookLink && (
+              <div className="dash-detail-row">
+                <span className="dash-detail-label">Facebook</span>
+                <a
+                  className="dash-detail-value"
+                  href={user.facebookLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {user.facebookLink.replace(/^https?:\/\/(www\.)?/, '')}
+                </a>
+              </div>
+            )}
             <div className="dash-detail-row">
               <span className="dash-detail-label">IEEE Member</span>
               <span className="dash-detail-value">{user.isIeee ? 'Yes' : 'No'}</span>

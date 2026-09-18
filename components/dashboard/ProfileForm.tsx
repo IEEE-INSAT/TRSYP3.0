@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuthStore, useRegistrationStore } from '@/lib/store';
+import { isFacebookUrl } from '@/lib/utils';
 import {
   COUNTRY_OPTIONS,
   DIAL_CODES,
@@ -24,6 +25,7 @@ interface FormState {
   isRas: boolean;
   sb: SB | '';
   country: Country | '';
+  facebookLink: string;
 }
 
 /**
@@ -68,6 +70,7 @@ export default function ProfileForm() {
       isRas: user?.isRas ?? false,
       sb: user?.sb ?? '',
       country: user?.country ?? '',
+      facebookLink: user?.facebookLink ?? '',
     };
   }, [account, user]);
 
@@ -109,6 +112,9 @@ export default function ProfileForm() {
     if (isStudent && !form.sb) e.sb = 'Required for students';
     if (isIeee && !form.ieeeId.trim()) e.ieeeId = 'Required for IEEE members';
     else if (form.ieeeId && !/^\d+$/.test(form.ieeeId.trim())) e.ieeeId = 'Digits only';
+    if (form.facebookLink.trim() && !isFacebookUrl(form.facebookLink)) {
+      e.facebookLink = 'Enter a valid facebook.com profile link';
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -131,6 +137,8 @@ export default function ProfileForm() {
     }
     if (isStudent && form.sb !== initial.sb) patch.sb = (form.sb || undefined) as SB | undefined;
     if (isIeee && form.isRas !== initial.isRas) patch.isRas = form.isRas;
+    // An emptied field is sent as "" so the server clears the stored link.
+    if (form.facebookLink.trim() !== initial.facebookLink) patch.facebookLink = form.facebookLink.trim();
     return patch;
   };
 
@@ -304,6 +312,21 @@ export default function ProfileForm() {
           ))}
         </select>
         {errors.country && <span className="reg-error">{errors.country}</span>}
+      </div>
+
+      {/* Facebook profile - optional */}
+      <div className="reg-field">
+        <label className="reg-label" htmlFor="profile-facebookLink">Facebook Profile</label>
+        <input
+          id="profile-facebookLink"
+          type="url"
+          className={`reg-input ${errors.facebookLink ? 'reg-input-error' : ''}`}
+          placeholder="https://www.facebook.com/your.profile"
+          autoComplete="url"
+          value={form.facebookLink}
+          onChange={(e) => set('facebookLink', e.target.value)}
+        />
+        {errors.facebookLink && <span className="reg-error">{errors.facebookLink}</span>}
       </div>
 
       {/* Membership type - IEEE members only */}
