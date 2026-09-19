@@ -12,6 +12,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { RoomingModule } from './modules/rooming/rooming.module';
 import { RegistrationModule } from './modules/registration/registration.module';
 import { ChallengeModule } from './modules/challenge/challenge.module';
+import { PaymentModule } from './modules/payment/payment.module';
 
 @Module({
     imports: [
@@ -38,6 +39,12 @@ import { ChallengeModule } from './modules/challenge/challenge.module';
                 CHALLENGE_REGISTRATION_PHASE: Joi.string()
                     .valid('soon', 'open', 'closed')
                     .default('closed'),
+                // The one payment-proof switch. Read per request, and
+                // reported to the UI by GET /payment/proof/me, so opening
+                // submissions needs no frontend rebuild.
+                PAYMENT_PROOF_OPEN: Joi.string()
+                    .valid('true', 'false')
+                    .default('false'),
             }),
         }),
         ThrottlerModule.forRoot({
@@ -53,6 +60,7 @@ import { ChallengeModule } from './modules/challenge/challenge.module';
         RoomingModule,
         RegistrationModule,
         ChallengeModule,
+        PaymentModule,
     ],
     controllers: [AppController],
     providers: [

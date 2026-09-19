@@ -5,6 +5,7 @@ import { registrationService } from '../api/registration.service';
 import { ApiError } from '../api/http';
 import { features } from '../config';
 import type { PaymentMethod } from '../payment';
+import type { BackendPaymentProof } from '../api/types';
 import type {
   BackendParticipant,
   Country,
@@ -20,6 +21,22 @@ export type RegStatus =
   | 'waiting_for_payment'
   | 'waiting_for_verification'
   | 'approved';
+
+/**
+ * The dashboard's three states, derived from what the backend knows.
+ *
+ * `paid` is authoritative once set; before that, a PENDING proof is the only
+ * thing that distinguishes "waiting for an admin" from "nothing sent yet". A
+ * rejected proof puts the participant back at the start, with a reason.
+ */
+function paymentStatusOf(
+  paid: boolean,
+  proof: Pick<BackendPaymentProof, 'status'> | null,
+): RegStatus {
+  if (paid) return 'approved';
+  if (proof?.status === 'PENDING') return 'waiting_for_verification';
+  return 'waiting_for_payment';
+}
 
 /** Kept for the dashboard's optional team display. */
 export interface TeamMember {
@@ -61,6 +78,8 @@ export interface UserData {
   paymentFileName: string;
   /** How the fee was paid - set when the proof is submitted. */
   paymentMethod?: PaymentMethod;
+  /** Why the last proof was turned down, when it was. Null otherwise. */
+  paymentRejectionReason?: string | null;
   participantId?: string;
   teamName?: string;
   memberCount?: number;
@@ -88,12 +107,26 @@ interface RegistrationState {
   /** True while the first backend profile sync is in flight - lets the UI avoid
    *  flashing a "not registered" state before we actually know. */
   hydrating: boolean;
+  /**
+   * Whether the backend is accepting payment proofs, straight from
+   * `GET /payment/proof/me`.
+   *
+   * The server owns this: it is the half that actually refuses a submission,
+   * so asking it removes the build-time frontend flag that could disagree.
+   * Defaults to closed until the first sync answers.
+   */
+  paymentSubmissionOpen: boolean;
   error: string | null;
 
   registerParticipant: (input: ParticipantRegistrationInput) => Promise<void>;
   /** Edit an existing participant - only the changed fields need to be passed. */
   updateProfile: (patch: Partial<ParticipantRegistrationInput>) => Promise<void>;
-  submitPayment: (fileName: string, method: PaymentMethod) => Promise<void>;
+  /** `file` is null only for a cash payment, which has no receipt. */
+  submitPayment: (
+    file: File | null,
+    method: PaymentMethod,
+    onProgress?: (percent: number) => void,
+  ) => Promise<void>;
   updateStatus: (status: RegStatus) => void;
   hydrateFromBackend: () => Promise<void>;
   reset: () => void;
@@ -166,6 +199,7 @@ export const useRegistrationStore = create<RegistrationState>()(
       isRegistered: false,
       submitting: false,
       hydrating: false,
+      paymentSubmissionOpen: false,
       error: null,
 
       registerParticipant: async (input) => {
@@ -287,20 +321,26 @@ export const useRegistrationStore = create<RegistrationState>()(
         }
       },
 
-      submitPayment: async (fileName, method) => {
+      submitPayment: async (file, method, onProgress) => {
         const { user, submitting } = get();
         if (!user || submitting) return;
-        set({ submitting: true });
+        set({ submitting: true, error: null });
         try {
           const token = await useAuthStore.getState().getAccessToken();
-          await registrationService.submitPayment(fileName, method, token ?? '');
+          const proof = await registrationService.submitPayment(
+            file,
+            method,
+            token ?? '',
+            onProgress,
+          );
           set({
             user: {
               ...user,
               status: 'waiting_for_verification',
               paymentProofSubmitted: true,
-              paymentFileName: fileName,
+              paymentFileName: proof.fileName ?? '',
               paymentMethod: method,
+              paymentRejectionReason: null,
             },
             submitting: false,
           });
@@ -341,15 +381,27 @@ export const useRegistrationStore = create<RegistrationState>()(
               ? email.split('@')[0]
               : 'Participant';
 
+          // The payment module knows about proofs under review; `paid` alone
+          // cannot tell "not paid yet" from "waiting for an admin". A failure
+          // here is non-fatal - fall back to pricing off `paid`.
+          const payment = await registrationService
+            .getMyPayment(token)
+            .catch(() => null);
+          const proof = payment?.latestProof ?? null;
+
           set({
+            paymentSubmissionOpen: payment?.submissionOpen ?? false,
             user: {
               userType: 'participant',
               fullName,
               email,
               ...participantFields(participant),
-              status: participant.paid ? 'approved' : 'waiting_for_payment',
-              paymentProofSubmitted: false,
-              paymentFileName: '',
+              status: paymentStatusOf(participant.paid, proof),
+              paymentProofSubmitted: proof?.status === 'PENDING',
+              paymentFileName: proof?.fileName ?? '',
+              paymentMethod: proof?.method,
+              paymentRejectionReason:
+                proof?.status === 'REJECTED' ? proof.rejectionReason : null,
             },
             isRegistered: true,
           });

@@ -70,19 +70,19 @@ model Admin {
 
 // --- Registration Module ---
 model Participant {
-  id                String             @id @default(uuid())
-  userId            String             @unique @map("user_id")
-  ieeeId            Int?               @unique @map("ieee_id")
-  phone             String             @unique
-  gender            String
-  paid              Boolean            @default(false)
-  isInternational   Boolean            @default(false) @map("is_international")
-  isRas             Boolean            @default(false) @map("is_ras")
-  banned            Boolean            @default(false)
-  participantType   ParticipantType    @map("participant_type")
-  sb                SB?
-  country           COUNTRY
-  facebookLink String? @map("facebook_link")
+  id              String          @id @default(uuid())
+  userId          String          @unique @map("user_id")
+  ieeeId          Int?            @unique @map("ieee_id")
+  phone           String          @unique
+  gender          String
+  paid            Boolean         @default(false)
+  isInternational Boolean         @default(false) @map("is_international")
+  isRas           Boolean         @default(false) @map("is_ras")
+  banned          Boolean         @default(false)
+  participantType ParticipantType @map("participant_type")
+  sb              SB?
+  country         COUNTRY
+  facebookLink    String?         @map("facebook_link")
 
   createdAt         DateTime           @default(now()) @map("created_at")
   updatedAt         DateTime           @updatedAt @map("updated_at")
@@ -97,6 +97,7 @@ model Participant {
   ledTeams          Team[]             @relation("TeamLeader")
   user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   internationalInfo InternationalInfo? @relation("ParticipantInternationalInfo")
+  paymentProofs     PaymentProof[]
 
   @@map("participants")
 }
@@ -251,9 +252,6 @@ enum SB {
   CU
   MSE
   ISGIS
-  
-   
-
 
   Other
 }
@@ -419,6 +417,7 @@ model RiddleProgress {
   @@unique([teamId, riddleNumber])
   @@map("riddle_progress")
 }
+
 model RiddleCode {
   id           String   @id @default(uuid())
   teamId       String   @map("team_id")
@@ -428,4 +427,52 @@ model RiddleCode {
 
   @@unique([teamId, riddleNumber])
   @@map("riddle_codes")
+}
+
+// --- Payment Module ---
+// `Participant.paid` stays the single source of truth for "settled": approving
+// a proof is what flips it. These rows are the audit trail behind that flag -
+// a rejected submission keeps its history so a resubmission can be compared
+// against what was turned down.
+model PaymentProof {
+  id            String        @id @default(uuid())
+  participantId String        @map("participant_id")
+  method        PaymentMethod
+
+  // Null for a cash payment handed to the committee: there is no receipt to
+  // upload, so an admin confirms it in person instead.
+  storagePath String? @map("storage_path")
+  fileName    String? @map("file_name")
+  mimeType    String? @map("mime_type")
+  sizeBytes   Int?    @map("size_bytes")
+
+  // What the fee was when the proof was submitted, in TND. The live fee is
+  // derived from facts that can change afterwards (a RAS toggle, joining a
+  // team), so the reviewer needs the figure the participant actually saw.
+  amountSnapshot Int @map("amount_snapshot")
+
+  status          PaymentProofStatus @default(PENDING)
+  rejectionReason String?            @map("rejection_reason")
+  reviewedAt      DateTime?          @map("reviewed_at")
+  createdAt       DateTime           @default(now()) @map("created_at")
+
+  participant Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([participantId])
+  @@map("payment_proofs")
+}
+
+/// Mirror of `lib/payment.ts` on the frontend - change both together.
+enum PaymentMethod {
+  BANK_TRANSFER
+  D17
+  FLOUCI
+  CASH
+}
+
+enum PaymentProofStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

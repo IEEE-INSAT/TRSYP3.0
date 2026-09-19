@@ -11,7 +11,6 @@ services:
         NEXT_PUBLIC_COMPETITION_PHASE: ${NEXT_PUBLIC_COMPETITION_PHASE:-closed}
         NEXT_PUBLIC_CHALLENGE_PHASE: ${NEXT_PUBLIC_CHALLENGE_PHASE:-closed}
         NEXT_PUBLIC_PARTICIPANT_REGISTRATION_OPEN: ${NEXT_PUBLIC_PARTICIPANT_REGISTRATION_OPEN:-true}
-        NEXT_PUBLIC_PAYMENT_PROOF_OPEN: ${NEXT_PUBLIC_PAYMENT_PROOF_OPEN:-false}
     env_file:
       - path: .env
         required: false
@@ -19,6 +18,7 @@ services:
       NODE_ENV: production
       PORT: 10000
       RIDDLE_CODE_SECRET: ${RIDDLE_CODE_SECRET:-local-compose-only-riddle-secret}
+      PAYMENT_PROOF_OPEN: ${PAYMENT_PROOF_OPEN:-false}
     ports:
       - "3000:10000"
     restart: unless-stopped

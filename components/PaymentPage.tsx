@@ -5,8 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/lib/store/use-auth';
-import { useTeamStore } from '@/lib/store';
-import { PAYMENT_PROOF_OPEN } from '@/lib/config';
+import { useTeamStore, useRegistrationStore, useAuthStore } from '@/lib/store';
 import {
   FEES,
   FEE_CURRENCY,
@@ -17,6 +16,8 @@ import {
   type FeeTier,
 } from '@/lib/fees';
 import {
+  ACCEPTED_PROOF_TYPES,
+  MAX_PROOF_BYTES,
   PAYMENT_METHODS,
   PAYMENT_METHOD_HINTS,
   PAYMENT_METHOD_LABELS,
@@ -48,6 +49,11 @@ export default function PaymentPage() {
   // teams decide the fee role (challenger vs visitor), so they are fetched here.
   const fetchTeams = useTeamStore((s) => s.fetchTeams);
   const teams = useTeamStore((s) => s.teams);
+  // The server decides whether proofs are being accepted - it is the half
+  // that enforces it, so there is no build-time flag here to disagree with.
+  const submissionOpen = useRegistrationStore((s) => s.paymentSubmissionOpen);
+  const hydrating = useRegistrationStore((s) => s.hydrating);
+  const initialized = useAuthStore((s) => s.initialized);
   const [method, setMethod] = useState<PaymentMethod | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -57,6 +63,7 @@ export default function PaymentPage() {
   const [copied, setCopied] = useState(false);
   const [progress, setProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -76,12 +83,21 @@ export default function PaymentPage() {
   const myFee = computeFee({ isIeee: user.isIeee, isRas: user.isRas, isChallenger });
 
   const awaitingPayment = user.status === 'waiting_for_payment';
-  const proofOpen = PAYMENT_PROOF_OPEN && awaitingPayment;
+  // Until the first sync answers, we do not know whether the window is open -
+  // saying "soon" before asking would be a guess the participant then sees
+  // flip under them.
+  const windowKnown = initialized && !hydrating;
+  const proofOpen = submissionOpen && awaitingPayment;
+
+  // Cash is handed to a committee member, so there is no receipt to scan -
+  // those submissions land as pending for an admin to confirm in person.
+  const fileOptional = method === 'CASH';
+  const canSubmit =
+    !!method && confirmed && (!!file || fileOptional) && !uploading;
 
   const handleFile = (f: File) => {
-    const valid = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
-    if (!valid.includes(f.type)) return;
-    if (f.size > 5 * 1024 * 1024) return;
+    if (!ACCEPTED_PROOF_TYPES.includes(f.type)) return;
+    if (f.size > MAX_PROOF_BYTES) return;
     setFile(f);
     if (f.type.startsWith('image/')) {
       const reader = new FileReader();
@@ -105,22 +121,21 @@ export default function PaymentPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleSubmit = () => {
-    if (!file || !method || !confirmed) return;
+  const handleSubmit = async () => {
+    if (!canSubmit) return;
     setUploading(true);
+    setSubmitError('');
     setProgress(0);
-    const interval = setInterval(() => {
-      setProgress((p) => {
-        if (p >= 100) {
-          clearInterval(interval);
-          void submitPayment(file.name, method);
-          setUploading(false);
-          setShowSuccess(true);
-          return 100;
-        }
-        return p + Math.random() * 15 + 5;
-      });
-    }, 150);
+    try {
+      await submitPayment(file, method, setProgress);
+      setShowSuccess(true);
+    } catch (e) {
+      setSubmitError(
+        e instanceof Error ? e.message : 'Could not submit your payment proof',
+      );
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -202,7 +217,9 @@ export default function PaymentPage() {
         <motion.div className="reg-form" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
           <div className="reg-section-label">
             Payment Proof
-            {!proofOpen && awaitingPayment && <span className="pay-soon-chip">Soon</span>}
+            {windowKnown && !submissionOpen && awaitingPayment && (
+              <span className="pay-soon-chip">Soon</span>
+            )}
           </div>
 
           {!awaitingPayment ? (
@@ -211,7 +228,9 @@ export default function PaymentPage() {
                 ? `We've received your payment proof${user.paymentFileName ? ` (${user.paymentFileName})` : ''} and our team is verifying it. Nothing else is needed from you.`
                 : 'Your payment is confirmed - your spot at TRSYP 3.0 is secured.'}
             </p>
-          ) : !PAYMENT_PROOF_OPEN ? (
+          ) : !windowKnown ? (
+            <p className="reg-account-hint">Checking whether submission is open&hellip;</p>
+          ) : !submissionOpen ? (
             <p className="reg-account-hint">
               Payment proof submission opens soon. We&apos;ll announce the accounts and turn this
               on here - no need to pay anything yet.
@@ -321,8 +340,15 @@ export default function PaymentPage() {
                 ) : (
                   <>
                     <svg className="pay-dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
-                    <p className="pay-dropzone-text">Drag & drop your receipt here</p>
-                    <p className="pay-dropzone-hint">or click to browse: JPG, PNG, PDF (max 5MB)</p>
+                    <p className="pay-dropzone-text">
+                      {fileOptional
+                        ? 'Attach a receipt if the committee gave you one'
+                        : 'Drag & drop your receipt here'}
+                    </p>
+                    <p className="pay-dropzone-hint">
+                      {fileOptional ? 'Optional for cash. ' : 'or click to browse: '}
+                      JPG, PNG, PDF (max 3MB)
+                    </p>
                   </>
                 )}
               </div>
@@ -337,17 +363,21 @@ export default function PaymentPage() {
                 <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />
                 <span className="reg-checkmark" />
                 <span className="reg-checkbox-text">
-                  I confirm that I have paid the full registration fee of {myFee.fee} {FEE_CURRENCY}.
+                  {fileOptional
+                    ? `I confirm that I have paid the full registration fee of ${myFee.fee} ${FEE_CURRENCY} in cash to a member of the organizing committee.`
+                    : `I confirm that I have paid the full registration fee of ${myFee.fee} ${FEE_CURRENCY}.`}
                 </span>
               </label>
+
+              {submitError && <p className="pay-submit-error">{submitError}</p>}
 
               <button
                 type="button"
                 className="reg-submit"
-                disabled={!file || !method || !confirmed || uploading}
-                onClick={handleSubmit}
+                disabled={!canSubmit}
+                onClick={() => void handleSubmit()}
               >
-                {uploading ? 'Uploading...' : 'Submit Payment Proof'}
+                {uploading ? `Uploading... ${Math.round(progress)}%` : 'Submit Payment Proof'}
               </button>
             </>
           )}

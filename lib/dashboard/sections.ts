@@ -8,8 +8,9 @@
 
 /**
  * The payment section is open: it shows the fee table so every participant can
- * see what they owe. Whether the proof upload inside it is live is a separate
- * switch - `PAYMENT_PROOF_OPEN` in `lib/config`.
+ * see what they owe. Whether the proof upload inside it is live is the
+ * backend's call, reported by `GET /payment/proof/me` and held in the
+ * registration store as `paymentSubmissionOpen`.
  */
 export const PAYMENT_ENABLED = true;
 

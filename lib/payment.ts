@@ -24,3 +24,17 @@ export const PAYMENT_METHOD_HINTS: Record<PaymentMethod, string> = {
   FLOUCI: 'Mobile payment via the Flouci app',
   CASH: 'Handed to a member of the organizing committee',
 };
+
+/**
+ * 3 MB a receipt, matching `MAX_PROOF_BYTES` in the backend's payment
+ * constants. Checked here only to fail fast - the server enforces it.
+ */
+export const MAX_PROOF_BYTES = 3 * 1024 * 1024;
+
+/** MIME types the upload accepts, matching the backend's allow-list. */
+export const ACCEPTED_PROOF_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/jpg',
+  'application/pdf',
+];

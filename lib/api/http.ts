@@ -67,3 +67,66 @@ export async function apiFetch<T>(
 
   return data as T;
 }
+
+/**
+ * Multipart POST with upload progress.
+ *
+ * `fetch` cannot report how much of a request body has been sent, so anything
+ * that wants a real progress bar has to go through `XMLHttpRequest`. Errors
+ * are normalised to `ApiError` so callers cannot tell the two paths apart.
+ *
+ * The browser sets the multipart Content-Type (including the boundary) from
+ * the FormData, so this deliberately does not set that header itself.
+ */
+export function uploadWithProgress<T>(
+  path: string,
+  form: FormData,
+  token?: string | null,
+  onProgress?: (percent: number) => void,
+): Promise<T> {
+  if (!isApiConfigured) {
+    return Promise.reject(new ApiError(0, 'NEXT_PUBLIC_API_URL is not configured'));
+  }
+
+  return new Promise<T>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API_URL}${path}`);
+    xhr.setRequestHeader('Accept', 'application/json');
+    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+
+    if (onProgress) {
+      xhr.upload.onprogress = (e) => {
+        // Not every request reports a total; leave the caller's last value
+        // alone rather than reporting a bogus 0%.
+        if (e.lengthComputable) onProgress((e.loaded / e.total) * 100);
+      };
+    }
+
+    xhr.onload = () => {
+      let data: unknown = null;
+      if (xhr.responseText) {
+        try {
+          data = JSON.parse(xhr.responseText);
+        } catch {
+          data = xhr.responseText;
+        }
+      }
+
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(data as T);
+        return;
+      }
+
+      const message =
+        (data && typeof data === 'object' && 'message' in data
+          ? String((data as { message: unknown }).message)
+          : null) ?? xhr.statusText;
+      reject(new ApiError(xhr.status, message, data));
+    };
+
+    xhr.onerror = () => reject(new ApiError(0, 'Network error during upload'));
+    xhr.onabort = () => reject(new ApiError(0, 'Upload cancelled'));
+
+    xhr.send(form);
+  });
+}

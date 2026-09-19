@@ -13,7 +13,6 @@ import LoadingScreen from './LoadingScreen';
 import UserAvatar from './UserAvatar';
 // Single source of truth, shared with the dashboard section nav.
 import { PAYMENT_ENABLED } from '@/lib/dashboard/sections';
-import { PAYMENT_PROOF_OPEN } from '@/lib/config';
 import { useJustRegistered } from '@/lib/dashboard/just-registered';
 
 /** The fee's three states, in the order a participant passes through them. */
@@ -37,6 +36,9 @@ export default function Dashboard() {
   const initialized = useAuthStore((s) => s.initialized);
   const account = useAuthStore((s) => s.account);
   const hydrating = useRegistrationStore((s) => s.hydrating);
+  // Server-owned: the payment page is reachable either way, so the CTA just
+  // says which of the two it leads to.
+  const submissionOpen = useRegistrationStore((s) => s.paymentSubmissionOpen);
 
   const activity = useTeamStore((s) => s.activity);
   const setActivity = useTeamStore((s) => s.setActivity);
@@ -378,7 +380,7 @@ export default function Dashboard() {
                   team-less users. */}
               {user.status === 'waiting_for_payment' && (
                 <Link href="/dashboard/payment" className="dash-reg-link">
-                  {PAYMENT_PROOF_OPEN ? 'Submit payment proof' : 'See the fees'} &rarr;
+                  {submissionOpen ? 'Submit payment proof' : 'See the fees'} &rarr;
                 </Link>
               )}
               {user.status === 'waiting_for_verification' && user.paymentFileName && (

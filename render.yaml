@@ -30,6 +30,8 @@ services:
         value: closed
       - key: CHALLENGE_REGISTRATION_PHASE
         value: closed
+      - key: PAYMENT_PROOF_OPEN
+        value: "false"
       - key: NEXT_PUBLIC_API_URL
         value: /api
       - key: NEXT_PUBLIC_SUPABASE_URL
@@ -46,5 +48,3 @@ services:
         value: closed
       - key: NEXT_PUBLIC_PARTICIPANT_REGISTRATION_OPEN
         value: "true"
-      - key: NEXT_PUBLIC_PAYMENT_PROOF_OPEN
-        value: "false"

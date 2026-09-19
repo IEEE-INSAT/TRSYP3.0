@@ -62,22 +62,6 @@ export const PARTICIPANT_REGISTRATION_OPEN = readBool(
 );
 
 /**
- * Payment proof submission window, driven by
- * `NEXT_PUBLIC_PAYMENT_PROOF_OPEN`.
- *
- * The payment section itself (see `PAYMENT_ENABLED` in
- * `lib/dashboard/sections`) stays open regardless - it shows the fee table so
- * a participant always knows what they owe. This flag only decides whether the
- * proof form below it accepts a method and a receipt, or renders a "soon"
- * notice instead. Defaults to closed until the committee announces the
- * accounts.
- */
-export const PAYMENT_PROOF_OPEN = readBool(
-  process.env.NEXT_PUBLIC_PAYMENT_PROOF_OPEN,
-  false,
-);
-
-/**
  * Master switch for public log-in. Set to `false` to temporarily hide the
  * Log In CTA in the navbar. Flip back to `true` to reopen.
  */

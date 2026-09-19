@@ -1,3 +1,5 @@
+import type { PaymentMethod } from '../payment';
+
 /**
  * Types mirroring the NestJS backend DTOs / responses.
  *
@@ -369,4 +371,40 @@ export interface RiddleSubmitResponse {
   correct: boolean;
   solved: boolean;
   attempts: number;
+}
+
+// ── Payment proofs ───────────────────────────────────────────────────────────
+
+/** Review state of a submitted proof, mirroring the backend enum. */
+export type PaymentProofStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+/** One submitted proof, as its owner sees it. */
+export interface BackendPaymentProof {
+  id: string;
+  method: PaymentMethod;
+  status: PaymentProofStatus;
+  /** The fee as it stood when the proof was submitted, in TND. */
+  amountSnapshot: number;
+  /** Null for a cash payment, which has no receipt. */
+  fileName: string | null;
+  hasFile: boolean;
+  rejectionReason: string | null;
+  reviewedAt: string | null;
+  createdAt: string;
+}
+
+/**
+ * Response of GET /payment/proof/me.
+ *
+ * `paid` is the settled flag and `latestProof` explains what is happening in
+ * between, which together are enough to derive the dashboard status without
+ * the client keeping any of its own.
+ */
+export interface MyPaymentResponse {
+  paid: boolean;
+  fee: number;
+  currency: string;
+  /** Whether the backend is accepting proofs right now. */
+  submissionOpen: boolean;
+  latestProof: BackendPaymentProof | null;
 }

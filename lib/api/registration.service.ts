@@ -1,8 +1,10 @@
-import { apiFetch, ApiError } from './http';
+import { apiFetch, ApiError, uploadWithProgress } from './http';
 import { features } from '../config';
 import type { PaymentMethod } from '../payment';
 import type {
+  BackendPaymentProof,
   BackendParticipant,
+  MyPaymentResponse,
   CreateTeamPayload,
   MyTeams,
   RegisterParticipantPayload,
@@ -277,21 +279,56 @@ export const registrationService = {
   /**
    * Submit a payment proof.
    *
-   * TODO(backend): the Payment module is currently empty stubs - there is no
-   * endpoint nor a model for payment proofs. When it lands, replace this with
-   * the real (likely multipart) upload call and drop the placeholder.
+   * Multipart, and sent with `XMLHttpRequest` rather than `fetch` so the
+   * caller can report real upload progress - `fetch` still has no way to
+   * observe a request body being sent.
+   *
+   * The receipt is omitted for a cash payment: there is nothing to scan when
+   * the money was handed to a committee member, so those land as PENDING for
+   * an admin to confirm in person.
    */
   async submitPayment(
-    fileName: string,
+    file: File | null,
     paymentMethod: PaymentMethod,
     token: string,
-  ): Promise<{ ok: boolean }> {
-    if (!features.registrationApi) return { ok: true };
-    await apiFetch('/payment/proof', {
-      method: 'POST',
-      body: { fileName, paymentMethod },
+    onProgress?: (percent: number) => void,
+  ): Promise<BackendPaymentProof> {
+    const form = new FormData();
+    form.append('method', paymentMethod);
+    if (file) form.append('file', file, file.name);
+
+    return uploadWithProgress<BackendPaymentProof>(
+      '/payment/proof',
+      form,
       token,
-    });
-    return { ok: true };
+      onProgress,
+    );
+  },
+
+  /**
+   * Where the current participant stands: settled or not, the live fee, and
+   * the most recent proof. The dashboard derives its status from this instead
+   * of remembering anything locally.
+   */
+  async getMyPayment(token: string): Promise<MyPaymentResponse | null> {
+    if (!features.registrationApi) return null;
+    try {
+      return await apiFetch<MyPaymentResponse>('/payment/proof/me', { token });
+    } catch (e) {
+      // No participant row yet - the caller has nothing to show either way.
+      if (e instanceof ApiError && e.status === 404) return null;
+      throw e;
+    }
+  },
+
+  /** Short-lived link to a stored receipt, for showing it back to its owner. */
+  async getProofFileUrl(
+    proofId: string,
+    token: string,
+  ): Promise<{ url: string; expiresIn: number }> {
+    return apiFetch<{ url: string; expiresIn: number }>(
+      `/payment/proof/${proofId}/file`,
+      { token },
+    );
   },
 };
