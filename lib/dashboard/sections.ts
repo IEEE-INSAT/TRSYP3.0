@@ -44,8 +44,8 @@ export const DASHBOARD_SECTIONS: DashboardSection[] = [
   { id: 'overview', label: 'Overview', href: '/dashboard', enabled: true, gated: true },
   { id: 'profile', label: 'Profile', href: '/dashboard/profile', enabled: true, gated: true },
   { id: 'avatar', label: 'Avatar', href: '/dashboard/avatar', enabled: true, gated: false },
-  { id: 'rooming', label: 'Rooming', href: '/dashboard/rooming', enabled: ROOMING_ENABLED, gated: true },
   { id: 'payment', label: 'Payment', href: '/dashboard/payment', enabled: PAYMENT_ENABLED, gated: true },
+  { id: 'rooming', label: 'Rooming', href: '/dashboard/rooming', enabled: ROOMING_ENABLED, gated: true },
 ];
 
 /** Where a user with no avatar is held until they create one. */
