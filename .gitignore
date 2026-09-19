@@ -22,3 +22,7 @@ node_modules/
 dist/
 coverage/
 *.tsbuildinfo
+
+# Local pnpm setup
+pnpm-lock.yaml
+pnpm-workspace.yaml

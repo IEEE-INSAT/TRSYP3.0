@@ -1,5 +1,6 @@
 import { apiFetch, ApiError } from './http';
 import { features } from '../config';
+import type { PaymentMethod } from '../payment';
 import type {
   BackendParticipant,
   CreateTeamPayload,
@@ -282,12 +283,13 @@ export const registrationService = {
    */
   async submitPayment(
     fileName: string,
+    paymentMethod: PaymentMethod,
     token: string,
   ): Promise<{ ok: boolean }> {
     if (!features.registrationApi) return { ok: true };
     await apiFetch('/payment/proof', {
       method: 'POST',
-      body: { fileName },
+      body: { fileName, paymentMethod },
       token,
     });
     return { ok: true };

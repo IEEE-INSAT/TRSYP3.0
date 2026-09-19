@@ -6,13 +6,49 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/lib/store/use-auth';
 import { useTeamStore } from '@/lib/store';
+import { PAYMENT_PROOF_OPEN } from '@/lib/config';
+import {
+  FEES,
+  FEE_CURRENCY,
+  FEE_ROLE_LABELS,
+  FEE_TIER_LABELS,
+  computeFee,
+  type FeeRole,
+  type FeeTier,
+} from '@/lib/fees';
+import {
+  PAYMENT_METHODS,
+  PAYMENT_METHOD_HINTS,
+  PAYMENT_METHOD_LABELS,
+  type PaymentMethod,
+} from '@/lib/payment';
+
+/** Where the fee is sent, per method - shown once a method is picked. */
+const METHOD_TARGET_LABEL: Record<PaymentMethod, string> = {
+  BANK_TRANSFER: 'RIB',
+  D17: 'D17 number',
+  FLOUCI: 'Flouci number',
+  CASH: 'Where to pay',
+};
+
+const METHOD_TARGET_VALUE: Record<PaymentMethod, string> = {
+  BANK_TRANSFER: '44444444444444444444',
+  D17: '44 444 444',
+  FLOUCI: '44 444 444',
+  CASH: 'At the IEEE INSAT SB desk, INSAT campus',
+};
+
+const TIER_ORDER: FeeTier[] = ['IEEE_RAS', 'IEEE', 'NON_IEEE'];
+const ROLE_ORDER: FeeRole[] = ['VISITOR', 'CHALLENGER'];
 
 export default function PaymentPage() {
   const { user, submitPayment } = useAuth();
   // Teams are optional - a participant may hold a competition team, a challenge
   // team, both, or neither - so payment is not gated on team membership. The
-  // teams are still refreshed here to keep the dashboard warm.
+  // teams decide the fee role (challenger vs visitor), so they are fetched here.
   const fetchTeams = useTeamStore((s) => s.fetchTeams);
+  const teams = useTeamStore((s) => s.teams);
+  const [method, setMethod] = useState<PaymentMethod | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
@@ -24,20 +60,23 @@ export default function PaymentPage() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!user || user.status !== 'waiting_for_payment') {
-      window.location.href = user ? '/dashboard' : '/';
-    }
+    if (!user) window.location.href = '/';
   }, [user]);
 
   useEffect(() => {
     if (user) void fetchTeams();
   }, [user, fetchTeams]);
 
-  if (!user || user.status !== 'waiting_for_payment') return null;
+  if (!user) return null;
 
-  const isChallenger = user.userType === 'challenger';
-  const feeAmount = user.isIeee ? 30 : 50;
-  const totalAmount = isChallenger ? feeAmount * ((user.memberCount || 0) + 1) : feeAmount;
+  // Same three facts the server prices off, so the highlighted card tracks a
+  // team join or a RAS toggle without waiting for a profile refetch.
+  const isChallenger =
+    user.userType === 'challenger' || !!teams.COMPETITION || !!teams.CHALLENGE;
+  const myFee = computeFee({ isIeee: user.isIeee, isRas: user.isRas, isChallenger });
+
+  const awaitingPayment = user.status === 'waiting_for_payment';
+  const proofOpen = PAYMENT_PROOF_OPEN && awaitingPayment;
 
   const handleFile = (f: File) => {
     const valid = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
@@ -59,21 +98,22 @@ export default function PaymentPage() {
     if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
   };
 
-  const copyRib = () => {
-    navigator.clipboard.writeText('44444444444444444444');
+  const copyTarget = () => {
+    if (!method) return;
+    navigator.clipboard.writeText(METHOD_TARGET_VALUE[method]);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleSubmit = () => {
-    if (!file || !confirmed) return;
+    if (!file || !method || !confirmed) return;
     setUploading(true);
     setProgress(0);
     const interval = setInterval(() => {
       setProgress((p) => {
         if (p >= 100) {
           clearInterval(interval);
-          submitPayment(file.name);
+          void submitPayment(file.name, method);
           setUploading(false);
           setShowSuccess(true);
           return 100;
@@ -93,140 +133,224 @@ export default function PaymentPage() {
 
         {/* Instructions */}
         <motion.div className="reg-info-banner" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-          <div className="reg-info-badge">PAYMENT SUBMISSION</div>
-          <h2 className="reg-info-title">Submit Your Payment</h2>
-          <p className="reg-info-subtitle">You&apos;re one step away from confirming your registration for TRSYP 3.0!</p>
+          <div className="reg-info-badge">PAYMENT</div>
+          <h2 className="reg-info-title">Registration Fee</h2>
+          <p className="reg-info-subtitle">
+            {proofOpen
+              ? "You're one step away from confirming your registration for TRSYP 3.0!"
+              : 'Here is what your registration costs. Proof submission opens shortly.'}
+          </p>
           <div className="pay-steps">
             <div className="pay-step">
               <span className="pay-step-num">1</span>
-              <span>Transfer the registration fee to the account below.</span>
+              <span>Check the fee that applies to you : your card is highlighted below.</span>
             </div>
             <div className="pay-step">
               <span className="pay-step-num">2</span>
-              <span>Upload your payment receipt (screenshot, photo, or PDF).</span>
+              <span>Pay it by bank transfer, D17, Flouci, or in cash.</span>
             </div>
             <div className="pay-step">
               <span className="pay-step-num">3</span>
-              <span>Submit and we&apos;ll verify your payment within 48 hours.</span>
+              <span>Upload your receipt and we&apos;ll verify it within 48 hours.</span>
             </div>
           </div>
         </motion.div>
 
-        {/* Bank Details */}
-        <motion.div className="pay-bank-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
-          <div className="pay-bank-title">Payment Details</div>
-          <div className="pay-bank-rows">
-            <div className="pay-bank-row">
-              <span className="pay-bank-label">Bank</span>
-              <span className="pay-bank-value">Bank Name (Placeholder)</span>
-            </div>
-            <div className="pay-bank-row">
-              <span className="pay-bank-label">Account Holder</span>
-              <span className="pay-bank-value">TRSYP 3.0 Organizing Committee</span>
-            </div>
-            <div className="pay-bank-row">
-              <span className="pay-bank-label">RIB Number</span>
-              <span className="pay-bank-value pay-bank-rib">
-                <code>44444444444444444444</code>
-                <button className="pay-copy-btn" onClick={copyRib} type="button">
-                  {copied ? (
-                    <><svg viewBox="0 0 24 24" fill="none" stroke="var(--color-green)" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg> Copied!</>
-                  ) : (
-                    <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg> Copy</>
-                  )}
-                </button>
-              </span>
-            </div>
-            <div className="pay-bank-row pay-bank-amount">
-              <span className="pay-bank-label">Amount</span>
-              <span className="pay-bank-value">
-                <strong>{totalAmount} TND</strong>
-                {isChallenger && <span className="pay-bank-note">({(user.memberCount || 0) + 1} members × {feeAmount} TND)</span>}
-              </span>
-            </div>
-          </div>
-          {isChallenger && (
-            <p className="pay-bank-team-note">Please transfer the total amount for your entire team in a single transaction.</p>
-          )}
-        </motion.div>
-
-        {/* Upload */}
-        <motion.div className="reg-form" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
-          <div className="reg-section-label">Upload Payment Proof</div>
-
-          <div
-            className={`pay-dropzone ${dragging ? 'pay-dropzone-active' : ''} ${file ? 'pay-dropzone-has-file' : ''}`}
-            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-            onDragLeave={() => setDragging(false)}
-            onDrop={handleDrop}
-            onClick={() => inputRef.current?.click()}
-          >
-            <input
-              ref={inputRef}
-              type="file"
-              accept=".jpg,.jpeg,.png,.pdf"
-              style={{ display: 'none' }}
-              onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
-            />
-            {file ? (
-              <div className="pay-file-preview">
-                {preview ? (
-                  <Image
-                    src={preview}
-                    alt="Payment proof"
-                    className="pay-file-thumb"
-                    width={120}
-                    height={80}
-                    unoptimized
-                  />
-                ) : (
-                  <div className="pay-file-pdf-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
-                  </div>
-                )}
-                <div className="pay-file-info">
-                  <span className="pay-file-name">{file.name}</span>
-                  <span className="pay-file-size">{(file.size / 1024).toFixed(0)} KB</span>
-                </div>
-                <button
-                  className="pay-file-remove"
-                  onClick={(e) => { e.stopPropagation(); setFile(null); setPreview(null); }}
-                  type="button"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                </button>
-              </div>
-            ) : (
-              <>
-                <svg className="pay-dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
-                <p className="pay-dropzone-text">Drag & drop your receipt here</p>
-                <p className="pay-dropzone-hint">or click to browse: JPG, PNG, PDF (max 5MB)</p>
-              </>
-            )}
-          </div>
-
-          {uploading && (
-            <div className="pay-progress">
-              <div className="pay-progress-bar" style={{ width: `${Math.min(progress, 100)}%` }} />
-            </div>
-          )}
-
-          <label className="reg-checkbox-wrap">
-            <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />
-            <span className="reg-checkmark" />
-            <span className="reg-checkbox-text">
-              I confirm that I have transferred the full registration fee of {totalAmount} TND to the account above.
+        {/* Fee cards - every tier, with the participant's own highlighted */}
+        <motion.div className="pay-fees" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
+          <div className="pay-fees-head">
+            <div className="pay-bank-title">Fees</div>
+            <span className="pay-fees-yours">
+              Your fee: <strong>{myFee.fee} {FEE_CURRENCY}</strong>
             </span>
-          </label>
+          </div>
 
-          <button
-            type="button"
-            className="reg-submit"
-            disabled={!file || !confirmed || uploading}
-            onClick={handleSubmit}
-          >
-            {uploading ? 'Uploading...' : 'Submit Payment Proof'}
-          </button>
+          {ROLE_ORDER.map((role) => (
+            <div key={role} className="pay-fee-group">
+              <div className="pay-fee-group-label">
+                {FEE_ROLE_LABELS[role]}
+                <span className="pay-fee-group-hint">
+                  {role === 'CHALLENGER'
+                    ? 'On a competition or technical challenge team'
+                    : 'Attending without entering a track'}
+                </span>
+              </div>
+              <div className="pay-fee-grid">
+                {TIER_ORDER.map((tier) => {
+                  const mine = role === myFee.feeRole && tier === myFee.feeTier;
+                  return (
+                    <div
+                      key={tier}
+                      className={`pay-fee-card ${mine ? 'pay-fee-card-mine' : ''}`}
+                      aria-current={mine ? 'true' : undefined}
+                    >
+                      {mine && <span className="pay-fee-badge">Your fee</span>}
+                      <span className="pay-fee-tier">{FEE_TIER_LABELS[tier]}</span>
+                      <span className="pay-fee-amount">
+                        {FEES[role][tier]}
+                        <span className="pay-fee-currency">{FEE_CURRENCY}</span>
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </motion.div>
+
+        {/* Payment proof */}
+        <motion.div className="reg-form" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
+          <div className="reg-section-label">
+            Payment Proof
+            {!proofOpen && awaitingPayment && <span className="pay-soon-chip">Soon</span>}
+          </div>
+
+          {!awaitingPayment ? (
+            <p className="reg-account-hint">
+              {user.status === 'waiting_for_verification'
+                ? `We've received your payment proof${user.paymentFileName ? ` (${user.paymentFileName})` : ''} and our team is verifying it. Nothing else is needed from you.`
+                : 'Your payment is confirmed - your spot at TRSYP 3.0 is secured.'}
+            </p>
+          ) : !PAYMENT_PROOF_OPEN ? (
+            <p className="reg-account-hint">
+              Payment proof submission opens soon. We&apos;ll announce the accounts and turn this
+              on here - no need to pay anything yet.
+            </p>
+          ) : (
+            <>
+              <div className="reg-field">
+                <label className="reg-label">How did you pay?</label>
+                <div className="pay-method-grid" role="radiogroup" aria-label="Payment method">
+                  {PAYMENT_METHODS.map((m) => (
+                    <label
+                      key={m}
+                      className={`pay-method ${method === m ? 'pay-method-active' : ''}`}
+                    >
+                      <input
+                        type="radio"
+                        name="payment-method"
+                        value={m}
+                        checked={method === m}
+                        onChange={() => { setMethod(m); setCopied(false); }}
+                      />
+                      <span className="pay-method-dot" />
+                      <span className="pay-method-text">
+                        <span className="pay-method-label">{PAYMENT_METHOD_LABELS[m]}</span>
+                        <span className="pay-method-hint">{PAYMENT_METHOD_HINTS[m]}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {method && (
+                <div className="pay-bank-card">
+                  <div className="pay-bank-title">{PAYMENT_METHOD_LABELS[method]} Details</div>
+                  <div className="pay-bank-rows">
+                    <div className="pay-bank-row">
+                      <span className="pay-bank-label">Account Holder</span>
+                      <span className="pay-bank-value">TRSYP 3.0 Organizing Committee</span>
+                    </div>
+                    <div className="pay-bank-row">
+                      <span className="pay-bank-label">{METHOD_TARGET_LABEL[method]}</span>
+                      <span className="pay-bank-value pay-bank-rib">
+                        <code>{METHOD_TARGET_VALUE[method]}</code>
+                        {method !== 'CASH' && (
+                          <button className="pay-copy-btn" onClick={copyTarget} type="button">
+                            {copied ? (
+                              <><svg viewBox="0 0 24 24" fill="none" stroke="var(--color-green)" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg> Copied!</>
+                            ) : (
+                              <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg> Copy</>
+                            )}
+                          </button>
+                        )}
+                      </span>
+                    </div>
+                    <div className="pay-bank-row pay-bank-amount">
+                      <span className="pay-bank-label">Amount</span>
+                      <span className="pay-bank-value">
+                        <strong>{myFee.fee} {FEE_CURRENCY}</strong>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div
+                className={`pay-dropzone ${dragging ? 'pay-dropzone-active' : ''} ${file ? 'pay-dropzone-has-file' : ''}`}
+                onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={handleDrop}
+                onClick={() => inputRef.current?.click()}
+              >
+                <input
+                  ref={inputRef}
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.pdf"
+                  style={{ display: 'none' }}
+                  onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+                />
+                {file ? (
+                  <div className="pay-file-preview">
+                    {preview ? (
+                      <Image
+                        src={preview}
+                        alt="Payment proof"
+                        className="pay-file-thumb"
+                        width={120}
+                        height={80}
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="pay-file-pdf-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                      </div>
+                    )}
+                    <div className="pay-file-info">
+                      <span className="pay-file-name">{file.name}</span>
+                      <span className="pay-file-size">{(file.size / 1024).toFixed(0)} KB</span>
+                    </div>
+                    <button
+                      className="pay-file-remove"
+                      onClick={(e) => { e.stopPropagation(); setFile(null); setPreview(null); }}
+                      type="button"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <svg className="pay-dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+                    <p className="pay-dropzone-text">Drag & drop your receipt here</p>
+                    <p className="pay-dropzone-hint">or click to browse: JPG, PNG, PDF (max 5MB)</p>
+                  </>
+                )}
+              </div>
+
+              {uploading && (
+                <div className="pay-progress">
+                  <div className="pay-progress-bar" style={{ width: `${Math.min(progress, 100)}%` }} />
+                </div>
+              )}
+
+              <label className="reg-checkbox-wrap">
+                <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />
+                <span className="reg-checkmark" />
+                <span className="reg-checkbox-text">
+                  I confirm that I have paid the full registration fee of {myFee.fee} {FEE_CURRENCY}.
+                </span>
+              </label>
+
+              <button
+                type="button"
+                className="reg-submit"
+                disabled={!file || !method || !confirmed || uploading}
+                onClick={handleSubmit}
+              >
+                {uploading ? 'Uploading...' : 'Submit Payment Proof'}
+              </button>
+            </>
+          )}
         </motion.div>
       </div>
 

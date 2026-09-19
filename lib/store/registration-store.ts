@@ -4,6 +4,7 @@ import { useAuthStore } from './auth-store';
 import { registrationService } from '../api/registration.service';
 import { ApiError } from '../api/http';
 import { features } from '../config';
+import type { PaymentMethod } from '../payment';
 import type {
   BackendParticipant,
   Country,
@@ -58,6 +59,8 @@ export interface UserData {
   status: RegStatus;
   paymentProofSubmitted: boolean;
   paymentFileName: string;
+  /** How the fee was paid - set when the proof is submitted. */
+  paymentMethod?: PaymentMethod;
   participantId?: string;
   teamName?: string;
   memberCount?: number;
@@ -90,7 +93,7 @@ interface RegistrationState {
   registerParticipant: (input: ParticipantRegistrationInput) => Promise<void>;
   /** Edit an existing participant - only the changed fields need to be passed. */
   updateProfile: (patch: Partial<ParticipantRegistrationInput>) => Promise<void>;
-  submitPayment: (fileName: string) => Promise<void>;
+  submitPayment: (fileName: string, method: PaymentMethod) => Promise<void>;
   updateStatus: (status: RegStatus) => void;
   hydrateFromBackend: () => Promise<void>;
   reset: () => void;
@@ -284,19 +287,20 @@ export const useRegistrationStore = create<RegistrationState>()(
         }
       },
 
-      submitPayment: async (fileName) => {
+      submitPayment: async (fileName, method) => {
         const { user, submitting } = get();
         if (!user || submitting) return;
         set({ submitting: true });
         try {
           const token = await useAuthStore.getState().getAccessToken();
-          await registrationService.submitPayment(fileName, token ?? '');
+          await registrationService.submitPayment(fileName, method, token ?? '');
           set({
             user: {
               ...user,
               status: 'waiting_for_verification',
               paymentProofSubmitted: true,
               paymentFileName: fileName,
+              paymentMethod: method,
             },
             submitting: false,
           });

@@ -3468,34 +3468,83 @@ select.reg-input option {
   line-height: 1;
 }
 
-.dash-fee-pay-link {
-  display: inline-block;
-  margin-top: 14px;
+/* Registration status + fee share one card. Two zones separated by a rule:
+   the headline (what you owe, where you stand) and the detail line with its
+   action. Every gap in here is one of 6 / 10 / 18px so the card reads as a
+   rhythm rather than four loose groups. */
+.dash-reg-card {
+  padding: 24px 28px;
+}
+
+.dash-reg-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+}
+
+.dash-reg-fee {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* The kicker sits in a flex column here, so its own margin would double the
+   gap the column already sets. */
+.dash-reg-card .dash-card-title {
+  margin-bottom: 0;
+}
+
+.dash-reg-card .dash-fee-amount {
+  font-size: 30px;
+}
+
+.dash-reg-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.dash-reg-card .dash-status-msg {
+  flex: 1 1 260px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.45);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.dash-reg-link {
+  flex-shrink: 0;
   font-family: var(--font-heading);
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   color: var(--color-green);
   text-decoration: none;
+  white-space: nowrap;
 }
 
-.dash-fee-pay-link:hover {
+.dash-reg-link:hover {
   text-decoration: underline;
 }
 
-/* Status */
-.dash-status-card {
-  border-left: 3px solid;
-}
-
-.dash-status-row {
-  margin-bottom: 12px;
+.dash-reg-note {
+  flex-shrink: 0;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.3);
+  word-break: break-all;
 }
 
 .dash-status-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
   font-family: var(--font-heading);
   font-size: 11px;
   font-weight: 700;
@@ -3511,88 +3560,6 @@ select.reg-input option {
   color: rgba(255, 255, 255, 0.5);
   line-height: 1.65;
   margin: 0 0 20px;
-}
-
-.dash-pay-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 28px;
-  background: var(--color-green);
-  color: #000;
-  font-family: var(--font-heading);
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  text-decoration: none;
-  border-radius: 10px;
-  transition: all 0.25s;
-  animation: dashPayPulse 2s ease infinite;
-}
-
-@keyframes dashPayPulse {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgba(0, 232, 122, 0.3);
-  }
-
-  50% {
-    box-shadow: 0 0 0 8px rgba(0, 232, 122, 0);
-  }
-}
-
-.dash-pay-btn svg {
-  width: 18px;
-  height: 18px;
-}
-
-.dash-pay-btn:hover {
-  background: #00cc6a;
-  transform: translateY(-1px);
-}
-
-.dash-pay-submitted {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 14px 20px;
-  background: rgba(59, 130, 246, 0.06);
-  border: 1px solid rgba(59, 130, 246, 0.15);
-  border-radius: 10px;
-  color: #3b82f6;
-  font-family: var(--font-heading);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-}
-
-.dash-pay-submitted svg {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-
-.dash-pay-file {
-  display: block;
-  font-family: var(--font-body);
-  font-size: 12px;
-  color: rgba(59, 130, 246, 0.6);
-  margin-top: 4px;
-}
-
-.dash-pay-approved {
-  display: inline-block;
-  padding: 12px 24px;
-  background: rgba(0, 232, 122, 0.08);
-  border: 1px solid rgba(0, 232, 122, 0.2);
-  border-radius: 10px;
-  color: var(--color-green);
-  font-family: var(--font-heading);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
 }
 
 /* ─── No team yet: join / create ─── */
@@ -4066,6 +4033,236 @@ select.reg-input option {
   place-items: center;
 }
 
+/* Fee cards */
+.pay-fees {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 20px;
+  padding: 28px;
+}
+
+.pay-fees-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pay-fees-head .pay-bank-title {
+  margin-bottom: 0;
+}
+
+.pay-fees-yours {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.pay-fees-yours strong {
+  font-family: var(--font-heading);
+  color: var(--color-green);
+}
+
+.pay-fee-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pay-fee-group-label {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.pay-fee-group-hint {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.pay-fee-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.pay-fee-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.pay-fee-card-mine {
+  background: linear-gradient(
+    135deg,
+    rgba(0, 232, 122, 0.08),
+    rgba(0, 232, 122, 0.02)
+  );
+  border-color: rgba(0, 232, 122, 0.4);
+  box-shadow: 0 0 0 1px rgba(0, 232, 122, 0.12), 0 8px 30px rgba(0, 232, 122, 0.07);
+}
+
+.pay-fee-badge {
+  position: absolute;
+  top: -9px;
+  left: 16px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--color-green);
+  color: var(--color-bg);
+  font-family: var(--font-heading);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.pay-fee-tier {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.pay-fee-card-mine .pay-fee-tier {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.pay-fee-amount {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-family: var(--font-heading);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.pay-fee-card-mine .pay-fee-amount {
+  color: var(--color-green);
+}
+
+.pay-fee-currency {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  opacity: 0.55;
+}
+
+/* "Soon" chip next to a section label */
+.pay-soon-chip {
+  margin-left: 10px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+}
+
+/* Payment method radios */
+.pay-method-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.pay-method {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.pay-method:hover {
+  border-color: rgba(0, 232, 122, 0.25);
+}
+
+.pay-method input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.pay-method-active {
+  background: rgba(0, 232, 122, 0.06);
+  border-color: rgba(0, 232, 122, 0.4);
+}
+
+.pay-method-dot {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: grid;
+  place-items: center;
+  transition: border-color 0.2s ease;
+}
+
+.pay-method-active .pay-method-dot {
+  border-color: var(--color-green);
+}
+
+.pay-method-active .pay-method-dot::after {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--color-green);
+}
+
+.pay-method input:focus-visible + .pay-method-dot {
+  outline: 2px solid var(--color-green);
+  outline-offset: 2px;
+}
+
+.pay-method-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.pay-method-label {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.pay-method-hint {
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.35);
+}
+
 /* Bank card */
 .pay-bank-card {
   background: linear-gradient(
@@ -4360,6 +4557,13 @@ select.reg-input option {
     border-radius: 16px;
   }
 
+  /* Too narrow for two columns: the badge and the link drop under the text
+     they belong to, left aligned with it. */
+  .dash-reg-top,
+  .dash-reg-foot {
+    justify-content: flex-start;
+  }
+
   /* The activity labels are the widest thing in a dash card - tighten their
      tracking and side padding rather than let the pair overflow it. */
   .reg-toggle-activity {
@@ -4374,6 +4578,16 @@ select.reg-input option {
   .pay-bank-card {
     padding: 22px 18px;
     border-radius: 16px;
+  }
+
+  .pay-fees {
+    padding: 22px 18px;
+    border-radius: 16px;
+  }
+
+  .pay-fee-grid,
+  .pay-method-grid {
+    grid-template-columns: 1fr;
   }
 }
 

@@ -46,3 +46,5 @@ services:
         value: closed
       - key: NEXT_PUBLIC_PARTICIPANT_REGISTRATION_OPEN
         value: "true"
+      - key: NEXT_PUBLIC_PAYMENT_PROOF_OPEN
+        value: "false"

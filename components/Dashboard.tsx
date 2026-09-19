@@ -13,12 +13,14 @@ import LoadingScreen from './LoadingScreen';
 import UserAvatar from './UserAvatar';
 // Single source of truth, shared with the dashboard section nav.
 import { PAYMENT_ENABLED } from '@/lib/dashboard/sections';
+import { PAYMENT_PROOF_OPEN } from '@/lib/config';
 import { useJustRegistered } from '@/lib/dashboard/just-registered';
 
+/** The fee's three states, in the order a participant passes through them. */
 const STATUS_MAP = {
-  waiting_for_payment: { label: 'Waiting for Payment', color: '#f59e0b', icon: '🟡', msg: 'Your registration is pending. Please submit your payment proof to confirm your spot.' },
-  waiting_for_verification: { label: 'Waiting for Verification', color: '#3b82f6', icon: '🔵', msg: 'Your payment proof has been submitted and is under review. We\'ll notify you once verified.' },
-  approved: { label: 'Approved', color: '#00E87A', icon: '🟢', msg: 'Your registration is confirmed! See you at TRSYP 3.0!' },
+  waiting_for_payment: { label: 'Not Paid', color: '#ff1d78', msg: 'Pay your registration fee and upload the proof to confirm your spot.' },
+  waiting_for_verification: { label: 'Pending', color: '#f59e0b', msg: 'Your payment proof is in - waiting for approval. We\'ll notify you once it is verified.' },
+  approved: { label: 'Paid', color: '#00e87a', msg: 'Your registration is confirmed! See you at TRSYP 3.0!' },
 };
 
 const errorMessage = (error: unknown, fallback: string) =>
@@ -341,57 +343,50 @@ export default function Dashboard() {
           </div>
         </motion.section>
 
-        {/* Registration Fee */}
+        {/* Status + fee: two facts about the same thing, so one card.
+            Headline row (what you owe / where you stand), then a rule, then
+            the detail line and its action - two zones instead of four
+            loose groups. */}
         <motion.section
-          className="dash-card dash-fee-card"
+          className="dash-card dash-reg-card"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.09 }}
-          aria-labelledby="fee-heading"
+          aria-labelledby="reg-heading"
         >
-          <div className="dash-card-title" id="fee-heading">Registration Fee</div>
-          <span className="dash-fee-amount">{formatFee(feeInfo)}</span>
-          {PAYMENT_ENABLED && user.status === 'waiting_for_payment' && (
-            <Link href="/dashboard/payment" className="dash-fee-pay-link">
-              Submit payment proof →
-            </Link>
-          )}
-        </motion.section>
+          <div className="dash-reg-top">
+            <div className="dash-reg-fee">
+              <span className="dash-card-title" id="reg-heading">Registration Fee</span>
+              <span className="dash-fee-amount">{formatFee(feeInfo)}</span>
+            </div>
 
-        {/* Status Card */}
-        {PAYMENT_ENABLED && (
-        <motion.div className="dash-card dash-status-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }} style={{ borderColor: `${status.color}22` }}>
-          <div className="dash-card-title">Registration Status</div>
-          <div className="dash-status-row">
-            <span className="dash-status-badge" style={{ background: `${status.color}18`, color: status.color, borderColor: `${status.color}33` }}>
-              {status.icon} {status.label}
-            </span>
+            {PAYMENT_ENABLED && (
+              <span className="dash-status-badge" style={{ background: `${status.color}18`, color: status.color, borderColor: `${status.color}33` }}>
+                {status.label}
+              </span>
+            )}
           </div>
-          <p className="dash-status-msg">{status.msg}</p>
 
-          {/* Payment Action (TEMP: hidden while PAYMENT_ENABLED = false) */}
-          {PAYMENT_ENABLED && user.status === 'waiting_for_payment' && (
-            <Link href="/dashboard/payment" className="dash-pay-btn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>
-              Submit Payment Proof
-            </Link>
-          )}
-          {/* No team lock here: attending without entering either track is a
-              valid path, so payment must stay reachable for team-less users. */}
-          {PAYMENT_ENABLED && user.status === 'waiting_for_verification' && (
-            <div className="dash-pay-submitted">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
-              <div>
-                <span>Payment Proof Submitted. Under Review</span>
-                {user.paymentFileName && <span className="dash-pay-file">{user.paymentFileName}</span>}
-              </div>
+          {PAYMENT_ENABLED && (
+            <div className="dash-reg-foot">
+              <p className="dash-status-msg">{status.msg}</p>
+
+              {/* The payment page is open even while proof submission is
+                  not - it carries the fee table - so the link says where it
+                  leads. No team lock: attending without entering either
+                  track is a valid path, so payment stays reachable for
+                  team-less users. */}
+              {user.status === 'waiting_for_payment' && (
+                <Link href="/dashboard/payment" className="dash-reg-link">
+                  {PAYMENT_PROOF_OPEN ? 'Submit payment proof' : 'See the fees'} &rarr;
+                </Link>
+              )}
+              {user.status === 'waiting_for_verification' && user.paymentFileName && (
+                <span className="dash-reg-note">{user.paymentFileName}</span>
+              )}
             </div>
           )}
-          {PAYMENT_ENABLED && user.status === 'approved' && (
-            <div className="dash-pay-approved">Registration Confirmed</div>
-          )}
-          </motion.div>
-        )}
+        </motion.section>
 
         {/* Which track the team panels below refer to */}
         {showActivityToggle && (

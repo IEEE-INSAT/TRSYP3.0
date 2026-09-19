@@ -6,8 +6,12 @@
  * never disagree about what exists or what is reachable.
  */
 
-/** TEMP: payment step disabled for now - flip back to true to re-enable. */
-export const PAYMENT_ENABLED = false;
+/**
+ * The payment section is open: it shows the fee table so every participant can
+ * see what they owe. Whether the proof upload inside it is live is a separate
+ * switch - `PAYMENT_PROOF_OPEN` in `lib/config`.
+ */
+export const PAYMENT_ENABLED = true;
 
 /**
  * The rooming backend is live (`/rooming/*`), but no UI has been built for it
