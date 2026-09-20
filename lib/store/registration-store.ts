@@ -28,12 +28,18 @@ export type RegStatus =
  * `paid` is authoritative once set; before that, a PENDING proof is the only
  * thing that distinguishes "waiting for an admin" from "nothing sent yet". A
  * rejected proof puts the participant back at the start, with a reason.
+ *
+ * `paid` must come from `GET /payment/proof/me`, NOT from the participant
+ * profile: `ParticipantResponseDto` marks `paid` `@Exclude()`, so the profile
+ * never carries it and reading it there silently yields undefined - which
+ * left an approved participant sitting on "Not Paid". An APPROVED proof is
+ * accepted as settled too, so the two can never disagree.
  */
 function paymentStatusOf(
   paid: boolean,
   proof: Pick<BackendPaymentProof, 'status'> | null,
 ): RegStatus {
-  if (paid) return 'approved';
+  if (paid || proof?.status === 'APPROVED') return 'approved';
   if (proof?.status === 'PENDING') return 'waiting_for_verification';
   return 'waiting_for_payment';
 }
@@ -381,9 +387,9 @@ export const useRegistrationStore = create<RegistrationState>()(
               ? email.split('@')[0]
               : 'Participant';
 
-          // The payment module knows about proofs under review; `paid` alone
-          // cannot tell "not paid yet" from "waiting for an admin". A failure
-          // here is non-fatal - fall back to pricing off `paid`.
+          // The payment module is the only source for both facts: whether the
+          // fee is settled, and whether a proof is awaiting review. A failure
+          // here is non-fatal - the participant simply reads as not paid yet.
           const payment = await registrationService
             .getMyPayment(token)
             .catch(() => null);
@@ -396,7 +402,7 @@ export const useRegistrationStore = create<RegistrationState>()(
               fullName,
               email,
               ...participantFields(participant),
-              status: paymentStatusOf(participant.paid, proof),
+              status: paymentStatusOf(payment?.paid ?? false, proof),
               paymentProofSubmitted: proof?.status === 'PENDING',
               paymentFileName: proof?.fileName ?? '',
               paymentMethod: proof?.method,

@@ -277,7 +277,12 @@ export interface BackendParticipant {
   ieeeId?: number;
   phone: string;
   gender: string;
-  paid: boolean;
+  /**
+   * Admin responses only. `ParticipantResponseDto` marks this `@Exclude()`,
+   * so `GET /registration/profile` never returns it - read the settled flag
+   * from `GET /payment/proof/me` instead.
+   */
+  paid?: boolean;
   isInternational: boolean;
   isRas: boolean;
   facebookLink?: string | null;
