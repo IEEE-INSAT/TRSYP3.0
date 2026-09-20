@@ -4051,6 +4051,9 @@ select.reg-input option {
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 20px;
   padding: 28px;
+  /* Same 32px the info banner above uses, so the three stacked cards on this
+     page are evenly spaced rather than the last two being flush. */
+  margin-bottom: 32px;
 }
 
 .pay-fees-head {
