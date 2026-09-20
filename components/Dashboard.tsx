@@ -70,7 +70,6 @@ export default function Dashboard() {
   const [teamActionErr, setTeamActionErr] = useState('');
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [confirmDisband, setConfirmDisband] = useState(false);
-  const [showReason, setShowReason] = useState(false);
   const [disbanding, setDisbanding] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [leaving, setLeaving] = useState(false);

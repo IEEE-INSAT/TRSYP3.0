@@ -24,6 +24,7 @@ import { DomainEvents } from '../../../common/events/event-names';
 import {
   ALLOWED_PROOF_MIME,
   MAX_PROOF_BYTES,
+  OFFERED_METHODS,
   PROOF_EXTENSION,
 } from '../domain';
 import { ProofStorageService } from './storage.service';
@@ -107,6 +108,10 @@ export class PaymentService {
   ): Promise<PaymentProof> {
     if (!this.isSubmissionOpen()) {
       throw new ForbiddenException('Payment proof submission is not open yet');
+    }
+
+    if (!OFFERED_METHODS.includes(method)) {
+      throw new BadRequestException('That payment method is not accepted');
     }
 
     const participant = await this.registrationService.findByUserId(userId);

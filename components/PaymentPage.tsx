@@ -18,25 +18,34 @@ import {
 import {
   ACCEPTED_PROOF_TYPES,
   MAX_PROOF_BYTES,
-  PAYMENT_METHODS,
+  OFFERED_PAYMENT_METHODS,
   PAYMENT_METHOD_HINTS,
   PAYMENT_METHOD_LABELS,
   type PaymentMethod,
 } from '@/lib/payment';
 
-/** Where the fee is sent, per method - shown once a method is picked. */
-const METHOD_TARGET_LABEL: Record<PaymentMethod, string> = {
-  BANK_TRANSFER: 'RIB',
-  D17: 'D17 number',
-  FLOUCI: 'Flouci number',
-  CASH: 'Where to pay',
+/**
+ * Where the fee is sent, per method - shown once a method is picked.
+ *
+ * A list rather than one row each: a bank transfer needs both the RIB and the
+ * IBAN, since a domestic transfer asks for one and an international one asks
+ * for the other, and a participant should not have to convert between them.
+ */
+type MethodDetail = {
+  label: string;
+  value: string;
+  /** Cash is an instruction, not an identifier - nothing to paste anywhere. */
+  copyable?: boolean;
 };
 
-const METHOD_TARGET_VALUE: Record<PaymentMethod, string> = {
-  BANK_TRANSFER: '44444444444444444444',
-  D17: '44 444 444',
-  FLOUCI: '44 444 444',
-  CASH: 'At the IEEE INSAT SB desk, INSAT campus',
+const METHOD_DETAILS: Record<PaymentMethod, MethodDetail[]> = {
+  BANK_TRANSFER: [
+    { label: 'RIB', value: '25 050 000 0099987808 42', copyable: true },
+    { label: 'IBAN', value: 'TN59 25 050 000 0099987808 42', copyable: true },
+  ],
+  D17: [{ label: 'D17 number', value: '44 444 444', copyable: true }],
+  FLOUCI: [{ label: 'Flouci number', value: '44 444 444', copyable: true }],
+  CASH: [{ label: 'Where to pay', value: 'At the IEEE INSAT SB desk, INSAT campus' }],
 };
 
 const TIER_ORDER: FeeTier[] = ['IEEE_RAS', 'IEEE', 'NON_IEEE'];
@@ -54,13 +63,17 @@ export default function PaymentPage() {
   const submissionOpen = useRegistrationStore((s) => s.paymentSubmissionOpen);
   const hydrating = useRegistrationStore((s) => s.hydrating);
   const initialized = useAuthStore((s) => s.initialized);
-  const [method, setMethod] = useState<PaymentMethod | null>(null);
+  // A radio group with one option is not a choice. When only one method is
+  // offered it is selected up front and the group is not rendered at all.
+  const onlyMethod =
+    OFFERED_PAYMENT_METHODS.length === 1 ? OFFERED_PAYMENT_METHODS[0] : null;
+  const [method, setMethod] = useState<PaymentMethod | null>(onlyMethod);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copiedLabel, setCopiedLabel] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -92,8 +105,9 @@ export default function PaymentPage() {
   const windowKnown = initialized && !hydrating;
   const proofOpen = submissionOpen && awaitingPayment;
 
-  // Cash is handed to a committee member, so there is no receipt to scan -
-  // those submissions land as pending for an admin to confirm in person.
+  // Cash would arrive without a receipt, but it is no longer offered - so in
+  // practice the proof is always required. Kept as a condition rather than
+  // hardcoded, so reopening cash needs no change here.
   const fileOptional = method === 'CASH';
   const canSubmit =
     !!method && confirmed && (!!file || fileOptional) && !uploading;
@@ -117,11 +131,12 @@ export default function PaymentPage() {
     if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
   };
 
-  const copyTarget = () => {
-    if (!method) return;
-    navigator.clipboard.writeText(METHOD_TARGET_VALUE[method]);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const copyDetail = (detail: MethodDetail) => {
+    // Strip the grouping spaces: they make a RIB readable on screen but a
+    // bank form will usually refuse them.
+    navigator.clipboard.writeText(detail.value.replace(/\s+/g, ''));
+    setCopiedLabel(detail.label);
+    setTimeout(() => setCopiedLabel(null), 2000);
   };
 
   const handleSubmit = async () => {
@@ -165,7 +180,7 @@ export default function PaymentPage() {
             </div>
             <div className="pay-step">
               <span className="pay-step-num">2</span>
-              <span>Pay it by bank transfer, D17, Flouci, or in cash.</span>
+              <span>Transfer it to the account below.</span>
             </div>
             <div className="pay-step">
               <span className="pay-step-num">3</span>
@@ -253,10 +268,11 @@ export default function PaymentPage() {
                 </div>
               )}
 
+              {!onlyMethod && (
               <div className="reg-field">
                 <label className="reg-label">How did you pay?</label>
                 <div className="pay-method-grid" role="radiogroup" aria-label="Payment method">
-                  {PAYMENT_METHODS.map((m) => (
+                  {OFFERED_PAYMENT_METHODS.map((m) => (
                     <label
                       key={m}
                       className={`pay-method ${method === m ? 'pay-method-active' : ''}`}
@@ -266,7 +282,7 @@ export default function PaymentPage() {
                         name="payment-method"
                         value={m}
                         checked={method === m}
-                        onChange={() => { setMethod(m); setCopied(false); }}
+                        onChange={() => { setMethod(m); setCopiedLabel(null); }}
                       />
                       <span className="pay-method-dot" />
                       <span className="pay-method-text">
@@ -277,6 +293,7 @@ export default function PaymentPage() {
                   ))}
                 </div>
               </div>
+              )}
 
               {method && (
                 <div className="pay-bank-card">
@@ -284,23 +301,30 @@ export default function PaymentPage() {
                   <div className="pay-bank-rows">
                     <div className="pay-bank-row">
                       <span className="pay-bank-label">Account Holder</span>
-                      <span className="pay-bank-value">TRSYP 3.0 Organizing Committee</span>
+                      <span className="pay-bank-value">STE SARRA OF CONGRESS AND EVENTS</span>
                     </div>
-                    <div className="pay-bank-row">
-                      <span className="pay-bank-label">{METHOD_TARGET_LABEL[method]}</span>
-                      <span className="pay-bank-value pay-bank-rib">
-                        <code>{METHOD_TARGET_VALUE[method]}</code>
-                        {method !== 'CASH' && (
-                          <button className="pay-copy-btn" onClick={copyTarget} type="button">
-                            {copied ? (
-                              <><svg viewBox="0 0 24 24" fill="none" stroke="var(--color-green)" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg> Copied!</>
-                            ) : (
-                              <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg> Copy</>
-                            )}
-                          </button>
-                        )}
-                      </span>
-                    </div>
+                    {METHOD_DETAILS[method].map((detail) => (
+                      <div className="pay-bank-row" key={detail.label}>
+                        <span className="pay-bank-label">{detail.label}</span>
+                        <span className="pay-bank-value pay-bank-rib">
+                          <code>{detail.value}</code>
+                          {detail.copyable && (
+                            <button
+                              className="pay-copy-btn"
+                              onClick={() => copyDetail(detail)}
+                              type="button"
+                              aria-label={`Copy ${detail.label}`}
+                            >
+                              {copiedLabel === detail.label ? (
+                                <><svg viewBox="0 0 24 24" fill="none" stroke="var(--color-green)" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg> Copied!</>
+                              ) : (
+                                <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg> Copy</>
+                              )}
+                            </button>
+                          )}
+                        </span>
+                      </div>
+                    ))}
                     <div className="pay-bank-row pay-bank-amount">
                       <span className="pay-bank-label">Amount</span>
                       <span className="pay-bank-value">

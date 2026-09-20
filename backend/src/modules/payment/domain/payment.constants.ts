@@ -1,3 +1,5 @@
+import { PaymentMethod } from '@prisma/client';
+
 /**
  * Payment proof storage rules.
  *
@@ -5,6 +7,17 @@
  * through a short-lived signed URL minted per request, so a leaked path is
  * worthless on its own.
  */
+
+/**
+ * Methods a participant may submit under right now.
+ *
+ * The Prisma enum keeps all four so historical proofs still read back, but the
+ * congress chair settled on bank transfer alone. Enforced here rather than
+ * only hidden in the UI: cash is the one method allowed to arrive without a
+ * receipt, so leaving it accepted would let a crafted request register a
+ * pending payment with no proof at all.
+ */
+export const OFFERED_METHODS: PaymentMethod[] = [PaymentMethod.BANK_TRANSFER];
 
 /** Supabase Storage bucket holding the receipts. Must exist and stay private. */
 export const PROOF_BUCKET = 'payment-proofs';

@@ -6,9 +6,23 @@
  * enough to offer it.
  */
 
+/**
+ * Every method the system knows about. Kept complete even when some are not
+ * offered, because proofs submitted under an older policy still have to be
+ * read back and labelled.
+ */
 export const PAYMENT_METHODS = ['BANK_TRANSFER', 'D17', 'FLOUCI', 'CASH'] as const;
 
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
+/**
+ * What a participant may actually choose right now.
+ *
+ * The congress chair settled on bank transfer alone, so the other three are
+ * known but closed. Widening this array is all it takes to reopen one - the
+ * backend keeps its own copy and is the half that enforces it.
+ */
+export const OFFERED_PAYMENT_METHODS = ['BANK_TRANSFER'] as const satisfies readonly PaymentMethod[];
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   BANK_TRANSFER: 'Bank Transfer',
@@ -19,7 +33,7 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
 
 /** One line under each label, so the choice is obvious without a legend. */
 export const PAYMENT_METHOD_HINTS: Record<PaymentMethod, string> = {
-  BANK_TRANSFER: 'Virement bancaire to the RIB above',
+  BANK_TRANSFER: 'Virement bancaire to the account below',
   D17: 'Mobile payment via the D17 app',
   FLOUCI: 'Mobile payment via the Flouci app',
   CASH: 'Handed to a member of the organizing committee',

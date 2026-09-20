@@ -3543,37 +3543,6 @@ select.reg-input option {
   text-decoration: underline;
 }
 
-.dash-reg-reason {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 14px;
-}
-
-.dash-reg-reason-toggle {
-  align-self: flex-start;
-  padding: 0;
-  font-family: var(--font-heading);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: #ef4444;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.dash-reg-reason-text {
-  margin: 0;
-  padding: 12px 14px;
-  border-radius: 10px;
-  background: rgba(239, 68, 68, 0.07);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  font-family: var(--font-body);
-  font-size: 13px;
-  line-height: 1.55;
-  color: rgba(255, 255, 255, 0.8);
-}
-
 .dash-reg-note {
   flex-shrink: 0;
   font-family: var(--font-body);

@@ -167,16 +167,19 @@ describe('PaymentService', () => {
       );
     });
 
-    it('accepts cash with no receipt at all', async () => {
-      await service.submitProof('user-1', PaymentMethod.CASH, undefined);
-
-      expect(mockStorage.upload).not.toHaveBeenCalled();
-      expect(mockPrismaService.paymentProof.create).toHaveBeenCalled();
+    it('refuses a method that is not currently offered', async () => {
+      // Cash is the sharp edge: it is the one method allowed to skip the
+      // receipt, so accepting it while unoffered would let a crafted request
+      // register a pending payment with no proof.
+      await expect(
+        service.submitProof('user-1', PaymentMethod.CASH, undefined),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockPrismaService.paymentProof.create).not.toHaveBeenCalled();
     });
 
-    it('rejects a missing receipt for every other method', async () => {
+    it('requires a receipt for bank transfer', async () => {
       await expect(
-        service.submitProof('user-1', PaymentMethod.D17, undefined),
+        service.submitProof('user-1', PaymentMethod.BANK_TRANSFER, undefined),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -184,7 +187,7 @@ describe('PaymentService', () => {
       await expect(
         service.submitProof(
           'user-1',
-          PaymentMethod.FLOUCI,
+          PaymentMethod.BANK_TRANSFER,
           receipt({ size: MAX_PROOF_BYTES + 1 }),
         ),
       ).rejects.toThrow(PayloadTooLargeException);
@@ -194,7 +197,7 @@ describe('PaymentService', () => {
       await expect(
         service.submitProof(
           'user-1',
-          PaymentMethod.FLOUCI,
+          PaymentMethod.BANK_TRANSFER,
           receipt({ mimetype: 'text/html' }),
         ),
       ).rejects.toThrow(UnsupportedMediaTypeException);
@@ -204,7 +207,7 @@ describe('PaymentService', () => {
       mockConfigService.get.mockReturnValue('false');
 
       await expect(
-        service.submitProof('user-1', PaymentMethod.CASH, undefined),
+        service.submitProof('user-1', PaymentMethod.BANK_TRANSFER, receipt()),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -215,7 +218,7 @@ describe('PaymentService', () => {
       });
 
       await expect(
-        service.submitProof('user-1', PaymentMethod.CASH, undefined),
+        service.submitProof('user-1', PaymentMethod.BANK_TRANSFER, receipt()),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -226,7 +229,7 @@ describe('PaymentService', () => {
       });
 
       await expect(
-        service.submitProof('user-1', PaymentMethod.CASH, undefined),
+        service.submitProof('user-1', PaymentMethod.BANK_TRANSFER, receipt()),
       ).rejects.toThrow(ConflictException);
     });
 
@@ -234,7 +237,7 @@ describe('PaymentService', () => {
       mockPrismaService.paymentProof.findFirst.mockResolvedValue(mockProof);
 
       await expect(
-        service.submitProof('user-1', PaymentMethod.CASH, undefined),
+        service.submitProof('user-1', PaymentMethod.BANK_TRANSFER, receipt()),
       ).rejects.toThrow(ConflictException);
     });
 
@@ -256,7 +259,7 @@ describe('PaymentService', () => {
         { id: 'proof-0', storagePath: 'participant-1/proof-0.png' },
       ]);
 
-      await service.submitProof('user-1', PaymentMethod.CASH, undefined);
+      await service.submitProof('user-1', PaymentMethod.BANK_TRANSFER, receipt());
 
       expect(mockStorage.remove).toHaveBeenCalledWith('participant-1/proof-0.png');
       expect(mockPrismaService.paymentProof.update).toHaveBeenCalledWith({
@@ -269,7 +272,7 @@ describe('PaymentService', () => {
       mockRegistrationService.findByUserId.mockResolvedValue(null);
 
       await expect(
-        service.submitProof('user-1', PaymentMethod.CASH, undefined),
+        service.submitProof('user-1', PaymentMethod.BANK_TRANSFER, receipt()),
       ).rejects.toThrow(NotFoundException);
     });
   });
