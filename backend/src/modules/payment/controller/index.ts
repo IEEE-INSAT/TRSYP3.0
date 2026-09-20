@@ -42,8 +42,9 @@ import {
   PaymentProofListResponseDto,
   ProofFileUrlResponseDto,
 } from '../dto';
-import { JwtAuthGuard, RolesGuard } from '../../../common/guards';
-import { CurrentUser, Roles } from '../../../common/decorators';
+import { JwtAuthGuard } from '../../../common/guards';
+import { AdminGuard } from '../../auth/guards/admin.guard';
+import { CurrentUser } from '../../../common/decorators';
 import { ZodValidationPipe } from '../../../common/pipes';
 
 /**
@@ -191,12 +192,14 @@ export class PaymentController {
   @ApiResponse({ status: 404, description: 'Proof not found, or it has no receipt' })
   async getProofFile(
     @CurrentUser('sub') userId: string,
-    @CurrentUser('role') role: string | undefined,
+    @CurrentUser('_supabaseId') supabaseId: string,
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<ProofFileUrlResponseDto> {
     const proof = await this.paymentService.getProofOrThrow(id);
 
-    if (role !== 'admin' && proof.participant.userId !== userId) {
+    // Same source of truth as AdminGuard - see payment.module.ts.
+    const isAdmin = await this.paymentService.isAdmin(supabaseId);
+    if (!isAdmin && proof.participant.userId !== userId) {
       throw new ForbiddenException('This payment proof is not yours');
     }
 
@@ -214,15 +217,14 @@ export class PaymentController {
    * The review queue, oldest first.
    */
   @Get('admin/proofs')
-  @UseGuards(RolesGuard)
-  @Roles('admin')
+  @UseGuards(AdminGuard)
   @ApiOperation({ summary: '[Admin] List payment proofs' })
   @ApiQuery({ name: 'status', required: false, enum: PaymentProofStatus })
   @ApiQuery({ name: 'skip', required: false, type: Number })
   @ApiQuery({ name: 'take', required: false, type: Number })
   @ApiResponse({ status: 200, description: 'Proofs list' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - admin only' })
+  @ApiResponse({ status: 403, description: 'Forbidden - admins only' })
   async listProofs(
     @Query('skip', new DefaultValuePipe(0), ParseIntPipe) skip: number,
     @Query('take', new DefaultValuePipe(20), ParseIntPipe) take: number,
@@ -254,14 +256,13 @@ export class PaymentController {
    * Approve a proof and settle the participant.
    */
   @Post('admin/proofs/:id/approve')
-  @UseGuards(RolesGuard)
-  @Roles('admin')
+  @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '[Admin] Approve a payment proof' })
   @ApiParam({ name: 'id', description: 'Proof ID' })
   @ApiResponse({ status: 200, description: 'Proof approved, participant marked paid' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - admin only' })
+  @ApiResponse({ status: 403, description: 'Forbidden - admins only' })
   @ApiResponse({ status: 404, description: 'Proof not found' })
   @ApiResponse({ status: 409, description: 'Proof was already reviewed' })
   async approveProof(
@@ -275,15 +276,14 @@ export class PaymentController {
    * Reject a proof. The participant can submit a replacement.
    */
   @Post('admin/proofs/:id/reject')
-  @UseGuards(RolesGuard)
-  @Roles('admin')
+  @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '[Admin] Reject a payment proof' })
   @ApiParam({ name: 'id', description: 'Proof ID' })
   @ApiResponse({ status: 200, description: 'Proof rejected' })
   @ApiResponse({ status: 400, description: 'Missing or too-short reason' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - admin only' })
+  @ApiResponse({ status: 403, description: 'Forbidden - admins only' })
   @ApiResponse({ status: 404, description: 'Proof not found' })
   @ApiResponse({ status: 409, description: 'Proof was already reviewed' })
   async rejectProof(

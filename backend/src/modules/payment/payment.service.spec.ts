@@ -19,6 +19,7 @@ import {
 import { PaymentService, UploadedProof } from './service';
 import { ProofStorageService } from './service/storage.service';
 import { RegistrationService } from '../registration/service';
+import { AdminService } from '../admin/service/admin.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MAX_PROOF_BYTES } from './domain';
 
@@ -26,6 +27,7 @@ describe('PaymentService', () => {
   let service: PaymentService;
   let mockPrismaService: any;
   let mockRegistrationService: any;
+  let mockAdminService: any;
   let mockStorage: any;
   let mockEventEmitter: any;
   let mockConfigService: any;
@@ -87,6 +89,8 @@ describe('PaymentService', () => {
       markAsPaid: jest.fn().mockResolvedValue({ ...mockParticipant, paid: true }),
     };
 
+    mockAdminService = { findBySupabaseId: jest.fn().mockResolvedValue(null) };
+
     mockStorage = {
       upload: jest.fn().mockResolvedValue('participant-1/proof-1.png'),
       signedUrl: jest.fn().mockResolvedValue({ url: 'https://signed', expiresIn: 60 }),
@@ -103,6 +107,7 @@ describe('PaymentService', () => {
         PaymentService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: RegistrationService, useValue: mockRegistrationService },
+        { provide: AdminService, useValue: mockAdminService },
         { provide: ProofStorageService, useValue: mockStorage },
         { provide: EventEmitter2, useValue: mockEventEmitter },
         { provide: ConfigService, useValue: mockConfigService },
@@ -328,6 +333,18 @@ describe('PaymentService', () => {
 
     it('404s a cash payment, which has nothing to open', async () => {
       await expect(service.fileUrl(mockProof)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('isAdmin', () => {
+    it('is true when the account has an admins row', async () => {
+      mockAdminService.findBySupabaseId.mockResolvedValue({ id: 'admin-1' });
+      await expect(service.isAdmin('supabase-1')).resolves.toBe(true);
+    });
+
+    it('is false for a normal account, and for no account at all', async () => {
+      await expect(service.isAdmin('supabase-1')).resolves.toBe(false);
+      await expect(service.isAdmin(undefined)).resolves.toBe(false);
     });
   });
 

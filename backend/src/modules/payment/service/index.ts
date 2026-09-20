@@ -18,6 +18,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { RegistrationService } from '../../registration/service';
+import { AdminService } from '../../admin/service/admin.service';
 import { computeFee } from '../../registration/domain';
 import { DomainEvents } from '../../../common/events/event-names';
 import {
@@ -50,6 +51,7 @@ export class PaymentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly registrationService: RegistrationService,
+    private readonly adminService: AdminService,
     private readonly configService: ConfigService,
     private readonly eventEmitter: EventEmitter2,
     private readonly storage: ProofStorageService,
@@ -303,6 +305,18 @@ export class PaymentService {
     });
 
     return this.getProofOrThrow(id);
+  }
+
+  /**
+   * Whether this Supabase account is an admin.
+   *
+   * Mirrors `AdminGuard` for the one route that authorises owner-or-admin
+   * rather than admin-only. Admin-ness is a row in `admins`, never a JWT
+   * claim - Supabase issues `role: "authenticated"` to everyone.
+   */
+  async isAdmin(supabaseId: string | undefined): Promise<boolean> {
+    if (!supabaseId) return false;
+    return !!(await this.adminService.findBySupabaseId(supabaseId));
   }
 
   /** Short-lived link to a stored receipt. */
