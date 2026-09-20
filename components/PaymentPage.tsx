@@ -237,6 +237,19 @@ export default function PaymentPage() {
             </p>
           ) : (
             <>
+              {/* Without this a rejected participant sees an empty form and no
+                  idea what to change - the reason is the whole point of the
+                  reviewer having typed one. */}
+              {user.paymentRejectionReason && (
+                <div className="pay-rejected" role="status">
+                  <span className="pay-rejected-title">Your last proof was rejected</span>
+                  <span className="pay-rejected-reason">{user.paymentRejectionReason}</span>
+                  <span className="pay-rejected-hint">
+                    Fix what&apos;s described above and submit again.
+                  </span>
+                </div>
+              )}
+
               <div className="reg-field">
                 <label className="reg-label">How did you pay?</label>
                 <div className="pay-method-grid" role="radiogroup" aria-label="Payment method">

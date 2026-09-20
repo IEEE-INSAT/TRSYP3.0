@@ -281,6 +281,9 @@ export class PaymentService {
   /**
    * Reject a proof. The participant drops back to "not paid" and can submit
    * a replacement; the row is kept so the next one can be compared with it.
+   *
+   * If the participant was somehow already marked paid, that is undone here -
+   * see the comment inline.
    */
   async rejectProof(id: string, reason: string): Promise<ProofWithParticipant> {
     const proof = await this.getProofOrThrow(id);
@@ -297,6 +300,15 @@ export class PaymentService {
         reviewedAt: new Date(),
       },
     });
+
+    // A rejected proof and a settled participant must never coexist: the
+    // dashboard reads `paid` as authoritative and would tell someone their
+    // payment is confirmed while an admin has just turned it down. The guard
+    // above means the normal flow cannot produce that pair, but a row edited
+    // out of band can - so reconcile rather than trust it.
+    if (proof.participant.paid) {
+      await this.registrationService.markAsUnpaid(proof.participantId);
+    }
 
     this.eventEmitter.emit(DomainEvents.PAYMENT_STATUS_UPDATED, {
       participantId: proof.participantId,

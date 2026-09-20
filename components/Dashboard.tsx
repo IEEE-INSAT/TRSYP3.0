@@ -371,7 +371,13 @@ export default function Dashboard() {
 
           {PAYMENT_ENABLED && (
             <div className="dash-reg-foot">
-              <p className="dash-status-msg">{status.msg}</p>
+              <p className="dash-status-msg">
+                {/* A rejection is the one case where the generic copy is not
+                    enough: the participant needs to know what to fix. */}
+                {user.paymentRejectionReason
+                  ? `Your payment proof was rejected: ${user.paymentRejectionReason}`
+                  : status.msg}
+              </p>
 
               {/* The payment page is open even while proof submission is
                   not - it carries the fee table - so the link says where it

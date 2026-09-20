@@ -87,6 +87,7 @@ describe('PaymentService', () => {
     mockRegistrationService = {
       findByUserId: jest.fn().mockResolvedValue(mockParticipant),
       markAsPaid: jest.fn().mockResolvedValue({ ...mockParticipant, paid: true }),
+      markAsUnpaid: jest.fn().mockResolvedValue({ ...mockParticipant, paid: false }),
     };
 
     mockAdminService = { findBySupabaseId: jest.fn().mockResolvedValue(null) };
@@ -318,6 +319,28 @@ describe('PaymentService', () => {
           reviewedAt: expect.any(Date),
         },
       });
+    });
+  });
+
+  describe('rejectProof reconciliation', () => {
+    it('leaves an unpaid participant alone', async () => {
+      await service.rejectProof('proof-1', 'Amount does not match');
+      expect(mockRegistrationService.markAsUnpaid).not.toHaveBeenCalled();
+    });
+
+    it('undoes `paid` when the two would otherwise contradict', async () => {
+      mockPrismaService.paymentProof.findUnique.mockResolvedValue({
+        ...mockProof,
+        participant: {
+          ...mockParticipant,
+          paid: true,
+          user: { name: 'A', lastName: 'B', email: 'a@b.com' },
+        },
+      });
+
+      await service.rejectProof('proof-1', 'Receipt is unreadable');
+
+      expect(mockRegistrationService.markAsUnpaid).toHaveBeenCalledWith('participant-1');
     });
   });
 

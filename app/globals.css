@@ -4518,6 +4518,39 @@ select.reg-input option {
   transition: width 0.15s ease;
 }
 
+/* A reviewer turned the last proof down - say why, above the form. */
+.pay-rejected {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: rgba(255, 29, 120, 0.07);
+  border: 1px solid rgba(255, 29, 120, 0.22);
+}
+
+.pay-rejected-title {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-pink);
+}
+
+.pay-rejected-reason {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.pay-rejected-hint {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
 /* Upload or validation failure, above the submit button. */
 .pay-submit-error {
   margin: 0;
