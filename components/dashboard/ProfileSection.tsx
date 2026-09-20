@@ -46,7 +46,9 @@ export default function ProfileSection() {
           <>
             {/* Payment freezes the record server-side (403), so warn before a
                 user fills the form out and loses the edit at the last step. */}
-            {PAYMENT_ENABLED && user?.status !== 'waiting_for_payment' && (
+            {PAYMENT_ENABLED &&
+              user?.status !== 'waiting_for_payment' &&
+              user?.status !== 'rejected' && (
               <p className="dash-section-blurb dash-profile-locked-note">
                 Your registration is already being processed - if a change is rejected,
                 contact us and we&apos;ll update it for you.

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/store/use-auth';
 import { useTeamStore, useRegistrationStore, useAuthStore, selectTeam, selectRole } from '@/lib/store';
+import type { RegStatus } from '@/lib/store';
 import { ACTIVITY_LABELS, TEAM_ACTIVITIES } from '@/lib/api/types';
 import { computeFee, formatFee } from '@/lib/fees';
 import ActivityToggle, { isActivityOpen, phaseOf } from './register/ActivityToggle';
@@ -15,12 +16,13 @@ import UserAvatar from './UserAvatar';
 import { PAYMENT_ENABLED } from '@/lib/dashboard/sections';
 import { useJustRegistered } from '@/lib/dashboard/just-registered';
 
-/** The fee's three states, in the order a participant passes through them. */
+/** The fee's four states, in the order a participant passes through them. */
 const STATUS_MAP = {
   waiting_for_payment: { label: 'Not Paid', color: '#ff1d78', msg: 'Pay your registration fee and upload the proof to confirm your spot.' },
   waiting_for_verification: { label: 'Pending', color: '#f59e0b', msg: 'Your payment proof is in - waiting for approval. We\'ll notify you once it is verified.' },
+  rejected: { label: 'Rejected', color: '#ef4444', msg: 'Your payment proof was turned down. Check the reason, then send a new one.' },
   approved: { label: 'Paid', color: '#00e87a', msg: 'Your registration is confirmed! See you at TRSYP 3.0!' },
-};
+} satisfies Record<RegStatus, { label: string; color: string; msg: string }>;
 
 const errorMessage = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
@@ -68,6 +70,7 @@ export default function Dashboard() {
   const [teamActionErr, setTeamActionErr] = useState('');
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [confirmDisband, setConfirmDisband] = useState(false);
+  const [showReason, setShowReason] = useState(false);
   const [disbanding, setDisbanding] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [leaving, setLeaving] = useState(false);
@@ -371,22 +374,21 @@ export default function Dashboard() {
 
           {PAYMENT_ENABLED && (
             <div className="dash-reg-foot">
-              <p className="dash-status-msg">
-                {/* A rejection is the one case where the generic copy is not
-                    enough: the participant needs to know what to fix. */}
-                {user.paymentRejectionReason
-                  ? `Your payment proof was rejected: ${user.paymentRejectionReason}`
-                  : status.msg}
-              </p>
+              <p className="dash-status-msg">{status.msg}</p>
 
               {/* The payment page is open even while proof submission is
                   not - it carries the fee table - so the link says where it
                   leads. No team lock: attending without entering either
                   track is a valid path, so payment stays reachable for
                   team-less users. */}
-              {user.status === 'waiting_for_payment' && (
+              {(user.status === 'waiting_for_payment' || user.status === 'rejected') && (
                 <Link href="/dashboard/payment" className="dash-reg-link">
-                  {submissionOpen ? 'Submit payment proof' : 'See the fees'} &rarr;
+                  {user.status === 'rejected'
+                    ? 'Send a new proof'
+                    : submissionOpen
+                      ? 'Submit payment proof'
+                      : 'See the fees'}{' '}
+                  &rarr;
                 </Link>
               )}
               {user.status === 'waiting_for_verification' && user.paymentFileName && (

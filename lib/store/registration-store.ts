@@ -18,16 +18,21 @@ import type {
 
 export type UserType = 'participant' | 'challenger';
 export type RegStatus =
+  /** Nothing submitted yet. */
   | 'waiting_for_payment'
+  /** A proof is with an admin. */
   | 'waiting_for_verification'
+  /** An admin turned the last proof down; a replacement can be sent. */
+  | 'rejected'
   | 'approved';
 
 /**
  * The dashboard's three states, derived from what the backend knows.
  *
- * `paid` is authoritative once set; before that, a PENDING proof is the only
- * thing that distinguishes "waiting for an admin" from "nothing sent yet". A
- * rejected proof puts the participant back at the start, with a reason.
+ * `paid` is authoritative once set; the latest proof explains everything
+ * before that. "Not paid" means strictly nothing has been submitted - a
+ * turned-down proof is its own state, so the participant is told they were
+ * rejected rather than being quietly reset to the beginning.
  *
  * `paid` must come from `GET /payment/proof/me`, NOT from the participant
  * profile: `ParticipantResponseDto` marks `paid` `@Exclude()`, so the profile
@@ -41,6 +46,7 @@ function paymentStatusOf(
 ): RegStatus {
   if (paid || proof?.status === 'APPROVED') return 'approved';
   if (proof?.status === 'PENDING') return 'waiting_for_verification';
+  if (proof?.status === 'REJECTED') return 'rejected';
   return 'waiting_for_payment';
 }
 

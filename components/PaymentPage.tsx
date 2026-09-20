@@ -82,7 +82,10 @@ export default function PaymentPage() {
     user.userType === 'challenger' || !!teams.COMPETITION || !!teams.CHALLENGE;
   const myFee = computeFee({ isIeee: user.isIeee, isRas: user.isRas, isChallenger });
 
-  const awaitingPayment = user.status === 'waiting_for_payment';
+  // A rejected proof is still an open bill, so the form belongs to both
+  // states - the only difference is the notice above it.
+  const awaitingPayment =
+    user.status === 'waiting_for_payment' || user.status === 'rejected';
   // Until the first sync answers, we do not know whether the window is open -
   // saying "soon" before asking would be a guess the participant then sees
   // flip under them.
