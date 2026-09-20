@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { IsString, Length } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 /**
@@ -17,10 +18,20 @@ export const RejectProofSchema = z.object({
 });
 
 export class RejectProofDto {
+  /**
+   * The class-validator decorators are not redundant with the Zod schema
+   * above: `main.ts` installs a global `ValidationPipe({ whitelist: true })`,
+   * which deletes every property that carries no class-validator decorator.
+   * Without them `reason` was stripped before the Zod pipe ran, and a
+   * perfectly good body failed as "expected string, received undefined".
+   * Every DTO in this codebase declares both for that reason.
+   */
   @ApiProperty({
     description: 'Why the proof was rejected - shown to the participant',
     minLength: 5,
     maxLength: 500,
   })
+  @IsString()
+  @Length(5, 500)
   reason!: string;
 }
