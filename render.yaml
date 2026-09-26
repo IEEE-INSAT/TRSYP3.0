@@ -30,6 +30,10 @@ services:
         value: closed
       - key: CHALLENGE_REGISTRATION_PHASE
         value: closed
+      - key: FABLAB_REGISTRATION_PHASE
+        value: open
+      - key: FABLAB_SUBMISSION_PHASE
+        value: open
       - key: PAYMENT_PROOF_OPEN
         value: "false"
       - key: NEXT_PUBLIC_API_URL
@@ -46,5 +50,11 @@ services:
         value: closed
       - key: NEXT_PUBLIC_CHALLENGE_PHASE
         value: closed
+      - key: NEXT_PUBLIC_FABLAB_PHASE
+        value: open
+      - key: NEXT_PUBLIC_FABLAB_SUBMISSION_PHASE
+        value: open
+      - key: NEXT_PUBLIC_FABLAB_SPEC_URL
+        sync: false
       - key: NEXT_PUBLIC_PARTICIPANT_REGISTRATION_OPEN
         value: "true"
