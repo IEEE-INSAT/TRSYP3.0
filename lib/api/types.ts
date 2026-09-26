@@ -325,16 +325,15 @@ export const TEAM_SIZE_LIMITS: Record<TeamActivity, { min: number; max: number }
 };
 
 /** Fablab Challenge axis - picked by the leader, stored on FABLAB teams only. */
-export type FablabAxis = 'PIPETTING_DILUTION' | 'INSPECTION_GROWTH' | 'CONTAINMENT_HANDLING';
+export type FablabAxis = 'SAMPLE_PREPARATION' | 'WEIGHING_DOSING';
 
-/** The three axes in display order, numbered as in the specification book. */
+/** The axes in display order, numbered as in the specification book. */
 export const FABLAB_AXES: { value: FablabAxis; number: number; label: string }[] = [
-  { value: 'PIPETTING_DILUTION', number: 1, label: 'Automated Pipetting & Dilution Station' },
-  { value: 'INSPECTION_GROWTH', number: 2, label: 'Inspection Robot & Growth Scanner' },
-  { value: 'CONTAINMENT_HANDLING', number: 3, label: 'Secure Containment Handling Enclosure' },
+  { value: 'SAMPLE_PREPARATION', number: 1, label: 'Automated Sample Preparation' },
+  { value: 'WEIGHING_DOSING', number: 2, label: 'Automated Weighing & Dosing Station' },
 ];
 
-/** "Axis 2 · Inspection Robot & Growth Scanner" */
+/** "Axis 2 · Automated Weighing & Dosing Station" */
 export function fablabAxisLabel(axis: FablabAxis): string {
   const a = FABLAB_AXES.find((x) => x.value === axis);
   return a ? `Axis ${a.number} · ${a.label}` : axis;

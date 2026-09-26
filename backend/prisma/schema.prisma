@@ -197,9 +197,8 @@ enum TeamActivity {
 
 /// Fablab Challenge axis, picked by the team leader. Null on non-FABLAB teams.
 enum FablabAxis {
-  PIPETTING_DILUTION // Axis 1: Automated Pipetting & Dilution Station
-  INSPECTION_GROWTH // Axis 2: Inspection Robot & Growth Scanner
-  CONTAINMENT_HANDLING // Axis 3: Secure Containment Handling Enclosure
+  SAMPLE_PREPARATION // Axis 1: Automated Sample Preparation
+  WEIGHING_DOSING // Axis 2: Automated Weighing & Dosing Station
 }
 
 enum ParticipantType {

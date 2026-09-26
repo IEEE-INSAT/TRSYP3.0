@@ -760,7 +760,7 @@ describe('RegistrationService', () => {
 
     it('should create a Fablab team for an IEEE RAS member and store the axis', async () => {
       const create = jest.fn().mockResolvedValue(
-        teamRow({ id: 'team-3', size: 4, activity: TeamActivity.FABLAB, axis: FablabAxis.INSPECTION_GROWTH }, ['participant-1']),
+        teamRow({ id: 'team-3', size: 4, activity: TeamActivity.FABLAB, axis: FablabAxis.WEIGHING_DOSING }, ['participant-1']),
       );
       mockPrismaService.$transaction.mockImplementation(async (cb: any) =>
         cb({
@@ -774,12 +774,12 @@ describe('RegistrationService', () => {
       await service.createTeam('user-1', {
         ...createDto,
         activity: TeamActivity.FABLAB,
-        axis: FablabAxis.INSPECTION_GROWTH,
+        axis: FablabAxis.WEIGHING_DOSING,
       } as any);
 
       expect(create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ activity: TeamActivity.FABLAB, axis: FablabAxis.INSPECTION_GROWTH }),
+          data: expect.objectContaining({ activity: TeamActivity.FABLAB, axis: FablabAxis.WEIGHING_DOSING }),
         }),
       );
     });
@@ -799,7 +799,7 @@ describe('RegistrationService', () => {
         service.createTeam('user-1', {
           ...createDto,
           activity: TeamActivity.FABLAB,
-          axis: FablabAxis.PIPETTING_DILUTION,
+          axis: FablabAxis.SAMPLE_PREPARATION,
         } as any),
       ).rejects.toThrow(ForbiddenException);
       expect(create).not.toHaveBeenCalled();
@@ -818,7 +818,7 @@ describe('RegistrationService', () => {
         service.createTeam('user-1', {
           ...createDto,
           activity: TeamActivity.FABLAB,
-          axis: FablabAxis.PIPETTING_DILUTION,
+          axis: FablabAxis.SAMPLE_PREPARATION,
         } as any),
       ).rejects.toThrow(ForbiddenException);
       expect(create).not.toHaveBeenCalled();

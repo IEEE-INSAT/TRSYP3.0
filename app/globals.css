@@ -6686,9 +6686,9 @@ select.reg-input option {
 /* Option A / B */
 .fablab-options {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
-  max-width: 1000px;
+  max-width: 860px;
   margin: 0 auto;
 }
 

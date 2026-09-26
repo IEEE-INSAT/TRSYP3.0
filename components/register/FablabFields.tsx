@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { FABLAB_AXES, type FablabAxis } from '@/lib/api/types';
 
 /**
- * Axis choice for a Fablab team - one of three, picked by the leader.
+ * Axis choice for a Fablab team - one of the axes, picked by the leader.
  * Rendered as a stacked list rather than side-by-side tabs: the axis names are
  * long and must stay readable on a phone.
  */

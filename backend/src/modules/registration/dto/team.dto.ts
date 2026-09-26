@@ -22,12 +22,11 @@ export const TEAM_ACTIVITY_LABELS: Record<TeamActivity, string> = {
 
 /** Human-readable name of each Fablab axis. */
 export const FABLAB_AXIS_LABELS: Record<FablabAxis, string> = {
-  [FablabAxis.PIPETTING_DILUTION]: 'Automated Pipetting & Dilution Station',
-  [FablabAxis.INSPECTION_GROWTH]: 'Inspection Robot & Growth Scanner',
-  [FablabAxis.CONTAINMENT_HANDLING]: 'Secure Containment Handling Enclosure',
+  [FablabAxis.SAMPLE_PREPARATION]: 'Automated Sample Preparation',
+  [FablabAxis.WEIGHING_DOSING]: 'Automated Weighing & Dosing Station',
 };
 
-const AXIS_ENUM_MESSAGE = 'axis must be PIPETTING_DILUTION, INSPECTION_GROWTH or CONTAINMENT_HANDLING';
+const AXIS_ENUM_MESSAGE = 'axis must be SAMPLE_PREPARATION or WEIGHING_DOSING';
 
 export const TeamActivitySchema = z
   .nativeEnum(TeamActivity)

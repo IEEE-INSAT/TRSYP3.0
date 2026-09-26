@@ -606,13 +606,20 @@ export default function Dashboard() {
               )}
             </div>
           )}
-          {showTeam && isFablab && (isEditingTeam || team?.axis) && (
+          {showTeam && isFablab && (
             <div className="dash-detail-row">
               <span className="dash-detail-label">Axis</span>
               {isEditingTeam ? (
                 <FablabAxisPicker value={editTeamAxis} onChange={setEditTeamAxis} disabled={editTeamSubmitting} />
               ) : (
-                <span className="dash-detail-value">{team?.axis && fablabAxisLabel(team.axis)}</span>
+                <span className="dash-detail-value">
+                  {/* No axis: the axes changed after this team picked one. */}
+                  {team?.axis
+                    ? fablabAxisLabel(team.axis)
+                    : isLeader
+                      ? 'Not chosen yet - click Edit to pick one'
+                      : 'Not chosen yet'}
+                </span>
               )}
             </div>
           )}
