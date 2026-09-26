@@ -6,6 +6,7 @@ import type {
   BackendParticipant,
   MyPaymentResponse,
   CreateTeamPayload,
+  FablabAxis,
   MyTeams,
   RegisterParticipantPayload,
   Team,
@@ -32,6 +33,7 @@ import type {
 const TEAM_KEY: Record<TeamActivity, string> = {
   COMPETITION: 'trsyp_team',
   CHALLENGE: 'trsyp_team_challenge',
+  FABLAB: 'trsyp_team_fablab',
 };
 
 const DEFAULT_ACTIVITY: TeamActivity = 'COMPETITION';
@@ -133,6 +135,7 @@ export const registrationService = {
       size: payload.size,
       code: randomCode(),
       activity,
+      axis: payload.axis ?? null,
       leaderId: 'me',
       memberCount: 1,
       spotsLeft: payload.size - 1,
@@ -144,9 +147,9 @@ export const registrationService = {
     return team;
   },
 
-  /** PATCH /registration/team - leader updates team name/size. */
+  /** PATCH /registration/team - leader updates team name/size (and Fablab axis). */
   async updateTeam(
-    payload: { name?: string; size?: number },
+    payload: { name?: string; size?: number; axis?: FablabAxis },
     token: string,
     activity: TeamActivity = DEFAULT_ACTIVITY,
   ): Promise<Team> {
@@ -161,8 +164,26 @@ export const registrationService = {
     if (!team) throw new Error('Not in a team');
     if (payload.name) team.name = payload.name;
     if (payload.size) team.size = payload.size;
+    if (payload.axis) team.axis = payload.axis;
     team.spotsLeft = team.size - team.memberCount;
     writeLocalTeam(activity, team);
+    return team;
+  },
+
+  /** PUT /registration/team/fablab-submission - Fablab leader submits the Drive link. */
+  async submitFablab(url: string, token: string): Promise<Team> {
+    if (features.registrationApi) {
+      return apiFetch<Team>('/registration/team/fablab-submission', {
+        method: 'PUT',
+        body: { url },
+        token,
+      });
+    }
+    const team = readLocalTeam('FABLAB');
+    if (!team) throw new Error('Only the leader of a Fablab team can submit.');
+    team.submissionUrl = url;
+    team.submittedAt = new Date().toISOString();
+    writeLocalTeam('FABLAB', team);
     return team;
   },
 
@@ -213,19 +234,20 @@ export const registrationService = {
     return readLocalTeam(activity);
   },
 
-  /** GET /registration/teams - both teams in one round trip. */
+  /** GET /registration/teams - every activity's team in one round trip. */
   async getTeams(token: string): Promise<MyTeams> {
     if (features.registrationApi) {
       try {
         return await apiFetch<MyTeams>('/registration/teams', { token });
       } catch {
         // 404 → no participant profile yet; treat as "no teams".
-        return { competition: null, challenge: null };
+        return { competition: null, challenge: null, fablab: null };
       }
     }
     return {
       competition: readLocalTeam('COMPETITION'),
       challenge: readLocalTeam('CHALLENGE'),
+      fablab: readLocalTeam('FABLAB'),
     };
   },
 

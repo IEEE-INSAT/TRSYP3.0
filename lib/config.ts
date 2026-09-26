@@ -95,4 +95,19 @@ function readPhase(value: string | undefined, fallback: RegistrationPhase): Regi
 export const activityPhases = {
   competition: readPhase(process.env.NEXT_PUBLIC_COMPETITION_PHASE, 'closed'),
   challenge: readPhase(process.env.NEXT_PUBLIC_CHALLENGE_PHASE, 'closed'),
-} as const satisfies Record<'competition' | 'challenge', RegistrationPhase>;
+  fablab: readPhase(process.env.NEXT_PUBLIC_FABLAB_PHASE, 'closed'),
+} as const satisfies Record<'competition' | 'challenge' | 'fablab', RegistrationPhase>;
+
+/**
+ * Adwya × Orange Fablab Challenge (Track 03). Teams register on the site like
+ * any other activity; the leader then submits a Google Drive folder link from
+ * the dashboard. `submissionPhase` mirrors the backend's
+ * `FABLAB_SUBMISSION_PHASE` and is independent of team registration, so the
+ * two windows can close at different times. The spec book link falls back to
+ * a "coming soon" state while its env var is unset.
+ */
+export const fablabChallenge = {
+  phase: activityPhases.fablab,
+  submissionPhase: readPhase(process.env.NEXT_PUBLIC_FABLAB_SUBMISSION_PHASE, 'closed'),
+  specBookUrl: process.env.NEXT_PUBLIC_FABLAB_SPEC_URL?.trim() ?? '',
+} as const;

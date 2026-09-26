@@ -3,16 +3,17 @@ import { persist } from 'zustand/middleware';
 import { useAuthStore } from './auth-store';
 import { useRegistrationStore } from './registration-store';
 import { registrationService } from '../api/registration.service';
-import type { Team, TeamActivity } from '../api/types';
+import type { FablabAxis, Team, TeamActivity } from '../api/types';
 
 export type TeamRole = 'leader' | 'member';
 
-/** Per-activity map - one slot for the competition, one for the challenge. */
+/** Per-activity map - one slot per activity (competition, challenge, Fablab). */
 type ByActivity<T> = Record<TeamActivity, T>;
 
 const emptyByActivity = <T,>(value: T): ByActivity<T> => ({
   COMPETITION: value,
   CHALLENGE: value,
+  FABLAB: value,
 });
 
 interface TeamState {
@@ -29,9 +30,12 @@ interface TeamState {
   setActivity: (activity: TeamActivity) => void;
   /** Loads every activity's team in one request. */
   fetchTeams: () => Promise<void>;
-  createTeam: (name: string, size: number, activity?: TeamActivity) => Promise<void>;
-  updateTeam: (name?: string, size?: number, activity?: TeamActivity) => Promise<void>;
+  /** `axis` is required for FABLAB teams and ignored otherwise. */
+  createTeam: (name: string, size: number, activity?: TeamActivity, axis?: FablabAxis) => Promise<void>;
+  updateTeam: (name?: string, size?: number, activity?: TeamActivity, axis?: FablabAxis) => Promise<void>;
   joinTeam: (code: string, activity?: TeamActivity) => Promise<void>;
+  /** Fablab leader submits (or replaces) the concept's Drive folder link. */
+  submitFablab: (url: string) => Promise<void>;
   leaveTeam: (activity?: TeamActivity) => Promise<void>;
   disbandTeam: (activity?: TeamActivity) => Promise<void>;
   removeMember: (participantId: string, activity?: TeamActivity) => Promise<void>;
@@ -84,14 +88,17 @@ export const useTeamStore = create<TeamState>()(
         if (get().loading) return;
         set({ loading: true, error: null });
         try {
-          const { competition, challenge } = await registrationService.getTeams(
+          const { competition, challenge, fablab } = await registrationService.getTeams(
             await currentToken(),
           );
+          // `?? null` - an older backend omits the `fablab` slot entirely.
+          const fablabTeam = fablab ?? null;
           set({
-            teams: { COMPETITION: competition, CHALLENGE: challenge },
+            teams: { COMPETITION: competition, CHALLENGE: challenge, FABLAB: fablabTeam },
             roles: {
               COMPETITION: roleFromTeam(competition),
               CHALLENGE: roleFromTeam(challenge),
+              FABLAB: roleFromTeam(fablabTeam),
             },
             loading: false,
             loaded: true,
@@ -101,13 +108,13 @@ export const useTeamStore = create<TeamState>()(
         }
       },
 
-      createTeam: async (name, size, activity) => {
+      createTeam: async (name, size, activity, axis) => {
         const target = activity ?? get().activity;
         if (get().submitting) return;
         set({ submitting: true, error: null });
         try {
           const team = await registrationService.createTeam(
-            { name, size, activity: target },
+            { name, size, activity: target, ...(target === 'FABLAB' && axis && { axis }) },
             await currentToken(),
           );
           set((s) => ({
@@ -122,17 +129,29 @@ export const useTeamStore = create<TeamState>()(
         }
       },
 
-      updateTeam: async (name, size, activity) => {
+      updateTeam: async (name, size, activity, axis) => {
         const target = activity ?? get().activity;
         if (get().submitting) return;
         set({ submitting: true, error: null });
         try {
           const team = await registrationService.updateTeam(
-            { name, size },
+            { name, size, ...(target === 'FABLAB' && axis && { axis }) },
             await currentToken(),
             target,
           );
           set((s) => ({ teams: { ...s.teams, [target]: team }, submitting: false }));
+        } catch (e) {
+          set({ submitting: false, error: msg(e) });
+          throw e;
+        }
+      },
+
+      submitFablab: async (url) => {
+        if (get().submitting) return;
+        set({ submitting: true, error: null });
+        try {
+          const team = await registrationService.submitFablab(url, await currentToken());
+          set((s) => ({ teams: { ...s.teams, FABLAB: team }, submitting: false }));
         } catch (e) {
           set({ submitting: false, error: msg(e) });
           throw e;
@@ -230,22 +249,32 @@ export const useTeamStore = create<TeamState>()(
       // refreshes in the background - avoids the "info pops in / takes time to
       // change" flash. `loaded`/`loading` stay transient so a refetch still runs.
       name: 'trsyp_team_store',
-      version: 2,
+      version: 3,
       partialize: (state) => ({
         teams: state.teams,
         roles: state.roles,
         activity: state.activity,
       }),
       // v1 stored a single `team`/`role` pair, which was always the competition.
+      // v2 had no FABLAB slot.
       migrate: (persisted, version) => {
         type Persisted = Pick<TeamState, 'teams' | 'roles' | 'activity'>;
-        if (version >= 2) return persisted as Persisted;
+        if (version >= 3) return persisted as Persisted;
+
+        if (version === 2) {
+          const v2 = persisted as Persisted;
+          return {
+            activity: v2.activity ?? 'COMPETITION',
+            teams: { ...emptyByActivity<Team | null>(null), ...v2.teams },
+            roles: { ...emptyByActivity<TeamRole | null>(null), ...v2.roles },
+          } satisfies Persisted;
+        }
 
         const legacy = persisted as { team?: Team | null; role?: TeamRole | null };
         return {
           activity: 'COMPETITION',
-          teams: { COMPETITION: legacy?.team ?? null, CHALLENGE: null },
-          roles: { COMPETITION: legacy?.role ?? null, CHALLENGE: null },
+          teams: { ...emptyByActivity<Team | null>(null), COMPETITION: legacy?.team ?? null },
+          roles: { ...emptyByActivity<TeamRole | null>(null), COMPETITION: legacy?.role ?? null },
         } satisfies Persisted;
       },
     },

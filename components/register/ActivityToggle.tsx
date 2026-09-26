@@ -3,9 +3,15 @@
 import { activityPhases, type RegistrationPhase } from '@/lib/config';
 import { ACTIVITY_LABELS, TEAM_ACTIVITIES, type TeamActivity } from '@/lib/api/types';
 
+const PHASE_BY_ACTIVITY: Record<TeamActivity, RegistrationPhase> = {
+  COMPETITION: activityPhases.competition,
+  CHALLENGE: activityPhases.challenge,
+  FABLAB: activityPhases.fablab,
+};
+
 /** Registration window for one activity, from `lib/config`. */
 export function phaseOf(activity: TeamActivity): RegistrationPhase {
-  return activity === 'CHALLENGE' ? activityPhases.challenge : activityPhases.competition;
+  return PHASE_BY_ACTIVITY[activity];
 }
 
 /** Whether new teams can be created or joined for this activity right now. */
@@ -20,8 +26,8 @@ const PHASE_BADGE: Record<RegistrationPhase, string | null> = {
 };
 
 /**
- * Switch between the competition and the technical challenge.
- * Both tabs always render - a tab whose window is not open is still selectable
+ * Switch between the competition, the technical challenge and the Fablab
+ * challenge. Every tab always renders - a tab whose window is not open is still selectable
  * so members of an existing team can manage it, and it carries a Soon/Closed
  * badge so the state is obvious before the panel explains it.
  */

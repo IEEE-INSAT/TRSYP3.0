@@ -8,7 +8,7 @@ import { RegisterLocalDto } from './dto/register-local.dto';
 import { RegisterInternationalDto } from './dto/register-international.dto';
 import { RequestVisaDto } from './dto/request-visa.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
-import { ParticipantType, SB, COUNTRY, VisaStatus, TeamActivity } from '@prisma/client';
+import { ParticipantType, SB, COUNTRY, VisaStatus, TeamActivity, FablabAxis } from '@prisma/client';
 
 describe('RegistrationService', () => {
   let service: RegistrationService;
@@ -102,6 +102,9 @@ describe('RegistrationService', () => {
         findUnique: jest.fn(),
         update: jest.fn(),
       },
+      teamMembership: {
+        findUnique: jest.fn().mockResolvedValue(null),
+      },
       $transaction: jest.fn((cb) => cb(mockPrismaService)),
     };
 
@@ -147,6 +150,7 @@ describe('RegistrationService', () => {
         participantType: ParticipantType.Student,
         sb: SB.INSAT,
         country: COUNTRY.Tunisia,
+        facebookLink: 'https://www.facebook.com/test.user',
       };
 
       mockPrismaService.participant.findUnique.mockResolvedValue(null);
@@ -166,6 +170,7 @@ describe('RegistrationService', () => {
         participantType: ParticipantType.Student,
         sb: SB.INSAT,
         country: COUNTRY.Tunisia,
+        facebookLink: 'https://www.facebook.com/test.user',
         internationalInfo: {
           dateOfBirth: '1995-06-15',
           countryOfResidence: 'Algeria',
@@ -194,6 +199,7 @@ describe('RegistrationService', () => {
         participantType: ParticipantType.Student,
         sb: SB.INSAT,
         country: COUNTRY.Tunisia,
+        facebookLink: 'https://www.facebook.com/test.user',
       };
 
       mockPrismaService.participant.findUnique.mockResolvedValue(mockParticipant);
@@ -208,6 +214,7 @@ describe('RegistrationService', () => {
         participantType: ParticipantType.Student,
         sb: SB.INSAT,
         country: COUNTRY.Tunisia,
+        facebookLink: 'https://www.facebook.com/test.user',
         isRas: true,
       };
 
@@ -228,6 +235,7 @@ describe('RegistrationService', () => {
         participantType: ParticipantType.Student,
         sb: SB.INSAT,
         country: COUNTRY.Tunisia,
+        facebookLink: 'https://www.facebook.com/test.user',
       };
 
       mockPrismaService.participant.findUnique.mockResolvedValue(null);
@@ -246,6 +254,7 @@ describe('RegistrationService', () => {
         gender: 'male',
         participantType: ParticipantType.NonIEEE,
         country: COUNTRY.Tunisia,
+        facebookLink: 'https://www.facebook.com/test.user',
         isRas: true,
       };
 
@@ -346,6 +355,28 @@ describe('RegistrationService', () => {
           }),
         }),
       );
+    });
+
+    it('should refuse switching to NonIEEE while in a Fablab team', async () => {
+      const rasStudent = { ...mockParticipant, ieeeId: 12345678, isRas: true };
+      mockPrismaService.participant.findUnique.mockResolvedValue(rasStudent);
+      mockPrismaService.teamMembership.findUnique.mockResolvedValue({ id: 'mem-fablab' });
+
+      await expect(
+        service.updateProfile('participant-1', { participantType: ParticipantType.NonIEEE }),
+      ).rejects.toThrow(ConflictException);
+      expect(mockPrismaService.participant.update).not.toHaveBeenCalled();
+    });
+
+    it('should refuse dropping RAS membership while in a Fablab team', async () => {
+      const rasStudent = { ...mockParticipant, ieeeId: 12345678, isRas: true };
+      mockPrismaService.participant.findUnique.mockResolvedValue(rasStudent);
+      mockPrismaService.teamMembership.findUnique.mockResolvedValue({ id: 'mem-fablab' });
+
+      await expect(service.updateProfile('participant-1', { isRas: false })).rejects.toThrow(
+        ConflictException,
+      );
+      expect(mockPrismaService.participant.update).not.toHaveBeenCalled();
     });
 
     it('should drop the student branch when switching to Young Professional', async () => {
@@ -727,6 +758,72 @@ describe('RegistrationService', () => {
       );
     });
 
+    it('should create a Fablab team for an IEEE RAS member and store the axis', async () => {
+      const create = jest.fn().mockResolvedValue(
+        teamRow({ id: 'team-3', size: 4, activity: TeamActivity.FABLAB, axis: FablabAxis.INSPECTION_GROWTH }, ['participant-1']),
+      );
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) =>
+        cb({
+          participant: {
+            findUnique: jest.fn().mockResolvedValue(eligible({ participantType: ParticipantType.Student, isRas: true })),
+          },
+          team: { findUnique: jest.fn().mockResolvedValue(null), create },
+        }),
+      );
+
+      await service.createTeam('user-1', {
+        ...createDto,
+        activity: TeamActivity.FABLAB,
+        axis: FablabAxis.INSPECTION_GROWTH,
+      } as any);
+
+      expect(create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ activity: TeamActivity.FABLAB, axis: FablabAxis.INSPECTION_GROWTH }),
+        }),
+      );
+    });
+
+    it('should refuse a Fablab team to an IEEE member who is not in RAS', async () => {
+      const create = jest.fn();
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) =>
+        cb({
+          participant: {
+            findUnique: jest.fn().mockResolvedValue(eligible({ participantType: ParticipantType.Student, isRas: false })),
+          },
+          team: { findUnique: jest.fn().mockResolvedValue(null), create },
+        }),
+      );
+
+      await expect(
+        service.createTeam('user-1', {
+          ...createDto,
+          activity: TeamActivity.FABLAB,
+          axis: FablabAxis.PIPETTING_DILUTION,
+        } as any),
+      ).rejects.toThrow(ForbiddenException);
+      expect(create).not.toHaveBeenCalled();
+    });
+
+    it('should refuse a Fablab team to a non-IEEE participant', async () => {
+      const create = jest.fn();
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) =>
+        cb({
+          participant: { findUnique: jest.fn().mockResolvedValue(eligible({ participantType: ParticipantType.NonIEEE })) },
+          team: { findUnique: jest.fn().mockResolvedValue(null), create },
+        }),
+      );
+
+      await expect(
+        service.createTeam('user-1', {
+          ...createDto,
+          activity: TeamActivity.FABLAB,
+          axis: FablabAxis.PIPETTING_DILUTION,
+        } as any),
+      ).rejects.toThrow(ForbiddenException);
+      expect(create).not.toHaveBeenCalled();
+    });
+
     it('should throw ForbiddenException if the activity is not open yet', async () => {
       mockConfigService.get.mockReturnValue('soon');
 
@@ -812,6 +909,55 @@ describe('RegistrationService', () => {
     });
   });
 
+  describe('submitFablab', () => {
+    const url = 'https://drive.google.com/drive/folders/1AbCdEf';
+
+    it('should save the Drive link on the leader\'s Fablab team', async () => {
+      const update = jest.fn().mockResolvedValue(
+        teamRow({ id: 'team-3', size: 4, activity: TeamActivity.FABLAB, submissionUrl: url }, ['participant-1']),
+      );
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) =>
+        cb({
+          participant: {
+            findUnique: jest.fn().mockResolvedValue({ id: 'participant-1', banned: false, ledTeams: [{ id: 'team-3' }] }),
+          },
+          team: { update },
+        }),
+      );
+
+      await service.submitFablab('user-1', { url });
+
+      expect(update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'team-3' },
+          data: expect.objectContaining({ submissionUrl: url, submittedAt: expect.any(Date) }),
+        }),
+      );
+    });
+
+    it('should refuse a participant who does not lead a Fablab team', async () => {
+      const update = jest.fn();
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) =>
+        cb({
+          participant: {
+            findUnique: jest.fn().mockResolvedValue({ id: 'participant-1', banned: false, ledTeams: [] }),
+          },
+          team: { update },
+        }),
+      );
+
+      await expect(service.submitFablab('user-1', { url })).rejects.toThrow(NotFoundException);
+      expect(update).not.toHaveBeenCalled();
+    });
+
+    it('should refuse submissions while the window is closed', async () => {
+      mockConfigService.get.mockReturnValue('closed');
+
+      await expect(service.submitFablab('user-1', { url })).rejects.toThrow(ForbiddenException);
+      expect(mockPrismaService.$transaction).not.toHaveBeenCalled();
+    });
+  });
+
   describe('joinTeam', () => {
     const joinDto = { code: 'A3KX9Z' };
 
@@ -820,6 +966,32 @@ describe('RegistrationService', () => {
       paid: false,
       banned: false,
       ...overrides,
+    });
+
+    it('should refuse an IEEE member who is not in RAS joining a Fablab team', async () => {
+      const update = jest.fn();
+      mockPrismaService.$transaction.mockImplementation(async (cb: any) =>
+        cb({
+          participant: {
+            findUnique: jest.fn().mockResolvedValue(
+              eligible({ participantType: ParticipantType.YoungProfessional, isRas: false }),
+            ),
+          },
+          teamMembership: { findUnique: jest.fn().mockResolvedValue(null) },
+          team: {
+            findUnique: jest.fn().mockResolvedValue({
+              id: 'team-3',
+              size: 4,
+              activity: TeamActivity.FABLAB,
+              memberships: [{ id: 'mem-1' }],
+            }),
+            update,
+          },
+        }),
+      );
+
+      await expect(service.joinTeam('user-1', { code: 'F4BL4B' })).rejects.toThrow(ForbiddenException);
+      expect(update).not.toHaveBeenCalled();
     });
 
     it('should let an eligible participant join a team with spots left', async () => {

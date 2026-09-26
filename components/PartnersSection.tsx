@@ -8,6 +8,14 @@ const HOSTS = [
   { id: 5, src: "/partners/IEEE-Region-8.png", label: "IEEE Region 8", scale: 0.75 },
 ];
 
+// Adwya uses a cleaned dark-theme variant (transparent, flat colors);
+// irtsc-logo.png is png.png cropped to the logo (the original is mostly padding)
+const PARTNERS = [
+  { id: 1, src: "/partners/orange-tunisie.png", label: "Orange Tunisie", scale: 0.65 },
+  { id: 2, src: "/partners/adwya-logo.png", label: "Adwya", scale: 0.75 },
+  { id: 3, src: "/partners/irtsc-logo.png", label: "IRTSC", scale: 0.8 },
+];
+
 export default function PartnersSection() {
   return (
     <section className="partners" id="partners">
@@ -23,6 +31,28 @@ export default function PartnersSection() {
 
         <div className="partners-grid">
           {HOSTS.map((p) => (
+            <div key={p.id} className="partners-slot">
+              <Image
+                src={p.src}
+                alt={p.label}
+                fill
+                style={{ objectFit: "contain", transform: `scale(${p.scale})` }}
+              />
+            </div>
+          ))}
+        </div>
+
+        <div className="partners-header partners-header--sub">
+          <div className="partners-eyebrow">
+            <span className="partners-eyebrow-line" />
+            <span className="partners-eyebrow-text">Supported By</span>
+            <span className="partners-eyebrow-line" />
+          </div>
+          <h2 className="partners-title">Our Partners</h2>
+        </div>
+
+        <div className="partners-grid partners-grid--three">
+          {PARTNERS.map((p) => (
             <div key={p.id} className="partners-slot">
               <Image
                 src={p.src}

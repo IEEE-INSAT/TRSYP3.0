@@ -1,15 +1,26 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/store/use-auth';
 import { useTeamStore, useRegistrationStore, useAuthStore, selectTeam, selectRole } from '@/lib/store';
 import type { RegStatus } from '@/lib/store';
-import { ACTIVITY_LABELS, TEAM_ACTIVITIES } from '@/lib/api/types';
+import {
+  ACTIVITY_LABELS,
+  TEAM_ACTIVITIES,
+  TEAM_SIZE_LIMITS,
+  canEnterActivity,
+  fablabAxisLabel,
+  teamSizeOptions,
+  type FablabAxis,
+} from '@/lib/api/types';
 import { computeFee, formatFee } from '@/lib/fees';
+import { fablabChallenge } from '@/lib/config';
 import ActivityToggle, { isActivityOpen, phaseOf } from './register/ActivityToggle';
+import { FablabAxisPicker, FablabEligibilityNotice } from './register/FablabFields';
+import FablabSubmission from './dashboard/FablabSubmission';
 import LoadingScreen from './LoadingScreen';
 import UserAvatar from './UserAvatar';
 // Single source of truth, shared with the dashboard section nav.
@@ -46,10 +57,11 @@ export default function Dashboard() {
   const setActivity = useTeamStore((s) => s.setActivity);
   const team = useTeamStore(selectTeam);
   const role = useTeamStore(selectRole);
+  // A team in any activity other than the selected one (null when there is none).
   const otherTeam = useTeamStore((s) =>
-    s.teams[s.activity === 'COMPETITION' ? 'CHALLENGE' : 'COMPETITION'],
+    TEAM_ACTIVITIES.filter((a) => a !== s.activity).map((a) => s.teams[a]).find(Boolean) ?? null,
   );
-  const minTeamSize = activity === 'COMPETITION' ? 3 : 2;
+  const { min: minTeamSize, max: maxTeamSize } = TEAM_SIZE_LIMITS[activity];
   const teams = useTeamStore((s) => s.teams);
   const teamLoaded = useTeamStore((s) => s.loaded);
   const updateTeam = useTeamStore((s) => s.updateTeam);
@@ -64,6 +76,7 @@ export default function Dashboard() {
   const [isEditingTeam, setIsEditingTeam] = useState(false);
   const [editTeamName, setEditTeamName] = useState('');
   const [editTeamSize, setEditTeamSize] = useState(1);
+  const [editTeamAxis, setEditTeamAxis] = useState<FablabAxis | null>(null);
   const [editTeamErr, setEditTeamErr] = useState('');
   const [editTeamSubmitting, setEditTeamSubmitting] = useState(false);
 
@@ -79,6 +92,7 @@ export default function Dashboard() {
   const [joinCode, setJoinCode] = useState('');
   const [newTeamName, setNewTeamName] = useState('');
   const [newTeamSize, setNewTeamSize] = useState(3);
+  const [newTeamAxis, setNewTeamAxis] = useState<FablabAxis | null>(null);
   const [noTeamErr, setNoTeamErr] = useState('');
   const [noTeamSubmitting, setNoTeamSubmitting] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
@@ -115,15 +129,21 @@ export default function Dashboard() {
     if (user) void fetchTeams();
   }, [user, fetchTeams]);
 
-  // Both registration windows are closed, so the tabs are no longer a choice -
-  // they only switch between teams the participant already has. Someone entered
-  // in exactly one track is put on that track regardless of the persisted
-  // selection: a challenge-only member would otherwise open the dashboard on
-  // the competition tab (the store's default) and see none of their own team.
+  // Pick a sensible starting tab once the teams load, instead of trusting the
+  // persisted selection (the store defaults to the competition). Nothing to
+  // show on the current tab → go to the participant's own team if they have
+  // exactly one, otherwise to a track that is taking teams (e.g. Fablab while
+  // the other windows are closed). Runs once: afterwards the tabs are the
+  // user's to switch freely.
+  const tabPicked = useRef(false);
   useEffect(() => {
-    if (!teamLoaded) return;
+    if (!teamLoaded || tabPicked.current) return;
+    tabPicked.current = true;
+    if (teams[activity]) return;
     const entered = TEAM_ACTIVITIES.filter((a) => !!teams[a]);
-    if (entered.length === 1 && entered[0] !== activity) setActivity(entered[0]);
+    const firstOpen = TEAM_ACTIVITIES.find(isActivityOpen);
+    const next = entered.length === 1 ? entered[0] : !isActivityOpen(activity) ? firstOpen : undefined;
+    if (next && next !== activity) setActivity(next);
   }, [teamLoaded, teams, activity, setActivity]);
 
   if (!user) return <LoadingScreen />;
@@ -132,6 +152,9 @@ export default function Dashboard() {
 
   const activityLabel = ACTIVITY_LABELS[activity];
   const activityOpen = isActivityOpen(activity);
+  const isFablab = activity === 'FABLAB';
+  // Fablab is for IEEE RAS members only; the server enforces it too.
+  const notEligible = !canEnterActivity(activity, { isIeee: user.isIeee, isRas: user.isRas });
 
   const isChallenger = user.userType === 'challenger' || !!team || !!otherTeam;
 
@@ -180,6 +203,7 @@ export default function Dashboard() {
   const handleEditTeam = () => {
     setEditTeamName(team?.name || user?.teamName || '');
     setEditTeamSize(team?.size || (user?.memberCount ? user.memberCount + 1 : 1));
+    setEditTeamAxis(team?.axis ?? null);
     setEditTeamErr('');
     setIsEditingTeam(true);
   };
@@ -192,14 +216,14 @@ export default function Dashboard() {
     }
     const currentMemberCount = team?.members?.length || (user?.memberCount ? user.memberCount + 1 : 1);
     const minSize = Math.max(minTeamSize, currentMemberCount);
-    if (editTeamSize < minSize || editTeamSize > 6) {
-      setEditTeamErr(`Team size must be between ${minSize} and 6.`);
+    if (editTeamSize < minSize || editTeamSize > maxTeamSize) {
+      setEditTeamErr(`Team size must be between ${minSize} and ${maxTeamSize}.`);
       return;
     }
 
     setEditTeamSubmitting(true);
     try {
-      await updateTeam(editTeamName.trim(), editTeamSize);
+      await updateTeam(editTeamName.trim(), editTeamSize, undefined, isFablab ? editTeamAxis ?? undefined : undefined);
       await hydrateFromBackend();
       setIsEditingTeam(false);
     } catch (error: unknown) {
@@ -275,16 +299,21 @@ export default function Dashboard() {
       setNoTeamErr('Team name must be 2–50 characters.');
       return;
     }
-    if (newTeamSize < minTeamSize || newTeamSize > 6) {
-      setNoTeamErr(`Team size must be between ${minTeamSize} and 6.`);
+    if (newTeamSize < minTeamSize || newTeamSize > maxTeamSize) {
+      setNoTeamErr(`Team size must be between ${minTeamSize} and ${maxTeamSize}.`);
+      return;
+    }
+    if (isFablab && !newTeamAxis) {
+      setNoTeamErr('Choose an axis for your Fablab team.');
       return;
     }
     setNoTeamSubmitting(true);
     try {
-      await createTeam(newTeamName.trim(), newTeamSize);
+      await createTeam(newTeamName.trim(), newTeamSize, undefined, newTeamAxis ?? undefined);
       await hydrateFromBackend();
       setTeamMode('none');
       setNewTeamName('');
+      setNewTeamAxis(null);
     } catch (error: unknown) {
       setNoTeamErr(errorMessage(error, 'Failed to create team'));
     } finally {
@@ -397,6 +426,41 @@ export default function Dashboard() {
           )}
         </motion.section>
 
+        {/* Track 03 - promo before a team exists, then the concept submission.
+            Kept for Fablab teams after registration closes: they may still
+            have to submit. */}
+        {(fablabChallenge.phase !== 'closed' || !!teams.FABLAB) && (
+          <motion.section
+            className="dash-card dash-fablab-card"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.11 }}
+            aria-labelledby="fablab-heading"
+          >
+            <span className="dash-fablab-tag">
+              Track 03 · {teams.FABLAB ? 'Concept submission' : fablabChallenge.phase === 'open' ? 'Now open' : 'Opening soon'}
+            </span>
+            <div className="dash-fablab-title" id="fablab-heading">Adwya × Orange Fablab Challenge</div>
+            {teams.FABLAB ? (
+              <FablabSubmission
+                team={teams.FABLAB}
+                isLeader={!!user.participantId && teams.FABLAB.leaderId === user.participantId}
+              />
+            ) : (
+              <>
+                <p className="dash-fablab-msg">
+                  Build an automated lab assistant with a team of 2 to 4 IEEE RAS members. The top 5
+                  build it in a 12-hour makeathon and pitch it on 17 October. Included in your registration.
+                </p>
+                <Link href="/challenge#fablab" className="dash-fablab-link">
+                  See how to enter
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
+                </Link>
+              </>
+            )}
+          </motion.section>
+        )}
+
         {/* Which track the team panels below refer to */}
         {showActivityToggle && (
         <motion.div className="dash-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.12 }}>
@@ -408,6 +472,7 @@ export default function Dashboard() {
               // Drop any in-flight edit so it can't be applied to the other track.
               setIsEditingTeam(false);
               setTeamMode('none');
+              setNewTeamAxis(null);
               setConfirmDisband(false);
               setConfirmLeave(false);
               setNoTeamErr('');
@@ -434,10 +499,15 @@ export default function Dashboard() {
         {canJoinActivity && (
           <motion.div className="dash-card dash-noteam-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.15 }}>
             <div className="dash-card-title">Your {activityLabel} Team</div>
+            {notEligible ? (
+              <FablabEligibilityNotice />
+            ) : (
+            <>
             <p className="dash-noteam-msg">
-              You&apos;re not in a {activityLabel.toLowerCase()} team. Entering is optional - you&apos;re
+              You&apos;re not in a {activityLabel} team. Entering is optional - you&apos;re
               registered for TRSYP 3.0 either way. To take part, join a team with a code or create
               your own and invite members.
+              {isFablab && ' Every member, leader included, must be an IEEE RAS member.'}
             </p>
 
             {teamMode === 'none' && (
@@ -487,11 +557,15 @@ export default function Dashboard() {
                 <div className="reg-field">
                   <label className="reg-label">Team Size (including you) *</label>
                   <div className="reg-count-group">
-                    {[2, 3, 4, 5, 6].filter((n) => n >= minTeamSize).map((n) => (
+                    {teamSizeOptions(activity).map((n) => (
                       <button key={n} type="button" className={`reg-count-btn ${newTeamSize === n ? 'reg-count-btn-active' : ''}`} onClick={() => setNewTeamSize(n)}>{n}</button>
                     ))}
                   </div>
                 </div>
+
+                {isFablab && (
+                  <FablabAxisPicker value={newTeamAxis} onChange={setNewTeamAxis} disabled={noTeamSubmitting} />
+                )}
 
                 <div className="dash-noteam-form-actions">
                   <button type="button" className="dash-save-btn" onClick={handleCreateTeam} disabled={noTeamSubmitting}>
@@ -505,6 +579,8 @@ export default function Dashboard() {
             )}
 
             {noTeamErr && <span className="reg-error" style={{ display: 'block', marginTop: '12px' }}>{noTeamErr}</span>}
+            </>
+            )}
           </motion.div>
         )}
 
@@ -530,13 +606,23 @@ export default function Dashboard() {
               )}
             </div>
           )}
+          {showTeam && isFablab && (isEditingTeam || team?.axis) && (
+            <div className="dash-detail-row">
+              <span className="dash-detail-label">Axis</span>
+              {isEditingTeam ? (
+                <FablabAxisPicker value={editTeamAxis} onChange={setEditTeamAxis} disabled={editTeamSubmitting} />
+              ) : (
+                <span className="dash-detail-value">{team?.axis && fablabAxisLabel(team.axis)}</span>
+              )}
+            </div>
+          )}
           {showTeam && (
             <div className="dash-detail-row">
               <span className="dash-detail-label">Team Size</span>
               {isEditingTeam ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <div className="reg-count-group">
-                    {[2, 3, 4, 5, 6].filter((n) => n >= minTeamSize).map((n) => {
+                    {teamSizeOptions(activity).map((n) => {
                       const currentMemberCount = team?.members?.length || (user?.memberCount ? user.memberCount + 1 : 1);
                       const disabled = n < currentMemberCount;
                       return (

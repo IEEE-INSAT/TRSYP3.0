@@ -3,9 +3,17 @@
 import { useEffect, useState, FormEvent } from 'react';
 import { motion } from 'motion/react';
 import Link from 'next/link';
-import { useTeamStore, selectTeam, selectRole } from '@/lib/store';
-import { ACTIVITY_LABELS } from '@/lib/api/types';
+import { useTeamStore, useRegistrationStore, selectTeam, selectRole } from '@/lib/store';
+import {
+  ACTIVITY_LABELS,
+  TEAM_SIZE_LIMITS,
+  canEnterActivity,
+  fablabAxisLabel,
+  teamSizeOptions,
+  type FablabAxis,
+} from '@/lib/api/types';
 import ActivityToggle, { isActivityOpen, phaseOf } from './ActivityToggle';
+import { FablabAxisPicker, FablabEligibilityNotice } from './FablabFields';
 
 /** Page 2 of the registration flow - team leader / member + team status. */
 export default function TeamStep() {
@@ -27,16 +35,21 @@ export default function TeamStep() {
 
   const activityLabel = ACTIVITY_LABELS[activity];
   const activityOpen = isActivityOpen(activity);
-  const minSize = activity === 'COMPETITION' ? 3 : 2;
+  const { min: minSize, max: maxSize } = TEAM_SIZE_LIMITS[activity];
+  const isFablab = activity === 'FABLAB';
+  const isIeee = useRegistrationStore((s) => s.user?.isIeee ?? false);
+  const isRas = useRegistrationStore((s) => s.user?.isRas ?? false);
+  const notEligible = !canEnterActivity(activity, { isIeee, isRas });
 
   const [choice, setChoice] = useState<'leader' | 'member' | null>(null);
   const [teamName, setTeamName] = useState('');
   const [size, setSize] = useState(0);
   const [code, setCode] = useState('');
+  const [axis, setAxis] = useState<FablabAxis | null>(null);
   const [formErr, setFormErr] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const canCreate = teamName.trim().length >= 2 && teamName.trim().length <= 50 && size >= minSize && size <= 6;
+  const canCreate = teamName.trim().length >= 2 && teamName.trim().length <= 50 && size >= minSize && size <= maxSize && (!isFablab || !!axis);
   const canJoin = code.trim().length === 6;
 
   useEffect(() => {
@@ -50,12 +63,16 @@ export default function TeamStep() {
       setFormErr('Team name must be 2–50 characters.');
       return;
     }
-    if (size < minSize || size > 6) {
-      setFormErr(`Team size must be between ${minSize} and 6.`);
+    if (size < minSize || size > maxSize) {
+      setFormErr(`Team size must be between ${minSize} and ${maxSize}.`);
+      return;
+    }
+    if (isFablab && !axis) {
+      setFormErr('Choose an axis for your Fablab team.');
       return;
     }
     try {
-      await createTeam(teamName.trim(), size);
+      await createTeam(teamName.trim(), size, undefined, axis ?? undefined);
     } catch {
       /* error surfaced via storeError */
     }
@@ -99,6 +116,7 @@ export default function TeamStep() {
         setTeamName('');
         setSize(0);
         setCode('');
+        setAxis(null);
         setFormErr(null);
         setActivity(next);
       }}
@@ -122,6 +140,12 @@ export default function TeamStep() {
           <span className="dash-detail-label">Role</span>
           <span className="dash-detail-value">{isLeader ? 'Leader' : 'Member'}</span>
         </div>
+        {team.axis && (
+          <div className="dash-detail-row">
+            <span className="dash-detail-label">Axis</span>
+            <span className="dash-detail-value">{fablabAxisLabel(team.axis)}</span>
+          </div>
+        )}
 
         {isLeader && team.code && (
           <div className="pay-bank-row" style={{ marginTop: '1rem' }}>
@@ -210,6 +234,10 @@ export default function TeamStep() {
 
       <div className="reg-section-label">{activityLabel} Team</div>
 
+      {notEligible ? (
+        <FablabEligibilityNotice />
+      ) : (
+      <>
       <div className="reg-field">
         <label className="reg-label">Are you a team leader?</label>
         <div className="reg-toggle-group">
@@ -227,11 +255,12 @@ export default function TeamStep() {
           <div className="reg-field">
             <label className="reg-label">Team Size (including you) *</label>
             <div className="reg-count-group">
-              {[2, 3, 4, 5, 6].filter((n) => n >= minSize).map((n) => (
+              {teamSizeOptions(activity).map((n) => (
                 <button key={n} type="button" className={`reg-count-btn ${size === n ? 'reg-count-btn-active' : ''}`} onClick={() => setSize(n)}>{n}</button>
               ))}
             </div>
           </div>
+          {isFablab && <FablabAxisPicker value={axis} onChange={setAxis} disabled={submitting} />}
           {(formErr || storeError) && <span className="reg-error">{formErr || storeError}</span>}
           <button type="submit" className="reg-submit" disabled={submitting || !canCreate}>
             {submitting ? 'Creating…' : 'Create Team'}
@@ -260,6 +289,8 @@ export default function TeamStep() {
             {submitting ? 'Joining…' : 'Join Team'}
           </button>
         </form>
+      )}
+      </>
       )}
     </motion.div>
   );

@@ -45,6 +45,12 @@ import { PaymentModule } from './modules/payment/payment.module';
                 PAYMENT_PROOF_OPEN: Joi.string()
                     .valid('true', 'false')
                     .default('false'),
+                FABLAB_REGISTRATION_PHASE: Joi.string()
+                    .valid('soon', 'open', 'closed')
+                    .default('closed'),
+                FABLAB_SUBMISSION_PHASE: Joi.string()
+                    .valid('soon', 'open', 'closed')
+                    .default('closed'),
             }),
         }),
         ThrottlerModule.forRoot({

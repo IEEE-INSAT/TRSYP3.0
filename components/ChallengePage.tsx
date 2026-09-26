@@ -3,17 +3,21 @@
 import { motion } from 'motion/react';
 import Link from 'next/link';
 import { phaseOf } from './register/ActivityToggle';
-import { REGISTRATION_OPEN } from '@/lib/config';
+import Image from 'next/image';
+import { REGISTRATION_OPEN, fablabChallenge, type RegistrationPhase } from '@/lib/config';
+import { FABLAB_AXES } from '@/lib/api/types';
 
 /**
- * The two tracks a team can actually register for. Status is read from the same
- * config the registration flow uses (`activityPhases`), so this section can
- * never drift from what /register will really let you do.
+ * The tracks a team can enter. Tracks 01/02 read their status from the same
+ * config the registration flow uses (`activityPhases`), so they can never drift
+ * from what /register will really let you do. Track 03 (Fablab)
+ * registers teams on the site too; its concept is submitted from the dashboard.
  */
 const TRACKS = [
   {
     id: 'competition',
-    activity: 'COMPETITION' as const,
+    phase: phaseOf('COMPETITION') as RegistrationPhase,
+    featured: false,
     label: 'Track 01',
     name: 'The Competition',
     summary:
@@ -23,7 +27,8 @@ const TRACKS = [
   },
   {
     id: 'technical',
-    activity: 'CHALLENGE' as const,
+    phase: phaseOf('CHALLENGE') as RegistrationPhase,
+    featured: false,
     label: 'Track 02',
     name: 'Technical Challenge',
     summary:
@@ -31,11 +36,23 @@ const TRACKS = [
     points: ['Autonomous navigation', 'Embedded systems', 'Engineering tasks'],
     href: 'https://drive.google.com/file/d/1qtixTEgNhvlKSnxkAGL2xf_IyEZ_6tbQ/view?usp=sharing',
   },
+  {
+    id: 'fablab',
+    phase: fablabChallenge.phase,
+    // The only track taking entries - shown first, full width.
+    featured: true,
+    label: 'Track 03 · Adwya × Orange',
+    name: 'Fablab Challenge',
+    summary:
+      'Build a small automated lab assistant that prepares samples or doses powders, checks its own result, and logs every step. The top 5 teams build it in a 12-hour makeathon.',
+    points: ['IEEE RAS members only', 'Teams of 2–4', 'Top 5 selected', 'Pitch · 17 October'],
+    href: '#fablab',
+  },
 ];
 
 const PHASE_LABEL = {
   open: 'Registration open',
-  soon: 'Registration closed',
+  soon: 'Opening soon',
   closed: 'Registration closed',
 } as const;
 
@@ -77,6 +94,24 @@ const TECHNICAL_AREAS = [
       </svg>
     ),
   },
+];
+
+/** Track 03 runs as a selection funnel; `current` marks where it stands now. */
+const FABLAB_STEPS = [
+  { id: 'submit', title: 'Submit your concept', meta: 'Now open' },
+  { id: 'select', title: 'Top 5 teams selected', meta: 'Selection' },
+  { id: 'build', title: '12-hour makeathon', meta: 'Build the prototype' },
+  { id: 'pitch', title: 'Pitch at TRSYP 3.0', meta: '17 October' },
+];
+const FABLAB_CURRENT_STEP = 'submit';
+
+/** The five questions the concept dossier must answer (from the spec book). */
+const FABLAB_QUESTIONS = [
+  'The bench problem you are solving',
+  'What you will build and how it is used',
+  'The main parts, with a simple sketch',
+  'What your minimum demo will show after 12 hours',
+  'Your safety and logging approach',
 ];
 
 const GAMES = [
@@ -190,20 +225,22 @@ export default function ChallengePage() {
         <div className="prog-container-wide">
           <div className="prog-eyebrow challenge-tracks-eyebrow">
             <span className="prog-eyebrow-line" />
-            <span className="prog-eyebrow-text">Two ways to take part</span>
+            <span className="prog-eyebrow-text">Three ways to take part</span>
             <span className="prog-eyebrow-line" />
           </div>
 
           <div className="challenge-tracks-grid">
             {TRACKS.map((track, i) => {
-              const phase = phaseOf(track.activity);
+              const phase = track.phase;
               const open = phase === 'open' && REGISTRATION_OPEN;
               const specificationBookAvailable = open || track.id === 'technical';
+              // Fablab's card points down to its own section rather than a PDF.
+              const ctaLabel = track.id === 'fablab' ? 'HOW TO ENTER' : 'DOWNLOAD SPECIFICATION BOOK';
 
               return (
                 <motion.div
                   key={track.id}
-                  className={`challenge-track challenge-track--${phase}`}
+                  className={`challenge-track challenge-track--${phase}${track.featured ? ' challenge-track--featured' : ''}`}
                   initial={{ opacity: 0, y: 24 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
@@ -228,8 +265,8 @@ export default function ChallengePage() {
 
                   {specificationBookAvailable ? (
                     <Link href={track.href} className="challenge-track-cta">
-                      DOWNLOAD SPECIFICATION BOOK
-                      <span aria-hidden="true">→</span>
+                      {ctaLabel}
+                      <span aria-hidden="true">{track.id === 'fablab' ? '↓' : '→'}</span>
                     </Link>
                   ) : (
                     <span className="challenge-track-cta challenge-track-cta--disabled">
@@ -418,6 +455,157 @@ export default function ChallengePage() {
               VIEW SPECIFICATION BOOK
             </a>
           </div>
+        </div>
+      </section>
+      {/* ── TRACK 03 · ADWYA × ORANGE FABLAB CHALLENGE ──
+          The only track taking entries. Teams register on the site, and the
+          leader submits the concept as a Google Drive folder link from the
+          dashboard. */}
+      <section className="fablab" id="fablab">
+        <div className="prog-container-wide">
+          <div className="challenge-games-head">
+            <div className="prog-eyebrow">
+              <span className="prog-eyebrow-line" />
+              <span className="prog-eyebrow-text">Track 03 · Now open</span>
+              <span className="prog-eyebrow-line" />
+            </div>
+            <h2 className="challenge-story-h">
+              Adwya × Orange <span className="fablab-hl">Fablab Challenge</span>
+            </h2>
+            <p className="fablab-intro">
+              IEEE student teams build a small automated lab assistant. It must check its own
+              result and log every step. The top 5 teams build their prototype in a 12-hour
+              makeathon and pitch it at TRSYP 3.0 on 17 October.
+            </p>
+            <div className="fablab-sponsors" aria-label="Presented by Adwya and Orange">
+              <span className="fablab-sponsors-label">Presented by</span>
+              <span className="fablab-sponsor-logo">
+                <Image src="/partners/adwya-logo.png" alt="Adwya" fill sizes="120px" style={{ objectFit: 'contain' }} />
+              </span>
+              <span className="fablab-sponsors-x" aria-hidden="true">×</span>
+              <span className="fablab-sponsor-logo fablab-sponsor-logo--square">
+                <Image src="/partners/orange-tunisie.png" alt="Orange Tunisie" fill sizes="48px" style={{ objectFit: 'contain' }} />
+              </span>
+            </div>
+          </div>
+
+          {/* The leader picks one axis when creating the team */}
+          <div className="fablab-options">
+            {FABLAB_AXES.map((axis, i) => (
+              <motion.div
+                key={axis.value}
+                className="fablab-option"
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: i * 0.08 }}
+              >
+                <span className="fablab-option-letter">Axis {axis.number}</span>
+                <h3 className="fablab-option-title">{axis.label}</h3>
+              </motion.div>
+            ))}
+          </div>
+          <p className="fablab-options-note">
+            Your team leader picks one axis. Whatever you build must <strong>check its own result</strong>{' '}
+            and <strong>log every step</strong>.
+          </p>
+
+          {/* Selection funnel */}
+          <ol className="fablab-steps">
+            {FABLAB_STEPS.map((step, i) => (
+              <li
+                key={step.id}
+                className={`fablab-step${step.id === FABLAB_CURRENT_STEP ? ' fablab-step--current' : ''}`}
+              >
+                <span className="fablab-step-num">{String(i + 1).padStart(2, '0')}</span>
+                <span className="fablab-step-title">{step.title}</span>
+                <span className="fablab-step-meta">{step.meta}</span>
+              </li>
+            ))}
+          </ol>
+
+          {/* How to enter */}
+          <motion.div
+            className="fablab-submit"
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="fablab-submit-copy">
+              <h3 className="fablab-submit-h">How to enter</h3>
+              <ol className="fablab-checklist">
+                <li>
+                  <strong>Register your team on the site.</strong> Sign up for TRSYP 3.0, then the leader
+                  creates a Fablab team from the <Link href="/dashboard">dashboard</Link> and picks the
+                  team&apos;s axis (2 to 4 members, leader included). Teammates join with the team code.
+                  The leader and every teammate must be <strong>IEEE RAS members</strong>.
+                </li>
+                <li>
+                  Put everything in <strong>one Google Drive folder</strong>, named with your team name.
+                </li>
+                <li>
+                  Set sharing to <strong>&ldquo;Anyone with the link can view&rdquo;</strong> - we cannot
+                  open private folders.
+                </li>
+                <li>
+                  Include your <strong>concept dossier as a PDF</strong> (max 3 pages) answering the five
+                  questions of the specification book:
+                  <ul className="fablab-questions">
+                    {FABLAB_QUESTIONS.map((q) => (
+                      <li key={q}>{q}</li>
+                    ))}
+                  </ul>
+                </li>
+                <li>
+                  <span className="fablab-optional">Optional</span> sketches, CAD files, a simulation, or a
+                  short video (max 2 minutes).
+                </li>
+                <li>
+                  Your team leader pastes the folder link in the <strong>Fablab card of the{' '}
+                  <Link href="/dashboard">dashboard</Link></strong>. They can replace it until submissions
+                  close.
+                </li>
+              </ol>
+            </div>
+
+            <div className="fablab-submit-side">
+              {fablabChallenge.submissionPhase === 'open' ? (
+                <Link href="/dashboard" className="fablab-btn">
+                  Submit from your dashboard
+                  <span aria-hidden="true">→</span>
+                </Link>
+              ) : (
+                <span className="fablab-btn fablab-btn--disabled">
+                  {fablabChallenge.submissionPhase === 'closed' ? 'Submissions closed' : 'Submissions open soon'}
+                </span>
+              )}
+              {fablabChallenge.specBookUrl ? (
+                <a
+                  href={fablabChallenge.specBookUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="fablab-btn fablab-btn--ghost"
+                >
+                  Specification book
+                </a>
+              ) : (
+                <span className="fablab-btn fablab-btn--ghost fablab-btn--disabled">
+                  Specification book soon
+                </span>
+              )}
+              <ul className="fablab-facts">
+                <li>
+                  <span>Fee</span>
+                  Included in your TRSYP 3.0 registration
+                </li>
+                <li>
+                  <span>Prizes</span>
+                  Announced soon
+                </li>
+              </ul>
+            </div>
+          </motion.div>
         </div>
       </section>
     </div>

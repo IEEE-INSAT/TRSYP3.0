@@ -3,7 +3,7 @@ import { PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsObject, IsOptional, ValidateNested } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { RegisterLocalDto, RegisterLocalSchema } from './register-local.dto';
+import { FacebookLinkSchema, RegisterLocalDto, RegisterLocalSchema } from './register-local.dto';
 import {
   InternationalInfoDto,
   InternationalInfoBaseSchema,
@@ -16,6 +16,9 @@ import {
  */
 export const UpdateProfileSchema = RegisterLocalSchema.partial().extend({
   internationalInfo: InternationalInfoBaseSchema.partial().optional(),
+  // May be omitted (participants who registered while it was optional have
+  // none), but never cleared: an empty string or null is rejected.
+  facebookLink: FacebookLinkSchema.optional(),
 });
 
 export type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>;

@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Put,
   Delete,
   Body,
   Param,
@@ -55,6 +56,9 @@ import {
   TeamActivityQueryDto,
   MyTeamsResponseDto,
   DEFAULT_TEAM_ACTIVITY,
+  ACTIVITY_ENUM_MESSAGE,
+  FablabSubmissionDto,
+  FablabSubmissionSchema,
 } from '../dto';
 import { JwtAuthGuard, RolesGuard } from '../../../common/guards';
 import { CurrentUser, Roles } from '../../../common/decorators';
@@ -364,6 +368,25 @@ export class RegistrationController {
   }
 
   /**
+   * Submit (or replace) the Fablab concept - a Google Drive folder link.
+   * Only the Fablab team's leader can, and only while submissions are open.
+   */
+  @Put('team/fablab-submission')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Submit or replace your Fablab concept Drive link (Fablab leader only)' })
+  @ApiResponse({ status: 200, description: 'Submission saved', type: TeamResponseDto })
+  @ApiResponse({ status: 400, description: 'Not a Google Drive link' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Submissions not open, or participant is banned' })
+  @ApiResponse({ status: 404, description: 'Not the leader of a Fablab team' })
+  async submitFablab(
+    @CurrentUser('sub') userId: string,
+    @Body(new ZodValidationPipe(FablabSubmissionSchema)) dto: FablabSubmissionDto,
+  ): Promise<TeamResponseDto> {
+    return this.toTeamResponse(await this.registrationService.submitFablab(userId, dto));
+  }
+
+  /**
    * Join an existing team using a 6-character code (member path).
    */
   @Post('team/join')
@@ -396,10 +419,12 @@ export class RegistrationController {
     const teams = await this.registrationService.getMyTeams(userId);
     const competition = teams[TeamActivity.COMPETITION];
     const challenge = teams[TeamActivity.CHALLENGE];
+    const fablab = teams[TeamActivity.FABLAB];
 
     return {
       competition: competition ? this.toTeamResponse(competition) : null,
       challenge: challenge ? this.toTeamResponse(challenge) : null,
+      fablab: fablab ? this.toTeamResponse(fablab) : null,
     };
   }
 
@@ -581,7 +606,7 @@ export class RegistrationController {
     @Query('activity') activity?: TeamActivity,
   ): Promise<TeamListResponseDto> {
     if (activity !== undefined && !(activity in TeamActivity)) {
-      throw new BadRequestException('activity must be COMPETITION or CHALLENGE');
+      throw new BadRequestException(ACTIVITY_ENUM_MESSAGE);
     }
 
     const filters = { skip, take, search, activity };

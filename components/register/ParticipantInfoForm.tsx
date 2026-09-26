@@ -70,7 +70,8 @@ export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => vo
     if (!form.country) e.country = 'Select your country';
     if (isIeee && !form.ieeeId.trim()) e.ieeeId = 'Required for IEEE members';
     else if (form.ieeeId && !/^\d+$/.test(form.ieeeId.trim())) e.ieeeId = 'Digits only';
-    if (form.facebookLink.trim() && !isFacebookUrl(form.facebookLink)) {
+    if (!form.facebookLink.trim()) e.facebookLink = 'Required';
+    else if (!isFacebookUrl(form.facebookLink)) {
       e.facebookLink = 'Enter a valid facebook.com profile link';
     }
     setErrors(e);
@@ -90,7 +91,7 @@ export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => vo
         sb: isStudent && form.sb ? (form.sb as SB) : undefined,
         country: form.country as Country,
         isRas: isIeee && form.isRas,
-        facebookLink: form.facebookLink.trim() || undefined,
+        facebookLink: form.facebookLink.trim(),
       });
       onSuccess();
     } catch (err) {
@@ -205,9 +206,9 @@ export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => vo
         {errors.country && <span className="reg-error">{errors.country}</span>}
       </div>
 
-      {/* Facebook profile - optional */}
+      {/* Facebook profile - required */}
       <div className="reg-field">
-        <label className="reg-label" htmlFor="facebookLink">Facebook Profile</label>
+        <label className="reg-label" htmlFor="facebookLink">Facebook Profile *</label>
         <input
           id="facebookLink"
           type="url"

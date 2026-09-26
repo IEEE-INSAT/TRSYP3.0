@@ -112,7 +112,11 @@ export default function ProfileForm() {
     if (isStudent && !form.sb) e.sb = 'Required for students';
     if (isIeee && !form.ieeeId.trim()) e.ieeeId = 'Required for IEEE members';
     else if (form.ieeeId && !/^\d+$/.test(form.ieeeId.trim())) e.ieeeId = 'Digits only';
-    if (form.facebookLink.trim() && !isFacebookUrl(form.facebookLink)) {
+    // Required now, but participants who registered while it was optional may
+    // still have none - they can save other edits; only removing a link is blocked.
+    if (!form.facebookLink.trim()) {
+      if (initial.facebookLink) e.facebookLink = 'Required - you can change your link but not remove it';
+    } else if (!isFacebookUrl(form.facebookLink)) {
       e.facebookLink = 'Enter a valid facebook.com profile link';
     }
     setErrors(e);
@@ -137,8 +141,10 @@ export default function ProfileForm() {
     }
     if (isStudent && form.sb !== initial.sb) patch.sb = (form.sb || undefined) as SB | undefined;
     if (isIeee && form.isRas !== initial.isRas) patch.isRas = form.isRas;
-    // An emptied field is sent as "" so the server clears the stored link.
-    if (form.facebookLink.trim() !== initial.facebookLink) patch.facebookLink = form.facebookLink.trim();
+    // Only a new, non-empty link is sent - the server rejects clearing it.
+    if (form.facebookLink.trim() && form.facebookLink.trim() !== initial.facebookLink) {
+      patch.facebookLink = form.facebookLink.trim();
+    }
     return patch;
   };
 
@@ -314,9 +320,9 @@ export default function ProfileForm() {
         {errors.country && <span className="reg-error">{errors.country}</span>}
       </div>
 
-      {/* Facebook profile - optional */}
+      {/* Facebook profile - required for new sign-ups; once set it can't be removed */}
       <div className="reg-field">
-        <label className="reg-label" htmlFor="profile-facebookLink">Facebook Profile</label>
+        <label className="reg-label" htmlFor="profile-facebookLink">Facebook Profile *</label>
         <input
           id="profile-facebookLink"
           type="url"

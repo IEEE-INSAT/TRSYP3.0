@@ -12,7 +12,7 @@ export const FEE_CURRENCY = 'TND';
 /** Membership tier used to price a participant. */
 export type FeeTier = 'IEEE_RAS' | 'IEEE' | 'NON_IEEE';
 
-/** Visitor = attends only; Challenger = on a competition or technical-challenge team. */
+/** Visitor = attends only; Challenger = on a team in any activity (competition, technical challenge or Fablab). */
 export type FeeRole = 'VISITOR' | 'CHALLENGER';
 
 export const FEES: Record<FeeRole, Record<FeeTier, number>> = {

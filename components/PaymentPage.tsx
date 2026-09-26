@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/lib/store/use-auth';
 import { useTeamStore, useRegistrationStore, useAuthStore } from '@/lib/store';
+import { TEAM_ACTIVITIES } from '@/lib/api/types';
 import {
   FEES,
   FEE_CURRENCY,
@@ -91,8 +92,10 @@ export default function PaymentPage() {
 
   // Same three facts the server prices off, so the highlighted card tracks a
   // team join or a RAS toggle without waiting for a profile refetch.
+  // A team in *any* activity - Fablab included - makes a challenger, exactly
+  // like the server's membership count.
   const isChallenger =
-    user.userType === 'challenger' || !!teams.COMPETITION || !!teams.CHALLENGE;
+    user.userType === 'challenger' || TEAM_ACTIVITIES.some((a) => !!teams[a]);
   const myFee = computeFee({ isIeee: user.isIeee, isRas: user.isRas, isChallenger });
 
   // A rejected proof is still an open bill, so the form belongs to both

@@ -25,6 +25,7 @@ import {
   CreateTeamDto,
   JoinTeamDto,
   UpdateTeamDto,
+  FablabSubmissionDto,
   DEFAULT_TEAM_ACTIVITY,
 } from '../dto';
 import {
@@ -103,7 +104,20 @@ const ACTIVITY_PHASE_CONFIG: Record<
     fallback: 'closed',
     label: 'Technical challenge',
   },
+  [TeamActivity.FABLAB]: {
+    envKey: 'FABLAB_REGISTRATION_PHASE',
+    fallback: 'closed',
+    label: 'Fablab challenge',
+  },
 };
+
+/**
+ * Fablab eligibility: an IEEE member who is also in the RAS society. (RAS is
+ * an IEEE society, so `isRas` is already forced false for non-IEEE rows.)
+ */
+function isFablabEligible(participantType: ParticipantType, isRas: boolean): boolean {
+  return participantType !== ParticipantType.NonIEEE && isRas;
+}
 
 /**
  * Service handling participant registration, profile management, and visa operations
@@ -264,10 +278,10 @@ export class RegistrationService {
         if (dto.phone !== undefined) updateData.phone = dto.phone;
         if (dto.gender !== undefined) updateData.gender = dto.gender;
         if (dto.country !== undefined) updateData.country = dto.country;
-        // Present-but-null clears the link; absent leaves it untouched.
-        if ('facebookLink' in dto) {
-          const nextFacebookLink = dto.facebookLink ?? null;
-          if (nextFacebookLink !== current.facebookLink) updateData.facebookLink = nextFacebookLink;
+        // The link can be set or changed but not cleared - the DTO rejects an
+        // empty value, so absent simply leaves it untouched.
+        if (dto.facebookLink !== undefined && dto.facebookLink !== current.facebookLink) {
+          updateData.facebookLink = dto.facebookLink;
         }
 
         // Membership type drives three dependent fields, so they are always
@@ -281,6 +295,24 @@ export class RegistrationService {
           nextType === ParticipantType.Student ? (dto.sb ?? current.sb) : null;
         const nextIeeeId = isIeeeMember ? (dto.ieeeId ?? current.ieeeId) : null;
         const nextIsRas = isIeeeMember ? (dto.isRas ?? current.isRas) : false;
+
+        // The Fablab challenge is for IEEE RAS members only, so a Fablab member
+        // can't drop either membership out from under their team. Only an edit
+        // that *loses* eligibility is checked - legacy rows are left alone.
+        const wasFablabEligible = isFablabEligible(current.participantType, current.isRas);
+        if (wasFablabEligible && !isFablabEligible(nextType, nextIsRas)) {
+          const fablabMembership = await tx.teamMembership.findUnique({
+            where: {
+              participantId_activity: { participantId: current.id, activity: TeamActivity.FABLAB },
+            },
+            select: { id: true },
+          });
+          if (fablabMembership) {
+            throw new ConflictException(
+              'The Fablab challenge is open to IEEE RAS members only. Leave your Fablab team before removing your IEEE or RAS membership.',
+            );
+          }
+        }
 
         // Only demanded when the membership type is actually being switched.
         // Enforcing it on every patch would lock legacy rows that predate the
@@ -928,6 +960,8 @@ export class RegistrationService {
             id: true,
             paid: true,
             banned: true,
+            participantType: true,
+            isRas: true,
             memberships: { where: { activity }, select: { id: true } },
             ledTeams: { where: { activity }, select: { id: true } },
           },
@@ -952,6 +986,8 @@ export class RegistrationService {
           );
         }
 
+        this.assertEligibleFor(activity, participant.participantType, participant.isRas);
+
         const label = this.activityLabel(activity).toLowerCase();
 
         if (participant.ledTeams.length > 0) {
@@ -971,6 +1007,8 @@ export class RegistrationService {
             name: dto.name,
             size: dto.size,
             activity,
+            // The DTO already requires an axis for FABLAB and rejects it otherwise.
+            axis: activity === TeamActivity.FABLAB ? dto.axis : null,
             leader: { connect: { id: participant.id } },
             memberships: {
               create: { activity, participant: { connect: { id: participant.id } } },
@@ -1049,6 +1087,7 @@ export class RegistrationService {
           data: {
             ...(dto.name !== undefined && { name: dto.name }),
             ...(dto.size !== undefined && { size: dto.size }),
+            ...(dto.axis !== undefined && activity === TeamActivity.FABLAB && { axis: dto.axis }),
           },
           include: TEAM_INCLUDE,
         });
@@ -1059,6 +1098,71 @@ export class RegistrationService {
       this.handlePrismaError(error);
       throw error;
     }
+  }
+
+  /**
+   * Submit (or replace) the Fablab concept: a Google Drive folder link.
+   * Leader only, and only while the submission window is open - separate from
+   * the team-registration window so the two can close at different times.
+   *
+   * @param userId - JWT sub resolved to internal DB user ID
+   * @param dto    - The Drive folder link (validated as drive.google.com)
+   * @throws NotFoundException  if the user doesn't lead a Fablab team
+   * @throws ForbiddenException if the user is banned or submissions are not open
+   */
+  async submitFablab(userId: string, dto: FablabSubmissionDto): Promise<TeamWithMembers> {
+    const phase = this.getFablabSubmissionPhase();
+    if (phase !== 'open') {
+      throw new ForbiddenException(
+        phase === 'soon' ? 'Fablab submissions have not opened yet.' : 'Fablab submissions are closed.',
+      );
+    }
+
+    try {
+      const team = await this.prisma.$transaction(async (tx) => {
+        const participant = await tx.participant.findUnique({
+          where: { userId },
+          select: {
+            id: true,
+            banned: true,
+            ledTeams: { where: { activity: TeamActivity.FABLAB }, select: { id: true } },
+          },
+        });
+
+        if (!participant) {
+          throw new NotFoundException('Participant profile not found.');
+        }
+
+        if (participant.banned) {
+          throw new ForbiddenException('Banned participants cannot submit.');
+        }
+
+        const ledTeam = participant.ledTeams[0];
+        if (!ledTeam) {
+          throw new NotFoundException('Only the leader of a Fablab team can submit.');
+        }
+
+        return tx.team.update({
+          where: { id: ledTeam.id },
+          data: { submissionUrl: dto.url, submittedAt: new Date() },
+          include: TEAM_INCLUDE,
+        });
+      });
+
+      return this.shapeTeam(team);
+    } catch (error) {
+      this.handlePrismaError(error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fablab submission window, from `FABLAB_SUBMISSION_PHASE`. Unrecognised
+   * values mean closed, like the registration windows.
+   */
+  getFablabSubmissionPhase(): RegistrationPhase {
+    const raw = this.config.get<string>('FABLAB_SUBMISSION_PHASE')?.trim().toLowerCase();
+    return raw === 'open' || raw === 'soon' || raw === 'closed' ? raw : 'closed';
   }
 
   /**
@@ -1082,6 +1186,8 @@ export class RegistrationService {
             id: true,
             paid: true,
             banned: true,
+            participantType: true,
+            isRas: true,
           },
         });
 
@@ -1118,6 +1224,7 @@ export class RegistrationService {
         // The code determines the activity, so the window check happens here
         // rather than up front.
         this.assertActivityOpen(target.activity);
+        this.assertEligibleFor(target.activity, participant.participantType, participant.isRas);
 
         const existing = await tx.teamMembership.findUnique({
           where: {
@@ -1230,6 +1337,7 @@ export class RegistrationService {
     const teams: Record<TeamActivity, TeamWithMembers | null> = {
       [TeamActivity.COMPETITION]: null,
       [TeamActivity.CHALLENGE]: null,
+      [TeamActivity.FABLAB]: null,
     };
 
     for (const membership of participant.memberships) {
@@ -1463,6 +1571,22 @@ export class RegistrationService {
     }
 
     return where;
+  }
+
+  /**
+   * The Fablab challenge is open to IEEE RAS members only - leader and
+   * teammates alike. Every other activity accepts anyone.
+   */
+  private assertEligibleFor(
+    activity: TeamActivity,
+    participantType: ParticipantType,
+    isRas: boolean,
+  ): void {
+    if (activity === TeamActivity.FABLAB && !isFablabEligible(participantType, isRas)) {
+      throw new ForbiddenException(
+        'The Fablab challenge is open to IEEE RAS members only. If you are one, update your IEEE and RAS membership in your profile first.',
+      );
+    }
   }
 
   /** Human-readable name for an activity, used in error messages. */

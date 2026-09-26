@@ -251,7 +251,7 @@ export interface RegisterParticipantPayload {
   country: Country;
   /** IEEE RAS society membership - only sent for IEEE members. */
   isRas?: boolean;
-  /** Optional Facebook profile URL. On PATCH, `""` clears it. */
+  /** Facebook profile URL - required at registration; on PATCH it can be changed but not cleared. */
   facebookLink?: string;
 }
 
@@ -304,17 +304,59 @@ export interface BackendParticipant {
 
 /**
  * The event a team competes in. A participant may hold one team of each - a
- * competition team and a technical challenge team - but never two of the same.
+ * competition, technical challenge and Fablab team - but never two of the same.
  */
-export type TeamActivity = 'COMPETITION' | 'CHALLENGE';
+export type TeamActivity = 'COMPETITION' | 'CHALLENGE' | 'FABLAB';
 
-export const TEAM_ACTIVITIES: TeamActivity[] = ['COMPETITION', 'CHALLENGE'];
+export const TEAM_ACTIVITIES: TeamActivity[] = ['COMPETITION', 'CHALLENGE', 'FABLAB'];
 
 /** UI copy for each activity, so labels stay identical across screens. */
 export const ACTIVITY_LABELS: Record<TeamActivity, string> = {
   COMPETITION: 'Competition',
   CHALLENGE: 'Technical Challenge',
+  FABLAB: 'Adwya × Orange Fablab Challenge',
 };
+
+/** Team size bounds (leader included) - mirrors the backend's team DTO. */
+export const TEAM_SIZE_LIMITS: Record<TeamActivity, { min: number; max: number }> = {
+  COMPETITION: { min: 3, max: 6 },
+  CHALLENGE: { min: 2, max: 6 },
+  FABLAB: { min: 2, max: 4 },
+};
+
+/** Fablab Challenge axis - picked by the leader, stored on FABLAB teams only. */
+export type FablabAxis = 'PIPETTING_DILUTION' | 'INSPECTION_GROWTH' | 'CONTAINMENT_HANDLING';
+
+/** The three axes in display order, numbered as in the specification book. */
+export const FABLAB_AXES: { value: FablabAxis; number: number; label: string }[] = [
+  { value: 'PIPETTING_DILUTION', number: 1, label: 'Automated Pipetting & Dilution Station' },
+  { value: 'INSPECTION_GROWTH', number: 2, label: 'Inspection Robot & Growth Scanner' },
+  { value: 'CONTAINMENT_HANDLING', number: 3, label: 'Secure Containment Handling Enclosure' },
+];
+
+/** "Axis 2 · Inspection Robot & Growth Scanner" */
+export function fablabAxisLabel(axis: FablabAxis): string {
+  const a = FABLAB_AXES.find((x) => x.value === axis);
+  return a ? `Axis ${a.number} · ${a.label}` : axis;
+}
+
+/**
+ * Whether a participant may create or join a team in this activity. Fablab is
+ * for IEEE RAS members only (leader and teammates alike) - mirrors the
+ * backend's `assertEligibleFor`. Every other activity is open to all.
+ */
+export function canEnterActivity(
+  activity: TeamActivity,
+  member: { isIeee: boolean; isRas: boolean },
+): boolean {
+  return activity !== 'FABLAB' || (member.isIeee && member.isRas);
+}
+
+/** Size options offered in the team forms for one activity. */
+export function teamSizeOptions(activity: TeamActivity): number[] {
+  const { min, max } = TEAM_SIZE_LIMITS[activity];
+  return Array.from({ length: max - min + 1 }, (_, i) => min + i);
+}
 
 export interface TeamMemberSummary {
   id: string;
@@ -331,6 +373,12 @@ export interface Team {
   size: number;
   code: string;
   activity: TeamActivity;
+  /** FABLAB teams only; null (or absent from older backends) otherwise. */
+  axis?: FablabAxis | null;
+  /** FABLAB only - the Google Drive folder the leader submitted, if any. */
+  submissionUrl?: string | null;
+  /** ISO timestamp of the last submission. */
+  submittedAt?: string | null;
   leaderId: string;
   memberCount: number;
   spotsLeft: number;
@@ -341,6 +389,7 @@ export interface Team {
 export interface MyTeams {
   competition: Team | null;
   challenge: Team | null;
+  fablab: Team | null;
 }
 
 /** Body of POST /registration/team. */
@@ -348,6 +397,8 @@ export interface CreateTeamPayload {
   name: string;
   size: number;
   activity?: TeamActivity;
+  /** Required when `activity` is FABLAB, omitted otherwise. */
+  axis?: FablabAxis;
 }
 
 // ── Challenge (riddles) ───────────────────────────────────────────────────────
