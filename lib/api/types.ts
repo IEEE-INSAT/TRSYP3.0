@@ -242,9 +242,9 @@ export type CareerStage = 'Student' | 'YoungProfessional';
 /**
  * Body of POST /registration (Page 1 of the registration flow spec).
  *
- * IEEE membership and RAS are never asked: the server looks them up in IEEE's
+ * IEEE membership and RAS are never sent: the server looks them up in IEEE's
  * records. `ieeeId` is an optional lookup key (email is the fallback); `sb`
- * is only sent for Students.
+ * is only sent for Students who say they're IEEE members.
  */
 export interface RegisterParticipantPayload {
   ieeeId?: number;
@@ -261,11 +261,12 @@ export interface RegisterParticipantPayload {
  * Body of PATCH /registration/profile.
  *
  * Every field is optional - only what the user actually changed is sent.
- * `ieeeId: null` removes the member number. A new number is checked with
- * IEEE right away.
+ * `ieeeId: null` removes the member number, `sb: null` the student branch.
+ * A new number is checked with IEEE right away.
  */
-export type UpdateParticipantPayload = Partial<Omit<RegisterParticipantPayload, 'ieeeId'>> & {
+export type UpdateParticipantPayload = Partial<Omit<RegisterParticipantPayload, 'ieeeId' | 'sb'>> & {
   ieeeId?: number | null;
+  sb?: SB | null;
 };
 
 /**

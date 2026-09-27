@@ -260,7 +260,7 @@ describe('RegistrationService', () => {
       );
     });
 
-    it('should reject a student without a branch', async () => {
+    it('should accept a student with no branch (not an IEEE student)', async () => {
       const dto: RegisterLocalDto = {
         phone: '+21612345678',
         gender: 'male',
@@ -269,8 +269,14 @@ describe('RegistrationService', () => {
         facebookLink: 'https://www.facebook.com/test.user',
       };
 
-      await expect(service.register('account-1', dto)).rejects.toThrow(BadRequestException);
-      expect(mockPrismaService.participant.create).not.toHaveBeenCalled();
+      mockPrismaService.participant.findUnique.mockResolvedValue(null);
+      mockPrismaService.participant.create.mockResolvedValue(mockParticipant);
+
+      await service.register('account-1', dto);
+
+      expect(mockPrismaService.participant.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ sb: null }) }),
+      );
     });
   });
 
@@ -429,28 +435,31 @@ describe('RegistrationService', () => {
       expect(data.participantType).toBeUndefined();
     });
 
-    it('should reject becoming a student without a branch', async () => {
+    it('should let a student become one without a branch', async () => {
       const youngProfessional = {
         ...mockParticipant,
         careerStage: CareerStage.YoungProfessional,
         sb: null,
       };
       mockPrismaService.participant.findUnique.mockResolvedValue(youngProfessional);
+      mockPrismaService.participant.update.mockResolvedValue(youngProfessional);
 
-      await expect(
-        service.updateProfile('participant-1', { careerStage: CareerStage.Student }),
-      ).rejects.toThrow(BadRequestException);
+      await service.updateProfile('participant-1', { careerStage: CareerStage.Student });
+
+      expect(mockPrismaService.participant.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ careerStage: CareerStage.Student }) }),
+      );
     });
 
-    it('should not demand a branch when the career stage is untouched', async () => {
-      // A legacy row missing its branch must still be able to edit its phone.
-      const legacy = { ...mockParticipant, sb: null };
-      const dto: UpdateProfileDto = { phone: '+21699999999' };
+    it('should let the student branch be removed', async () => {
+      mockPrismaService.participant.findUnique.mockResolvedValue(mockParticipant);
+      mockPrismaService.participant.update.mockResolvedValue(mockParticipant);
 
-      mockPrismaService.participant.findUnique.mockResolvedValue(legacy);
-      mockPrismaService.participant.update.mockResolvedValue(legacy);
+      await service.updateProfile('participant-1', { sb: null });
 
-      await expect(service.updateProfile('participant-1', dto)).resolves.toBeDefined();
+      expect(mockPrismaService.participant.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ sb: null }) }),
+      );
     });
   });
 

@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { FABLAB_AXES, type FablabAxis } from '@/lib/api/types';
 
 /**
@@ -52,9 +51,8 @@ export function FablabEligibilityNotice() {
   return (
     <p className="reg-account-hint">
       The Fablab challenge is open to <strong>IEEE RAS members only</strong>, for the leader and every
-      teammate. Your membership comes from IEEE&apos;s records: if you are a RAS member, re-check it
-      from your dashboard. If your IEEE account uses another email, add your IEEE member number in
-      your <Link href="/dashboard/profile">profile</Link> first.
+      teammate. We take your membership from IEEE&apos;s records. If you&apos;re a RAS member, fill the IEEE Member Number in your profile and use
+      &ldquo;Check my IEEE membership&rdquo; on your dashboard first.
     </p>
   );
 }

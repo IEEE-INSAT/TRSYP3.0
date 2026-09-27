@@ -122,9 +122,13 @@ export interface ParticipantRegistrationInput {
   facebookLink?: string;
 }
 
-/** A profile edit: only the changed fields. `ieeeId: null` removes the member number. */
-export type ParticipantProfilePatch = Partial<Omit<ParticipantRegistrationInput, 'ieeeId'>> & {
+/**
+ * A profile edit: only the changed fields. `ieeeId: null` removes the member
+ * number, `sb: null` the student branch.
+ */
+export type ParticipantProfilePatch = Partial<Omit<ParticipantRegistrationInput, 'ieeeId' | 'sb'>> & {
   ieeeId?: number | null;
+  sb?: SB | null;
 };
 
 interface RegistrationState {
@@ -332,7 +336,7 @@ export const useRegistrationStore = create<RegistrationState>()(
                       patch.ieeeId === null
                         ? undefined
                         : (patch.ieeeId ?? (user.ieeeId ? Number(user.ieeeId) : undefined)),
-                    sb: patch.sb ?? (user.sb || undefined),
+                    sb: patch.sb === null ? undefined : (patch.sb ?? (user.sb || undefined)),
                     country: patch.country ?? user.country ?? 'Tunisia',
                     facebookLink: patch.facebookLink ?? user.facebookLink,
                   }),

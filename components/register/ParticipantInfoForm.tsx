@@ -3,7 +3,7 @@
 import { useState, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useRegistrationStore } from '@/lib/store';
-import { isFacebookUrl } from '@/lib/utils';
+import { ieeeMemberNumberError, isFacebookUrl } from '@/lib/utils';
 import {
   COUNTRY_OPTIONS,
   DIAL_CODES,
@@ -39,8 +39,9 @@ const initial: FormState = {
 /**
  * Page 1 of the registration flow - participant info (POST /registration).
  *
- * IEEE and RAS membership are not asked: the server looks them up in IEEE's
- * records after registration, by member number when given, else by email.
+ * "Are you an IEEE member?" only decides which fields to show (member number,
+ * student branch) - the answer is never sent. Membership and RAS come from
+ * IEEE's records, looked up after registration by member number, else email.
  */
 export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => void }) {
   const registerParticipant = useRegistrationStore((s) => s.registerParticipant);
@@ -53,7 +54,9 @@ export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => vo
   const set = <K extends keyof FormState>(key: K, val: FormState[K]) =>
     setForm((p) => ({ ...p, [key]: val }));
 
+  const [saysIeeeMember, setSaysIeeeMember] = useState<boolean | null>(null);
   const isStudent = form.careerStage === 'Student';
+  const asksBranch = saysIeeeMember === true && isStudent;
 
   // Local number digits only (drop spaces/dashes and any national trunk `0`),
   // then prepend the selected dial code to build the E.164 value.
@@ -67,9 +70,10 @@ export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => vo
     if (!localDigits) e.phone = 'Required';
     else if (!/^\d{4,14}$/.test(localDigits)) e.phone = 'Enter a valid phone number (digits only)';
     else if (!/^\+[1-9]\d{1,14}$/.test(fullPhone)) e.phone = 'Invalid phone number for this country code';
-    if (isStudent && !form.sb) e.sb = 'Required for students';
+    if (asksBranch && !form.sb) e.sb = 'Required for IEEE students';
     if (!form.country) e.country = 'Select your country';
-    if (form.ieeeId.trim() && !/^\d+$/.test(form.ieeeId.trim())) e.ieeeId = 'Digits only';
+    const ieeeIdError = saysIeeeMember ? ieeeMemberNumberError(form.ieeeId) : null;
+    if (ieeeIdError) e.ieeeId = ieeeIdError;
     if (!form.facebookLink.trim()) e.facebookLink = 'Required';
     else if (!isFacebookUrl(form.facebookLink)) {
       e.facebookLink = 'Enter a valid facebook.com profile link';
@@ -87,8 +91,9 @@ export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => vo
         careerStage: form.careerStage as CareerStage,
         gender: form.gender as Gender,
         phone: fullPhone,
-        ieeeId: form.ieeeId.trim() ? Number(form.ieeeId.trim()) : undefined,
-        sb: isStudent && form.sb ? (form.sb as SB) : undefined,
+        // Hidden fields are never sent: the answer itself isn't stored.
+        ieeeId: saysIeeeMember ? Number(form.ieeeId.trim()) : undefined,
+        sb: asksBranch && form.sb ? (form.sb as SB) : undefined,
         country: form.country as Country,
         facebookLink: form.facebookLink.trim(),
       });
@@ -101,11 +106,13 @@ export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => vo
   };
 
   const complete =
+    saysIeeeMember !== null &&
     !!form.careerStage &&
     !!form.gender &&
     !!form.phone &&
     !!form.country &&
-    (!isStudent || !!form.sb);
+    (!saysIeeeMember || !!form.ieeeId.trim()) &&
+    (!asksBranch || !!form.sb);
 
   return (
     <motion.form
@@ -116,6 +123,32 @@ export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => vo
       transition={{ duration: 0.4 }}
     >
       <div className="reg-section-label">Participant Information</div>
+
+      {/* IEEE membership - only shows the member number and branch fields.
+          The answer isn't stored: membership comes from IEEE's records. */}
+      <div className="reg-field">
+        <label className="reg-label">Are you an IEEE member? *</label>
+        <div className="reg-toggle-group">
+          <button
+            type="button"
+            className={`reg-toggle ${saysIeeeMember === true ? 'reg-toggle-active-green' : ''}`}
+            onClick={() => setSaysIeeeMember(true)}
+          >
+            Yes
+          </button>
+          <button
+            type="button"
+            className={`reg-toggle ${saysIeeeMember === false ? 'reg-toggle-active-green' : ''}`}
+            onClick={() => {
+              setSaysIeeeMember(false);
+              set('ieeeId', '');
+              set('sb', '');
+            }}
+          >
+            No
+          </button>
+        </div>
+      </div>
 
       {/* Student vs Young Professional */}
       <div className="reg-field">
@@ -213,28 +246,37 @@ export default function ParticipantInfoForm({ onSuccess }: { onSuccess: () => vo
         {errors.facebookLink && <span className="reg-error">{errors.facebookLink}</span>}
       </div>
       
-      {/* IEEE member number - optional lookup key; email is the fallback */}
-      <div className="reg-field">
-        <label className="reg-label" htmlFor="ieeeId">IEEE Member Number (optional)</label>
-        <input
-          id="ieeeId"
-          className={`reg-input ${errors.ieeeId ? 'reg-input-error' : ''}`}
-          type="text"
-          inputMode="numeric"
-          placeholder="e.g. 12345678"
-          value={form.ieeeId}
-          onChange={(e) => set('ieeeId', e.target.value)}
-        />
-        {errors.ieeeId && <span className="reg-error">{errors.ieeeId}</span>}
-        <span className="reg-field-hint">
-          We check your IEEE and RAS membership with IEEE, using this number or your account
-          email. Add it if your IEEE account uses a different email.
-        </span>
-      </div>
-
-      {/* Student branch - students only */}
+      {/* IEEE member number - required from IEEE members */}
       <AnimatePresence>
-        {isStudent && (
+        {saysIeeeMember === true && (
+          <motion.div
+            className="reg-field"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <label className="reg-label" htmlFor="ieeeId">IEEE Member Number *</label>
+            <input
+              id="ieeeId"
+              className={`reg-input ${errors.ieeeId ? 'reg-input-error' : ''}`}
+              type="text"
+              inputMode="numeric"
+              placeholder="e.g. 12345678"
+              value={form.ieeeId}
+              onChange={(e) => set('ieeeId', e.target.value)}
+            />
+            {errors.ieeeId && <span className="reg-error">{errors.ieeeId}</span>}
+            <span className="reg-field-hint">
+              We check your IEEE and RAS membership with IEEE using this number.
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Student branch - IEEE students only */}
+      <AnimatePresence>
+        {asksBranch && (
           <motion.div
             className="reg-field"
             initial={{ opacity: 0, height: 0 }}

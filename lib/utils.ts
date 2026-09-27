@@ -29,3 +29,16 @@ export function isFacebookUrl(value: string): boolean {
     return false;
   }
 }
+
+/**
+ * What's wrong with an IEEE member number as typed, or null when it's fine.
+ * Required from anyone who says they're an IEEE member. Real numbers have at
+ * least 5 digits (the server skips shorter ones).
+ */
+export function ieeeMemberNumberError(value: string): string | null {
+  const digits = value.trim();
+  if (!digits) return 'Required for IEEE members';
+  if (!/^\d+$/.test(digits)) return 'Digits only';
+  if (digits.length < 5) return 'Enter your full IEEE member number';
+  return null;
+}

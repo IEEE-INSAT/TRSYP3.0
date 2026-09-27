@@ -56,7 +56,7 @@ export const RegisterLocalSchema = z.object({
     message: "Gender must be 'male' or 'female'",
   }),
   careerStage: z.nativeEnum(CareerStage),
-  // Required for students - the service checks it against `careerStage`.
+  // IEEE student branch - optional; kept for students only.
   sb: z.nativeEnum(SB).optional(),
   country: z.nativeEnum(COUNTRY),
   // Required for new registrations. Participants who registered while it was

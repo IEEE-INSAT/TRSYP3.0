@@ -159,10 +159,6 @@ export class RegistrationService {
   ): Promise<Participant> {
     const isInternational = 'internationalInfo' in dto;
 
-    if (dto.careerStage === CareerStage.Student && !dto.sb) {
-      throw new BadRequestException('A student branch is required for students');
-    }
-
     try {
       const participant = await this.prisma.$transaction(async (tx) => {
         // Edge case: Check if participant already exists for this user
@@ -186,7 +182,9 @@ export class RegistrationService {
             phone: dto.phone,
             gender: dto.gender,
             careerStage: dto.careerStage,
-            sb: dto.careerStage === CareerStage.Student ? dto.sb : null,
+            // An IEEE student branch: only students have one, and only
+            // those who say they're IEEE members are asked for it.
+            sb: dto.careerStage === CareerStage.Student ? (dto.sb ?? null) : null,
             country: dto.country,
             paid: false,
             banned: false,
@@ -310,13 +308,13 @@ export class RegistrationService {
         // participant's answer. IEEE membership and RAS are not: they come
         // from the IEEE verification, re-derived below.
         const nextStage = dto.careerStage ?? current.careerStage;
+        // Optional (only IEEE students have one); null removes it.
         const nextSb =
-          nextStage === CareerStage.YoungProfessional ? null : (dto.sb ?? current.sb);
-        // Only demanded when the answer is being given, so legacy rows that
-        // predate the rule aren't locked out of a phone-number edit.
-        if (dto.careerStage === CareerStage.Student && !nextSb) {
-          throw new BadRequestException('A student branch is required for students');
-        }
+          nextStage === CareerStage.YoungProfessional
+            ? null
+            : dto.sb === undefined
+              ? current.sb
+              : dto.sb;
         // null removes the member number; absent leaves it.
         const nextIeeeId = dto.ieeeId === undefined ? current.ieeeId : dto.ieeeId;
         const ieeeIdChanged = nextIeeeId !== current.ieeeId;
@@ -1615,7 +1613,7 @@ export class RegistrationService {
   ): void {
     if (activity === TeamActivity.FABLAB && !isFablabEligible(participantType, isRas)) {
       throw new ForbiddenException(
-        'The Fablab challenge is open to IEEE RAS members only. If you are one, check your IEEE membership from your dashboard first (add your IEEE member number if your IEEE account uses another email).',
+        'The Fablab challenge is open to IEEE RAS members only. We take your membership from IEEE\'s records: if you\'re a RAS member, fill the IEEE Member Number in your profile and use "Check my IEEE membership" on your dashboard first.',
       );
     }
   }
