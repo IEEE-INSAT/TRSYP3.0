@@ -8,8 +8,10 @@ import type { PaymentMethod } from '../payment';
 import type { BackendPaymentProof } from '../api/types';
 import type {
   BackendParticipant,
+  CareerStage,
   Country,
   Gender,
+  IeeeVerification,
   ParticipantType,
   RegisterParticipantPayload,
   SB,
@@ -71,9 +73,14 @@ export interface UserData {
   email: string;
   whatsapp: string;
   university: string;
+  /** Priced as an IEEE member - from IEEE's records, never the user's say-so. */
   isIeee: boolean;
+  /** IEEE member number as entered, empty when none. */
   ieeeId: string;
+  /** Priced as an IEEE RAS member - from IEEE's records. */
   isRas: boolean;
+  /** The last IEEE check; null until the first one completes. */
+  ieeeVerification?: IeeeVerification | null;
   /** Facebook profile URL, empty string when not provided. */
   facebookLink?: string;
   /**
@@ -83,6 +90,7 @@ export interface UserData {
    */
   gender?: Gender;
   participantType?: ParticipantType;
+  careerStage?: CareerStage | null;
   sb?: SB | '';
   country?: Country;
   status: RegStatus;
@@ -98,19 +106,26 @@ export interface UserData {
   members?: TeamMember[];
 }
 
-/** Page 1 (participant info) input - matches the registration flow spec. */
+/**
+ * Page 1 (participant info) input. IEEE membership and RAS are not asked:
+ * the server looks them up in IEEE's records.
+ */
 export interface ParticipantRegistrationInput {
-  participantType: ParticipantType;
+  careerStage: CareerStage;
   gender: Gender;
   phone: string;
+  /** Optional IEEE member number - the most precise lookup key. */
   ieeeId?: number;
   sb?: SB;
   country: Country;
-  /** IEEE RAS society membership - answered at registration, defaults to false. */
-  isRas: boolean;
   /** Optional Facebook profile URL; empty string means "not provided". */
   facebookLink?: string;
 }
+
+/** A profile edit: only the changed fields. `ieeeId: null` removes the member number. */
+export type ParticipantProfilePatch = Partial<Omit<ParticipantRegistrationInput, 'ieeeId'>> & {
+  ieeeId?: number | null;
+};
 
 interface RegistrationState {
   user: UserData | null;
@@ -132,7 +147,9 @@ interface RegistrationState {
 
   registerParticipant: (input: ParticipantRegistrationInput) => Promise<void>;
   /** Edit an existing participant - only the changed fields need to be passed. */
-  updateProfile: (patch: Partial<ParticipantRegistrationInput>) => Promise<void>;
+  updateProfile: (patch: ParticipantProfilePatch) => Promise<void>;
+  /** Ask IEEE again for the membership the fee is based on. Throws when IEEE can't be reached. */
+  recheckIeeeMembership: () => Promise<void>;
   /** `file` is null only for a cash payment, which has no receipt. */
   submitPayment: (
     file: File | null,
@@ -145,16 +162,13 @@ interface RegistrationState {
 }
 
 function toPayload(input: ParticipantRegistrationInput): RegisterParticipantPayload {
-  const isIeee = input.participantType !== 'NonIEEE';
   return {
     phone: input.phone,
     gender: input.gender,
-    participantType: input.participantType,
-    ieeeId: isIeee ? input.ieeeId : undefined,
-    sb: input.participantType === 'Student' ? input.sb : undefined,
+    careerStage: input.careerStage,
+    ieeeId: input.ieeeId,
+    sb: input.careerStage === 'Student' ? input.sb : undefined,
     country: input.country,
-    // RAS is an IEEE society - never claim it for a non-IEEE participant.
-    isRas: isIeee && input.isRas,
     facebookLink: input.facebookLink?.trim() || undefined,
   };
 }
@@ -170,9 +184,11 @@ function participantFields(p: BackendParticipant) {
     isIeee: p.participantType !== 'NonIEEE',
     ieeeId: p.ieeeId ? String(p.ieeeId) : '',
     isRas: p.isRas ?? false,
+    ieeeVerification: p.ieeeVerification ?? null,
     facebookLink: p.facebookLink ?? '',
     gender: p.gender as Gender,
     participantType: p.participantType,
+    careerStage: p.careerStage ?? null,
     sb: (p.sb ?? '') as SB | '',
     country: p.country,
     participantId: p.id,
@@ -184,16 +200,18 @@ function participantFields(p: BackendParticipant) {
  * API is off (`features.registrationApi`), where there is no saved row to read.
  */
 function participantFieldsFromInput(input: ParticipantRegistrationInput) {
-  const isIeee = input.participantType !== 'NonIEEE';
   return {
     whatsapp: input.phone,
     university: input.sb ?? '',
-    isIeee,
+    // With no server there is no IEEE check: priced as a non-member.
+    isIeee: false,
     ieeeId: input.ieeeId ? String(input.ieeeId) : '',
-    isRas: isIeee && input.isRas,
+    isRas: false,
+    ieeeVerification: null,
     facebookLink: input.facebookLink?.trim() ?? '',
     gender: input.gender,
-    participantType: input.participantType,
+    participantType: 'NonIEEE' as ParticipantType,
+    careerStage: input.careerStage,
     sb: (input.sb ?? '') as SB | '',
     country: input.country,
   };
@@ -254,8 +272,8 @@ export const useRegistrationStore = create<RegistrationState>()(
               userType: 'participant',
               fullName,
               email,
-              // Prefer the stored row: the server normalises what it keeps
-              // (e.g. RAS is never true for a non-IEEE participant).
+              // Prefer the stored row: the server decides membership and RAS
+              // from IEEE's records, not from anything typed here.
               ...(saved ? participantFields(saved) : participantFieldsFromInput(input)),
               status: 'waiting_for_payment',
               paymentProofSubmitted: false,
@@ -284,19 +302,15 @@ export const useRegistrationStore = create<RegistrationState>()(
             throw new Error('You must be signed in to edit your profile.');
           }
 
-          // Send only what changed. The server derives `sb`/`ieeeId`/`isRas`
-          // from the resulting membership type, so a switch to NonIEEE clears
-          // them without the client having to ask.
+          // Send only what changed. Membership and RAS are never sent: the
+          // server takes them from IEEE, and re-checks when the number changes.
           const body: UpdateParticipantPayload = {};
           if (patch.phone !== undefined) body.phone = patch.phone;
           if (patch.gender !== undefined) body.gender = patch.gender;
           if (patch.country !== undefined) body.country = patch.country;
-          if (patch.participantType !== undefined) {
-            body.participantType = patch.participantType;
-          }
+          if (patch.careerStage !== undefined) body.careerStage = patch.careerStage;
           if (patch.ieeeId !== undefined) body.ieeeId = patch.ieeeId;
           if (patch.sb !== undefined) body.sb = patch.sb;
-          if (patch.isRas !== undefined) body.isRas = patch.isRas;
           // Sent even when empty - that is how the link gets cleared.
           if (patch.facebookLink !== undefined) body.facebookLink = patch.facebookLink.trim();
 
@@ -311,13 +325,15 @@ export const useRegistrationStore = create<RegistrationState>()(
                 {
                   ...user,
                   ...participantFieldsFromInput({
-                    participantType: patch.participantType ?? user.participantType ?? 'NonIEEE',
+                    careerStage: patch.careerStage ?? user.careerStage ?? 'Student',
                     gender: patch.gender ?? user.gender ?? 'male',
                     phone: patch.phone ?? user.whatsapp,
-                    ieeeId: patch.ieeeId ?? (user.ieeeId ? Number(user.ieeeId) : undefined),
+                    ieeeId:
+                      patch.ieeeId === null
+                        ? undefined
+                        : (patch.ieeeId ?? (user.ieeeId ? Number(user.ieeeId) : undefined)),
                     sb: patch.sb ?? (user.sb || undefined),
                     country: patch.country ?? user.country ?? 'Tunisia',
-                    isRas: patch.isRas ?? user.isRas,
                     facebookLink: patch.facebookLink ?? user.facebookLink,
                   }),
                   participantId: user.participantId,
@@ -331,6 +347,17 @@ export const useRegistrationStore = create<RegistrationState>()(
           });
           throw e;
         }
+      },
+
+      recheckIeeeMembership: async () => {
+        const { user } = get();
+        if (!user) return;
+        const token = await useAuthStore.getState().getAccessToken();
+        if (!token) throw new Error('You must be signed in to check your membership.');
+        const saved = await registrationService.recheckIeeeMembership(token);
+        // Re-read after the await: the profile may have changed meanwhile.
+        const current = get().user;
+        if (saved && current) set({ user: { ...current, ...participantFields(saved) } });
       },
 
       submitPayment: async (file, method, onProgress) => {

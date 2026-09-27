@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../prisma/prisma.module';
+import { IeeeModule } from '../ieee/ieee.module';
 import { RegistrationService } from './service';
 import { RegistrationController } from './controller';
 
@@ -10,7 +11,7 @@ import { RegistrationController } from './controller';
  * Exports RegistrationService for use by other modules (Payment, Rooming).
  */
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, IeeeModule],
   controllers: [RegistrationController],
   providers: [RegistrationService],
   exports: [RegistrationService],

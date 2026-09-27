@@ -1,9 +1,14 @@
 import { z } from 'zod';
-import { PartialType } from '@nestjs/swagger';
+import { OmitType, PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsObject, IsOptional, ValidateNested } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { FacebookLinkSchema, RegisterLocalDto, RegisterLocalSchema } from './register-local.dto';
+import {
+  FacebookLinkSchema,
+  IeeeIdSchema,
+  RegisterLocalDto,
+  RegisterLocalSchema,
+} from './register-local.dto';
 import {
   InternationalInfoDto,
   InternationalInfoBaseSchema,
@@ -19,6 +24,8 @@ export const UpdateProfileSchema = RegisterLocalSchema.partial().extend({
   // May be omitted (participants who registered while it was optional have
   // none), but never cleared: an empty string or null is rejected.
   facebookLink: FacebookLinkSchema.optional(),
+  // null removes the member number; the next check then goes by email.
+  ieeeId: IeeeIdSchema.nullable().optional(),
 });
 
 export type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>;
@@ -32,10 +39,15 @@ class PartialInternationalInfoDto extends PartialType(InternationalInfoDto) {}
 /**
  * DTO for profile update
  * All fields are optional using NestJS PartialType
- * Note: participantType, sb, and country cannot be changed after registration
- * (enforced at service level)
  */
-export class UpdateProfileDto extends PartialType(RegisterLocalDto) {
+export class UpdateProfileDto extends PartialType(OmitType(RegisterLocalDto, ['ieeeId'] as const)) {
+  @ApiPropertyOptional({
+    description: 'IEEE member number; null removes it',
+    example: 12345678,
+    nullable: true,
+  })
+  ieeeId?: number | null;
+
   @ApiPropertyOptional({
     description: 'International info updates (only for international participants)',
     type: () => PartialInternationalInfoDto,

@@ -51,6 +51,11 @@ import { PaymentModule } from './modules/payment/payment.module';
                 FABLAB_SUBMISSION_PHASE: Joi.string()
                     .valid('soon', 'open', 'closed')
                     .default('closed'),
+                // IEEE GetMemberStatus credentials, shared with the admin
+                // portal. Without them no membership checks run.
+                IEEE_API_BASE_URL: Joi.string().uri().optional(),
+                IEEE_CLIENT_ID: Joi.string().optional(),
+                IEEE_CLIENT_SECRET: Joi.string().optional(),
             }),
         }),
         ThrottlerModule.forRoot({

@@ -77,9 +77,16 @@ model Participant {
   gender          String
   paid            Boolean         @default(false)
   isInternational Boolean         @default(false) @map("is_international")
+  // `participantType` and `isRas` are what the participant is priced on. Once
+  // an IEEE verification exists they are written from it (see
+  // `ieee-membership.ts`); before that they hold the registration defaults.
   isRas           Boolean         @default(false) @map("is_ras")
   banned          Boolean         @default(false)
   participantType ParticipantType @map("participant_type")
+  // The participant's own answer, kept apart from `participantType` so it
+  // survives while they are priced as NonIEEE. Null for rows that registered
+  // as non-members before the question existed.
+  careerStage     CareerStage?    @map("career_stage")
   sb              SB?
   country         COUNTRY
   facebookLink    String?         @map("facebook_link")
@@ -98,8 +105,44 @@ model Participant {
   user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   internationalInfo InternationalInfo? @relation("ParticipantInternationalInfo")
   paymentProofs     PaymentProof[]
+  ieeeVerification  IeeeVerification?
 
   @@map("participants")
+}
+
+/// The result of looking the participant up in IEEE's GetMemberStatus API.
+///
+/// Shared with the admin portal, which created the table and writes it too:
+/// keep the column meanings as they are. One row per participant, upserted.
+/// The portal re-judges each row from the raw IEEE columns and treats it as
+/// stale when any `claimed*` value differs from the participant's current
+/// one, so every write here stores the participant's values *after* they
+/// were updated from the result.
+model IeeeVerification {
+  id            String          @id @default(uuid())
+  participantId String          @unique @map("participant_id")
+  /// Coarse outcome, a record only: nothing reads it back.
+  status        IeeeCheckStatus
+  /// IEEE's values as returned. `memberStatus` is null when no record was found.
+  memberStatus  String?         @map("member_status")
+  grade         String?
+  societies     String[]        @default([])
+  firstInitial  String?         @map("first_initial")
+  lastInitial   String?         @map("last_initial")
+  /// 'IEEE_ID' | 'EMAIL', null when not found.
+  matchedBy     String?         @map("matched_by")
+  issues        Json            @default("[]")
+  claimedIeeeId Int?            @map("claimed_ieee_id")
+  claimedType   String          @map("claimed_type")
+  claimedIsRas  Boolean         @map("claimed_is_ras")
+  claimedEmail  String          @map("claimed_email")
+  checkedAt     DateTime        @default(now()) @map("checked_at")
+  /// An admins.id, or 'system' for checks this backend runs.
+  checkedBy     String          @map("checked_by")
+
+  participant Participant @relation(fields: [participantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("ieee_verifications")
 }
 
 model Team {
@@ -205,6 +248,18 @@ enum ParticipantType {
   NonIEEE
   Student
   YoungProfessional
+}
+
+enum CareerStage {
+  Student
+  YoungProfessional
+}
+
+enum IeeeCheckStatus {
+  VERIFIED
+  MISMATCH
+  INACTIVE
+  NOT_FOUND
 }
 
 enum SB {

@@ -9,6 +9,8 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ConfigService } from '@nestjs/config';
 import {
   Prisma,
+  CareerStage,
+  IeeeVerification,
   Participant,
   ParticipantType,
   Team,
@@ -28,8 +30,10 @@ import {
   FablabSubmissionDto,
   DEFAULT_TEAM_ACTIVITY,
 } from '../dto';
+import { isVerificationStale, membershipFrom } from '../domain/ieee-membership';
 import {
   ParticipantRegisteredEvent,
+  ParticipantIeeeDetailsChangedEvent,
   ParticipantDeletedEvent,
   ParticipantBannedEvent,
   ParticipantUnbannedEvent,
@@ -46,10 +50,18 @@ type ParticipantWithRelations = Participant & {
     visaApplication?: VisaApplication | null;
   } | null;
   _count?: { memberships: number };
+  ieeeVerification?: IeeeVerification | null;
+  user?: { email: string };
 };
 
 /** Team-membership count, enough to price the participant without loading the teams. */
 const MEMBERSHIP_COUNT = { _count: { select: { memberships: true } } } satisfies Prisma.ParticipantInclude;
+
+/** The IEEE result and the email it is judged fresh against, for the participant's own view. */
+const IEEE_VERIFICATION = {
+  ieeeVerification: true,
+  user: { select: { email: true } },
+} satisfies Prisma.ParticipantInclude;
 
 /** Type for team with members and their user info */
 type TeamWithMembers = Team & {
@@ -147,6 +159,10 @@ export class RegistrationService {
   ): Promise<Participant> {
     const isInternational = 'internationalInfo' in dto;
 
+    if (dto.careerStage === CareerStage.Student && !dto.sb) {
+      throw new BadRequestException('A student branch is required for students');
+    }
+
     try {
       const participant = await this.prisma.$transaction(async (tx) => {
         // Edge case: Check if participant already exists for this user
@@ -169,14 +185,17 @@ export class RegistrationService {
             ieeeId: dto.ieeeId,
             phone: dto.phone,
             gender: dto.gender,
-            participantType: dto.participantType,
-            sb: dto.sb,
+            careerStage: dto.careerStage,
+            sb: dto.careerStage === CareerStage.Student ? dto.sb : null,
             country: dto.country,
             paid: false,
             banned: false,
             isInternational,
-            // RAS is an IEEE society: non-IEEE participants can never be members.
-            isRas: dto.participantType !== 'NonIEEE' && (dto.isRas ?? false),
+            // Membership and RAS come from IEEE's records, checked right
+            // after this (ParticipantRegisteredEvent). Until the answer is
+            // in, the participant is priced as a non-member.
+            participantType: ParticipantType.NonIEEE,
+            isRas: false,
             facebookLink: dto.facebookLink ?? null,
             ...(isInternational && {
               internationalInfo: {
@@ -234,6 +253,7 @@ export class RegistrationService {
     participantId: string,
     dto: UpdateProfileDto,
   ): Promise<Participant> {
+    let ieeeDetailsChanged = false;
     try {
       const participant = await this.prisma.$transaction(async (tx) => {
         const current = await tx.participant.findUnique({
@@ -242,6 +262,8 @@ export class RegistrationService {
             internationalInfo: {
               include: { visaApplication: { select: { status: true } } },
             },
+            ieeeVerification: true,
+            user: { select: { email: true } },
           },
         });
 
@@ -284,56 +306,56 @@ export class RegistrationService {
           updateData.facebookLink = dto.facebookLink;
         }
 
-        // Membership type drives three dependent fields, so they are always
-        // re-derived together from the *resulting* row rather than patched one
-        // by one - otherwise switching to NonIEEE would leave a stale IEEE ID,
-        // branch and RAS flag behind.
-        const nextType = dto.participantType ?? current.participantType;
-        const isIeeeMember = nextType !== ParticipantType.NonIEEE;
-
+        // Student vs Young Professional (and so the branch) is the
+        // participant's answer. IEEE membership and RAS are not: they come
+        // from the IEEE verification, re-derived below.
+        const nextStage = dto.careerStage ?? current.careerStage;
         const nextSb =
-          nextType === ParticipantType.Student ? (dto.sb ?? current.sb) : null;
-        const nextIeeeId = isIeeeMember ? (dto.ieeeId ?? current.ieeeId) : null;
-        const nextIsRas = isIeeeMember ? (dto.isRas ?? current.isRas) : false;
+          nextStage === CareerStage.YoungProfessional ? null : (dto.sb ?? current.sb);
+        // Only demanded when the answer is being given, so legacy rows that
+        // predate the rule aren't locked out of a phone-number edit.
+        if (dto.careerStage === CareerStage.Student && !nextSb) {
+          throw new BadRequestException('A student branch is required for students');
+        }
+        // null removes the member number; absent leaves it.
+        const nextIeeeId = dto.ieeeId === undefined ? current.ieeeId : dto.ieeeId;
+        const ieeeIdChanged = nextIeeeId !== current.ieeeId;
 
-        // The Fablab challenge is for IEEE RAS members only, so a Fablab member
-        // can't drop either membership out from under their team. Only an edit
-        // that *loses* eligibility is checked - legacy rows are left alone.
-        const wasFablabEligible = isFablabEligible(current.participantType, current.isRas);
-        if (wasFablabEligible && !isFablabEligible(nextType, nextIsRas)) {
-          const fablabMembership = await tx.teamMembership.findUnique({
-            where: {
-              participantId_activity: { participantId: current.id, activity: TeamActivity.FABLAB },
-            },
-            select: { id: true },
-          });
-          if (fablabMembership) {
-            throw new ConflictException(
-              'The Fablab challenge is open to IEEE RAS members only. Leave your Fablab team before removing your IEEE or RAS membership.',
-            );
-          }
+        let nextType = current.participantType;
+        let nextIsRas = current.isRas;
+        const verification = current.ieeeVerification;
+        if (verification && !ieeeIdChanged) {
+          ({ participantType: nextType, isRas: nextIsRas } = membershipFrom(verification, {
+            careerStage: nextStage,
+            sb: nextSb,
+          }));
+        } else if (nextType !== ParticipantType.NonIEEE && nextStage) {
+          // Not verified yet (or about to be re-checked): keep their standing,
+          // follow their answer.
+          nextType = ParticipantType[nextStage];
         }
 
-        // Only demanded when the membership type is actually being switched.
-        // Enforcing it on every patch would lock legacy rows that predate the
-        // rule out of unrelated edits like a phone-number change.
-        if (dto.participantType !== undefined) {
-          if (nextType === ParticipantType.Student && !nextSb) {
-            throw new BadRequestException(
-              'A student branch is required for student participants',
-            );
-          }
-          if (isIeeeMember && !nextIeeeId) {
-            throw new BadRequestException(
-              'An IEEE ID is required for IEEE members',
-            );
-          }
-        }
-
-        if (nextType !== current.participantType) updateData.participantType = nextType;
+        if (nextStage !== current.careerStage) updateData.careerStage = nextStage;
         if (nextSb !== current.sb) updateData.sb = nextSb;
-        if (nextIeeeId !== current.ieeeId) updateData.ieeeId = nextIeeeId;
+        if (ieeeIdChanged) updateData.ieeeId = nextIeeeId;
+        if (nextType !== current.participantType) updateData.participantType = nextType;
         if (nextIsRas !== current.isRas) updateData.isRas = nextIsRas;
+
+        // A result that described the participant before this edit must
+        // still describe them after it, or the admin portal reads it as
+        // stale: its claimed values follow the re-derived ones.
+        if (
+          verification &&
+          !ieeeIdChanged &&
+          !isVerificationStale(verification, { ...current, email: current.user.email }) &&
+          (nextType !== current.participantType || nextIsRas !== current.isRas)
+        ) {
+          await tx.ieeeVerification.update({
+            where: { participantId },
+            data: { claimedType: nextType, claimedIsRas: nextIsRas },
+          });
+        }
+        ieeeDetailsChanged = ieeeIdChanged;
 
         if (dto.internationalInfo && current.internationalInfo) {
           const intlUpdate: Prisma.InternationalInfoUpdateInput = {};
@@ -370,9 +392,16 @@ export class RegistrationService {
         return tx.participant.update({
           where: { id: participantId },
           data: updateData,
-          include: { internationalInfo: true, ...MEMBERSHIP_COUNT },
+          include: { internationalInfo: true, ...MEMBERSHIP_COUNT, ...IEEE_VERIFICATION },
         });
       });
+
+      if (ieeeDetailsChanged) {
+        this.eventEmitter.emit(
+          REGISTRATION_EVENTS.PARTICIPANT_IEEE_DETAILS_CHANGED,
+          new ParticipantIeeeDetailsChangedEvent(participantId),
+        );
+      }
 
       return participant;
     } catch (error) {
@@ -849,6 +878,7 @@ export class RegistrationService {
           include: { visaApplication: true },
         },
         ...MEMBERSHIP_COUNT,
+        ...IEEE_VERIFICATION,
       },
     });
   }
@@ -866,6 +896,7 @@ export class RegistrationService {
           include: { visaApplication: true },
         },
         ...MEMBERSHIP_COUNT,
+        ...IEEE_VERIFICATION,
       },
     });
   }
@@ -1584,7 +1615,7 @@ export class RegistrationService {
   ): void {
     if (activity === TeamActivity.FABLAB && !isFablabEligible(participantType, isRas)) {
       throw new ForbiddenException(
-        'The Fablab challenge is open to IEEE RAS members only. If you are one, update your IEEE and RAS membership in your profile first.',
+        'The Fablab challenge is open to IEEE RAS members only. If you are one, check your IEEE membership from your dashboard first (add your IEEE member number if your IEEE account uses another email).',
       );
     }
   }

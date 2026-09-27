@@ -1,6 +1,6 @@
 import { Exclude, Expose, Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ParticipantType, SB, COUNTRY, VisaStatus } from '@prisma/client';
+import { CareerStage, ParticipantType, SB, COUNTRY, VisaStatus } from '@prisma/client';
 
 /**
  * Response DTO for visa application
@@ -95,6 +95,34 @@ export class InternationalInfoResponseDto {
 }
 
 /**
+ * The participant's IEEE membership check, as IEEE's records answered it.
+ */
+export class IeeeVerificationSummaryDto {
+  @ApiProperty({
+    description: 'MEMBER (active), APPLICANT (application pending, counted as a member), LAPSED (needs renewing) or NOT_MEMBER (no membership found)',
+    enum: ['MEMBER', 'APPLICANT', 'LAPSED', 'NOT_MEMBER'],
+  })
+  @Expose()
+  standing!: string;
+
+  @ApiProperty({ description: 'Active member of the IEEE Robotics and Automation Society' })
+  @Expose()
+  isRas!: boolean;
+
+  @ApiPropertyOptional({ description: 'What the record was found by', enum: ['IEEE_ID', 'EMAIL'], nullable: true })
+  @Expose()
+  matchedBy!: string | null;
+
+  @ApiProperty({ description: 'When IEEE was asked', format: 'date-time' })
+  @Expose()
+  checkedAt!: Date;
+
+  @ApiProperty({ description: 'The participant\'s details changed since; a new check is on its way' })
+  @Expose()
+  stale!: boolean;
+}
+
+/**
  * Response DTO for participant profile
  * Excludes sensitive fields: paid, banned (internal state)
  */
@@ -119,7 +147,7 @@ export class ParticipantResponseDto {
   @Expose()
   isInternational!: boolean;
 
-  @ApiProperty({ description: 'Whether participant is an IEEE RAS member' })
+  @ApiProperty({ description: 'Whether the participant is priced as an IEEE RAS member (from their IEEE verification)' })
   @Expose()
   isRas!: boolean;
 
@@ -127,9 +155,25 @@ export class ParticipantResponseDto {
   @Expose()
   facebookLink?: string | null;
 
-  @ApiProperty({ description: 'Participant type', enum: ParticipantType })
+  @ApiProperty({
+    description: 'What the participant is priced as. Set from their IEEE verification once there is one; NonIEEE until then for new registrations.',
+    enum: ParticipantType,
+  })
   @Expose()
   participantType!: ParticipantType;
+
+  @ApiPropertyOptional({ description: 'Student or young professional, as the participant answered it', enum: CareerStage, nullable: true })
+  @Expose()
+  careerStage?: CareerStage | null;
+
+  @ApiPropertyOptional({
+    description: 'Their IEEE membership check; null while none has completed yet',
+    type: () => IeeeVerificationSummaryDto,
+    nullable: true,
+  })
+  @Expose()
+  @Type(() => IeeeVerificationSummaryDto)
+  ieeeVerification?: IeeeVerificationSummaryDto | null;
 
   @ApiPropertyOptional({ description: 'Student branch', enum: SB })
   @Expose()

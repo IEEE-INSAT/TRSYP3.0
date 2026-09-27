@@ -21,6 +21,7 @@ import { fablabChallenge } from '@/lib/config';
 import ActivityToggle, { isActivityOpen, phaseOf } from './register/ActivityToggle';
 import { FablabAxisPicker, FablabEligibilityNotice } from './register/FablabFields';
 import FablabSubmission from './dashboard/FablabSubmission';
+import IeeeMembershipStatus from './dashboard/IeeeMembershipStatus';
 import LoadingScreen from './LoadingScreen';
 import UserAvatar from './UserAvatar';
 // Single source of truth, shared with the dashboard section nav.
@@ -725,22 +726,7 @@ export default function Dashboard() {
                 </a>
               </div>
             )}
-            <div className="dash-detail-row">
-              <span className="dash-detail-label">IEEE Member</span>
-              <span className="dash-detail-value">{user.isIeee ? 'Yes' : 'No'}</span>
-            </div>
-            {user.isIeee && (
-              <>
-                <div className="dash-detail-row">
-                  <span className="dash-detail-label">IEEE ID</span>
-                  <span className="dash-detail-value">{user.ieeeId}</span>
-                </div>
-                <div className="dash-detail-row">
-                  <span className="dash-detail-label">RAS Member</span>
-                  <span className="dash-detail-value">{user.isRas ? 'Yes' : 'No'}</span>
-                </div>
-              </>
-            )}
+            <IeeeMembershipStatus />
           </div>
 
           {/* Team Members (Challenger) */}

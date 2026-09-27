@@ -52,8 +52,9 @@ export function FablabEligibilityNotice() {
   return (
     <p className="reg-account-hint">
       The Fablab challenge is open to <strong>IEEE RAS members only</strong>, for the leader and every
-      teammate. If you are one, set your IEEE membership, IEEE ID and RAS membership in your{' '}
-      <Link href="/dashboard/profile">profile</Link> first.
+      teammate. Your membership comes from IEEE&apos;s records: if you are a RAS member, re-check it
+      from your dashboard. If your IEEE account uses another email, add your IEEE member number in
+      your <Link href="/dashboard/profile">profile</Link> first.
     </p>
   );
 }

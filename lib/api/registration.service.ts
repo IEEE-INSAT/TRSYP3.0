@@ -102,6 +102,19 @@ export const registrationService = {
     });
   },
 
+  /**
+   * POST /registration/profile/ieee-verification - ask IEEE again, now.
+   * Returns the updated profile. IEEE can take up to a minute to answer; a 503
+   * means it couldn't be reached and nothing changed.
+   */
+  async recheckIeeeMembership(token: string): Promise<BackendParticipant | null> {
+    if (!features.registrationApi) return null;
+    return apiFetch<BackendParticipant>('/registration/profile/ieee-verification', {
+      method: 'POST',
+      token,
+    });
+  },
+
   /** GET /registration/profile - the current user's participant profile, or null if none yet. */
   async getProfile(token: string): Promise<BackendParticipant | null> {
     if (!features.registrationApi) return null;

@@ -10,6 +10,14 @@ export class ParticipantRegisteredEvent {
 }
 
 /**
+ * Event emitted when a participant changes a detail their IEEE membership is
+ * looked up by (their IEEE member number), so it is checked again.
+ */
+export class ParticipantIeeeDetailsChangedEvent {
+  constructor(public readonly participantId: string) {}
+}
+
+/**
  * Event emitted when a visa letter is requested
  */
 export class VisaRequestedEvent {
@@ -73,6 +81,7 @@ export class VisaStatusChangedEvent {
  */
 export const REGISTRATION_EVENTS = {
   PARTICIPANT_REGISTERED: 'participant.registered',
+  PARTICIPANT_IEEE_DETAILS_CHANGED: 'participant.ieee_details_changed',
   PARTICIPANT_DELETED: 'participant.deleted',
   PARTICIPANT_BANNED: 'participant.banned',
   PARTICIPANT_UNBANNED: 'participant.unbanned',

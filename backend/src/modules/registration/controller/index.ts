@@ -17,8 +17,10 @@ import {
   ParseBoolPipe,
   NotFoundException,
   BadRequestException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
-import { TeamActivity } from '@prisma/client';
+import { IeeeVerification, ParticipantType, TeamActivity } from '@prisma/client';
+import { Throttle } from '@nestjs/throttler';
 import {
   ApiTags,
   ApiOperation,
@@ -29,7 +31,9 @@ import {
 } from '@nestjs/swagger';
 import { plainToInstance } from 'class-transformer';
 import { RegistrationService } from '../service';
-import { computeFee } from '../domain';
+import { computeFee, isVerificationStale, verificationSummaryOf } from '../domain';
+import { IeeeVerificationService } from '../../ieee/ieee-verification.service';
+import { IeeeApiError } from '../../ieee/ieee-api.client';
 import {
   RegisterLocalDto,
   RegisterLocalSchema,
@@ -73,7 +77,10 @@ import { JwtPayload } from '../../../common/guards/jwt-auth.guard';
 @Controller('registration')
 @UseGuards(JwtAuthGuard)
 export class RegistrationController {
-  constructor(private readonly registrationService: RegistrationService) { }
+  constructor(
+    private readonly registrationService: RegistrationService,
+    private readonly ieeeVerification: IeeeVerificationService,
+  ) { }
 
   /**
    * Shape a service-level team (participants + their user rows) into the flat
@@ -104,19 +111,28 @@ export class RegistrationController {
    * Participant row -> API response, with the registration fee attached.
    * The fee is priced off the team-membership count the service includes;
    * rows fetched without it (a just-created participant) cannot be on a team.
+   * The IEEE check is summarised when the row was fetched with it.
    */
   private toParticipantResponse<T extends ParticipantResponseDto>(
     cls: new () => T,
     participant: Parameters<typeof plainToInstance>[1] & {
-      participantType: string;
+      participantType: ParticipantType;
       isRas: boolean;
+      ieeeId: number | null;
       _count?: { memberships: number };
+      ieeeVerification?: IeeeVerification | null;
+      user?: { email: string };
     },
   ): T {
+    const { ieeeVerification, user } = participant;
     return plainToInstance(
       cls,
       {
         ...participant,
+        ieeeVerification:
+          ieeeVerification && user
+            ? verificationSummaryOf(ieeeVerification, { ...participant, email: user.email })
+            : null,
         ...computeFee({
           isIeee: participant.participantType !== 'NonIEEE',
           isRas: participant.isRas,
@@ -187,7 +203,55 @@ export class RegistrationController {
     if (!participant) {
       throw new NotFoundException('Profile not found'); // Will be caught by exception filter
     }
+    // The sweep can't run while the host sleeps, so a dashboard visit also
+    // starts a check that is missing or out of date. It doesn't hold the
+    // response: the next load shows the result.
+    const row = participant.ieeeVerification;
+    if (!row || isVerificationStale(row, { ...participant, email: participant.user?.email ?? '' })) {
+      this.ieeeVerification.verifyInBackground(participant.id);
+    }
     return this.toParticipantResponse(ParticipantResponseDto, participant);
+  }
+
+  /**
+   * Check the current user's IEEE membership again, now.
+   */
+  @Post('profile/ieee-verification')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 10 * 60_000 } })
+  @ApiOperation({
+    summary: 'Re-check my IEEE membership',
+    description:
+      'Asks IEEE again (by IEEE member number, then email) and updates the membership the fee is based on. IEEE can take up to a minute to answer.',
+  })
+  @ApiResponse({ status: 200, description: 'Checked; the updated profile' })
+  @ApiResponse({ status: 404, description: 'Profile not found' })
+  @ApiResponse({ status: 503, description: 'IEEE could not be reached; nothing changed' })
+  async recheckMyIeeeMembership(
+    @CurrentUser('sub') userId: string,
+  ): Promise<ParticipantResponseDto> {
+    const participant = await this.registrationService.findByUserId(userId);
+    if (!participant) {
+      throw new NotFoundException('Profile not found');
+    }
+    if (!this.ieeeVerification.isEnabled()) {
+      throw new ServiceUnavailableException('IEEE membership checks are not available right now');
+    }
+    try {
+      await this.ieeeVerification.verify(participant.id);
+    } catch (error) {
+      if (error instanceof IeeeApiError) {
+        throw new ServiceUnavailableException(
+          "IEEE's membership service didn't answer. Please try again in a few minutes.",
+        );
+      }
+      throw error;
+    }
+    const updated = await this.registrationService.findByUserId(userId);
+    if (!updated) {
+      throw new NotFoundException('Profile not found');
+    }
+    return this.toParticipantResponse(ParticipantResponseDto, updated);
   }
 
   /**

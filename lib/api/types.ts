@@ -236,21 +236,23 @@ export const DIAL_CODES: DialCode[] = [
   { label: 'Mexico', dial: '+52' },
 ];
 
+/** Student or young professional - the participant's own answer (backend `CareerStage`). */
+export type CareerStage = 'Student' | 'YoungProfessional';
+
 /**
  * Body of POST /registration (Page 1 of the registration flow spec).
  *
- * `sb` is only sent for Students; `ieeeId` only for IEEE members
- * (participantType != NonIEEE).
+ * IEEE membership and RAS are never asked: the server looks them up in IEEE's
+ * records. `ieeeId` is an optional lookup key (email is the fallback); `sb`
+ * is only sent for Students.
  */
 export interface RegisterParticipantPayload {
   ieeeId?: number;
   phone: string;
   gender: Gender;
-  participantType: ParticipantType;
+  careerStage: CareerStage;
   sb?: SB;
   country: Country;
-  /** IEEE RAS society membership - only sent for IEEE members. */
-  isRas?: boolean;
   /** Facebook profile URL - required at registration; on PATCH it can be changed but not cleared. */
   facebookLink?: string;
 }
@@ -258,12 +260,30 @@ export interface RegisterParticipantPayload {
 /**
  * Body of PATCH /registration/profile.
  *
- * Every field is optional - only what the user actually changed is sent. The
- * server re-derives the IEEE-dependent fields (`sb`, `ieeeId`, `isRas`) from
- * the resulting `participantType`, so a membership switch cleans up after
- * itself.
+ * Every field is optional - only what the user actually changed is sent.
+ * `ieeeId: null` removes the member number. A new number is checked with
+ * IEEE right away.
  */
-export type UpdateParticipantPayload = Partial<RegisterParticipantPayload>;
+export type UpdateParticipantPayload = Partial<Omit<RegisterParticipantPayload, 'ieeeId'>> & {
+  ieeeId?: number | null;
+};
+
+/**
+ * Where the participant stands with IEEE, from IEEE's records:
+ * MEMBER (active), APPLICANT (application pending - counted as a member),
+ * LAPSED (needs renewing), NOT_MEMBER (no membership found).
+ */
+export type IeeeStanding = 'MEMBER' | 'APPLICANT' | 'LAPSED' | 'NOT_MEMBER';
+
+/** The participant's IEEE membership check. */
+export interface IeeeVerification {
+  standing: IeeeStanding;
+  isRas: boolean;
+  matchedBy: 'IEEE_ID' | 'EMAIL' | null;
+  checkedAt: string;
+  /** Their details changed since; a new check is on its way. */
+  stale: boolean;
+}
 
 /** Body of PATCH /auth/me. Email is not editable - it is the Supabase identity. */
 export interface UpdateMePayload {
@@ -292,7 +312,11 @@ export interface BackendParticipant {
   feeRole?: 'VISITOR' | 'CHALLENGER';
   feeTier?: 'IEEE_RAS' | 'IEEE' | 'NON_IEEE';
   banned: boolean;
+  /** What the participant is priced as - set from their IEEE check. */
   participantType: ParticipantType;
+  careerStage?: CareerStage | null;
+  /** Null until the first IEEE check completes. */
+  ieeeVerification?: IeeeVerification | null;
   sb?: string;
   country: Country;
   createdAt: string;

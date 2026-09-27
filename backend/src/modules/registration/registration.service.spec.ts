@@ -8,7 +8,7 @@ import { RegisterLocalDto } from './dto/register-local.dto';
 import { RegisterInternationalDto } from './dto/register-international.dto';
 import { RequestVisaDto } from './dto/request-visa.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
-import { ParticipantType, SB, COUNTRY, VisaStatus, TeamActivity, FablabAxis } from '@prisma/client';
+import { CareerStage, ParticipantType, SB, COUNTRY, VisaStatus, TeamActivity, FablabAxis } from '@prisma/client';
 
 describe('RegistrationService', () => {
   let service: RegistrationService;
@@ -41,6 +41,8 @@ describe('RegistrationService', () => {
     isInternational: false,
     banned: false,
     participantType: ParticipantType.Student,
+    careerStage: CareerStage.Student,
+    isRas: false,
     sb: SB.INSAT,
     country: COUNTRY.Tunisia,
     createdAt: new Date(),
@@ -102,6 +104,9 @@ describe('RegistrationService', () => {
         findUnique: jest.fn(),
         update: jest.fn(),
       },
+      ieeeVerification: {
+        update: jest.fn(),
+      },
       teamMembership: {
         findUnique: jest.fn().mockResolvedValue(null),
       },
@@ -147,7 +152,7 @@ describe('RegistrationService', () => {
       const dto: RegisterLocalDto = {
         phone: '+21612345678',
         gender: 'male',
-        participantType: ParticipantType.Student,
+        careerStage: CareerStage.Student,
         sb: SB.INSAT,
         country: COUNTRY.Tunisia,
         facebookLink: 'https://www.facebook.com/test.user',
@@ -167,7 +172,7 @@ describe('RegistrationService', () => {
       const dto: RegisterInternationalDto = {
         phone: '+21612345678',
         gender: 'male',
-        participantType: ParticipantType.Student,
+        careerStage: CareerStage.Student,
         sb: SB.INSAT,
         country: COUNTRY.Tunisia,
         facebookLink: 'https://www.facebook.com/test.user',
@@ -196,7 +201,7 @@ describe('RegistrationService', () => {
       const dto: RegisterLocalDto = {
         phone: '+21612345678',
         gender: 'male',
-        participantType: ParticipantType.Student,
+        careerStage: CareerStage.Student,
         sb: SB.INSAT,
         country: COUNTRY.Tunisia,
         facebookLink: 'https://www.facebook.com/test.user',
@@ -207,15 +212,15 @@ describe('RegistrationService', () => {
       await expect(service.register('account-1', dto)).rejects.toThrow(ConflictException);
     });
 
-    it('should persist RAS membership for an IEEE member', async () => {
+    it('should price a new participant as a non-member until IEEE answers', async () => {
       const dto: RegisterLocalDto = {
         phone: '+21612345678',
         gender: 'male',
-        participantType: ParticipantType.Student,
+        careerStage: CareerStage.Student,
         sb: SB.INSAT,
+        ieeeId: 12345678,
         country: COUNTRY.Tunisia,
         facebookLink: 'https://www.facebook.com/test.user',
-        isRas: true,
       };
 
       mockPrismaService.participant.findUnique.mockResolvedValue(null);
@@ -224,15 +229,22 @@ describe('RegistrationService', () => {
       await service.register('account-1', dto);
 
       expect(mockPrismaService.participant.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ isRas: true }) }),
+        expect.objectContaining({
+          data: expect.objectContaining({
+            careerStage: CareerStage.Student,
+            ieeeId: 12345678,
+            participantType: ParticipantType.NonIEEE,
+            isRas: false,
+          }),
+        }),
       );
     });
 
-    it('should default RAS membership to false when it is not answered', async () => {
+    it('should not keep a student branch for a young professional', async () => {
       const dto: RegisterLocalDto = {
         phone: '+21612345678',
         gender: 'male',
-        participantType: ParticipantType.Student,
+        careerStage: CareerStage.YoungProfessional,
         sb: SB.INSAT,
         country: COUNTRY.Tunisia,
         facebookLink: 'https://www.facebook.com/test.user',
@@ -244,28 +256,21 @@ describe('RegistrationService', () => {
       await service.register('account-1', dto);
 
       expect(mockPrismaService.participant.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ isRas: false }) }),
+        expect.objectContaining({ data: expect.objectContaining({ sb: null }) }),
       );
     });
 
-    it('should never store RAS membership for a non-IEEE participant', async () => {
+    it('should reject a student without a branch', async () => {
       const dto: RegisterLocalDto = {
         phone: '+21612345678',
         gender: 'male',
-        participantType: ParticipantType.NonIEEE,
+        careerStage: CareerStage.Student,
         country: COUNTRY.Tunisia,
         facebookLink: 'https://www.facebook.com/test.user',
-        isRas: true,
       };
 
-      mockPrismaService.participant.findUnique.mockResolvedValue(null);
-      mockPrismaService.participant.create.mockResolvedValue(mockParticipant);
-
-      await service.register('account-1', dto);
-
-      expect(mockPrismaService.participant.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ isRas: false }) }),
-      );
+      await expect(service.register('account-1', dto)).rejects.toThrow(BadRequestException);
+      expect(mockPrismaService.participant.create).not.toHaveBeenCalled();
     });
   });
 
@@ -312,9 +317,9 @@ describe('RegistrationService', () => {
       expect(mockPrismaService.participant.update).toHaveBeenCalled();
     });
 
-    it('should allow changing participantType, sb and country after registration', async () => {
+    it('should allow changing career stage, sb, country and IEEE number after registration', async () => {
       const dto: UpdateProfileDto = {
-        participantType: ParticipantType.Student,
+        careerStage: CareerStage.Student,
         sb: SB.ENSI,
         country: COUNTRY.Algeria,
         ieeeId: 99887766,
@@ -336,110 +341,110 @@ describe('RegistrationService', () => {
       );
     });
 
-    it('should clear IEEE ID, branch and RAS when switching to NonIEEE', async () => {
-      const rasStudent = { ...mockParticipant, ieeeId: 12345678, isRas: true };
-      const dto: UpdateProfileDto = { participantType: ParticipantType.NonIEEE };
+    it('should ask for a new IEEE check when the member number changes', async () => {
+      mockPrismaService.participant.findUnique.mockResolvedValue(mockParticipant);
+      mockPrismaService.participant.update.mockResolvedValue(mockParticipant);
 
-      mockPrismaService.participant.findUnique.mockResolvedValue(rasStudent);
-      mockPrismaService.participant.update.mockResolvedValue(rasStudent);
+      await service.updateProfile('participant-1', { ieeeId: 99887766 });
 
-      await service.updateProfile('participant-1', dto);
+      expect(mockEventEmitter.emit).toHaveBeenCalledWith(
+        'participant.ieee_details_changed',
+        expect.objectContaining({ participantId: 'participant-1' }),
+      );
+    });
+
+    it('should let the member number be removed', async () => {
+      mockPrismaService.participant.findUnique.mockResolvedValue({ ...mockParticipant, ieeeId: 12345678 });
+      mockPrismaService.participant.update.mockResolvedValue(mockParticipant);
+
+      await service.updateProfile('participant-1', { ieeeId: null });
 
       expect(mockPrismaService.participant.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            participantType: ParticipantType.NonIEEE,
-            sb: null,
-            ieeeId: null,
-            isRas: false,
-          }),
-        }),
+        expect.objectContaining({ data: expect.objectContaining({ ieeeId: null }) }),
       );
     });
 
-    it('should refuse switching to NonIEEE while in a Fablab team', async () => {
-      const rasStudent = { ...mockParticipant, ieeeId: 12345678, isRas: true };
-      mockPrismaService.participant.findUnique.mockResolvedValue(rasStudent);
-      mockPrismaService.teamMembership.findUnique.mockResolvedValue({ id: 'mem-fablab' });
+    it('should not ask for a new IEEE check on an unrelated edit', async () => {
+      mockPrismaService.participant.findUnique.mockResolvedValue(mockParticipant);
+      mockPrismaService.participant.update.mockResolvedValue(mockParticipant);
 
-      await expect(
-        service.updateProfile('participant-1', { participantType: ParticipantType.NonIEEE }),
-      ).rejects.toThrow(ConflictException);
-      expect(mockPrismaService.participant.update).not.toHaveBeenCalled();
+      await service.updateProfile('participant-1', { phone: '+21699999999' });
+
+      expect(mockEventEmitter.emit).not.toHaveBeenCalled();
     });
 
-    it('should refuse dropping RAS membership while in a Fablab team', async () => {
-      const rasStudent = { ...mockParticipant, ieeeId: 12345678, isRas: true };
-      mockPrismaService.participant.findUnique.mockResolvedValue(rasStudent);
-      mockPrismaService.teamMembership.findUnique.mockResolvedValue({ id: 'mem-fablab' });
-
-      await expect(service.updateProfile('participant-1', { isRas: false })).rejects.toThrow(
-        ConflictException,
-      );
-      expect(mockPrismaService.participant.update).not.toHaveBeenCalled();
-    });
-
-    it('should drop the student branch when switching to Young Professional', async () => {
-      const student = { ...mockParticipant, ieeeId: 12345678 };
-      const dto: UpdateProfileDto = {
-        participantType: ParticipantType.YoungProfessional,
+    it('should follow a verified member to Young Professional and keep the IEEE row fresh', async () => {
+      const verifiedRasStudent = {
+        ...mockParticipant,
+        ieeeId: 12345678,
+        isRas: true,
+        careerStage: CareerStage.Student,
+        user: { email: 'a@b.com' },
+        ieeeVerification: {
+          memberStatus: 'Active',
+          societies: ['MEMRA024'],
+          claimedIeeeId: 12345678,
+          claimedType: 'Student',
+          claimedIsRas: true,
+          claimedEmail: 'a@b.com',
+        },
       };
+      mockPrismaService.participant.findUnique.mockResolvedValue(verifiedRasStudent);
+      mockPrismaService.participant.update.mockResolvedValue(verifiedRasStudent);
 
-      mockPrismaService.participant.findUnique.mockResolvedValue(student);
-      mockPrismaService.participant.update.mockResolvedValue(student);
-
-      await service.updateProfile('participant-1', dto);
+      await service.updateProfile('participant-1', { careerStage: CareerStage.YoungProfessional });
 
       expect(mockPrismaService.participant.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
+            careerStage: CareerStage.YoungProfessional,
             participantType: ParticipantType.YoungProfessional,
             sb: null,
           }),
         }),
       );
+      // RAS still comes from IEEE's record, not from the edit.
+      const data = mockPrismaService.participant.update.mock.calls[0][0].data;
+      expect(data.isRas).toBeUndefined();
+      expect(mockPrismaService.ieeeVerification.update).toHaveBeenCalledWith({
+        where: { participantId: 'participant-1' },
+        data: { claimedType: ParticipantType.YoungProfessional, claimedIsRas: true },
+      });
+    });
+
+    it('should keep a non-member priced as NonIEEE whatever their career stage', async () => {
+      const nonMember = {
+        ...mockParticipant,
+        participantType: ParticipantType.NonIEEE,
+        careerStage: CareerStage.YoungProfessional,
+        sb: null,
+      };
+      mockPrismaService.participant.findUnique.mockResolvedValue(nonMember);
+      mockPrismaService.participant.update.mockResolvedValue(nonMember);
+
+      await service.updateProfile('participant-1', { careerStage: CareerStage.Student, sb: SB.INSAT });
+
+      const data = mockPrismaService.participant.update.mock.calls[0][0].data;
+      expect(data).toEqual(expect.objectContaining({ careerStage: CareerStage.Student, sb: SB.INSAT }));
+      expect(data.participantType).toBeUndefined();
     });
 
     it('should reject becoming a student without a branch', async () => {
-      const nonIeee = {
+      const youngProfessional = {
         ...mockParticipant,
-        participantType: ParticipantType.NonIEEE,
+        careerStage: CareerStage.YoungProfessional,
         sb: null,
       };
-      const dto: UpdateProfileDto = {
-        participantType: ParticipantType.Student,
-        ieeeId: 12345678,
-      };
+      mockPrismaService.participant.findUnique.mockResolvedValue(youngProfessional);
 
-      mockPrismaService.participant.findUnique.mockResolvedValue(nonIeee);
-
-      await expect(service.updateProfile('participant-1', dto)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.updateProfile('participant-1', { careerStage: CareerStage.Student }),
+      ).rejects.toThrow(BadRequestException);
     });
 
-    it('should reject becoming an IEEE member without an IEEE ID', async () => {
-      const nonIeee = {
-        ...mockParticipant,
-        participantType: ParticipantType.NonIEEE,
-        sb: null,
-        ieeeId: null,
-      };
-      const dto: UpdateProfileDto = {
-        participantType: ParticipantType.Student,
-        sb: SB.INSAT,
-      };
-
-      mockPrismaService.participant.findUnique.mockResolvedValue(nonIeee);
-
-      await expect(service.updateProfile('participant-1', dto)).rejects.toThrow(
-        BadRequestException,
-      );
-    });
-
-    it('should not demand IEEE fields when the membership type is untouched', async () => {
-      // A legacy row missing its IEEE ID must still be able to edit its phone.
-      const legacy = { ...mockParticipant, ieeeId: null };
+    it('should not demand a branch when the career stage is untouched', async () => {
+      // A legacy row missing its branch must still be able to edit its phone.
+      const legacy = { ...mockParticipant, sb: null };
       const dto: UpdateProfileDto = { phone: '+21699999999' };
 
       mockPrismaService.participant.findUnique.mockResolvedValue(legacy);

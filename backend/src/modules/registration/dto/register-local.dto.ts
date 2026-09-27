@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import {
-  IsBoolean,
   IsEnum,
   IsInt,
   IsOptional,
@@ -11,7 +10,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ParticipantType, SB, COUNTRY } from '@prisma/client';
+import { CareerStage, SB, COUNTRY } from '@prisma/client';
 
 /**
  * A facebook.com / fb.com profile URL. Empty, missing and null are all
@@ -38,24 +37,28 @@ export function isFacebookUrl(value: string): boolean {
 /**
  * Zod schema for local participant registration validation
  */
+/**
+ * IEEE member number. Optional for everyone: it is only a lookup key, the most
+ * precise one (email is the fallback). Membership and RAS are never asked -
+ * they come from IEEE's records.
+ */
+export const IeeeIdSchema = z
+  .number()
+  .int()
+  .positive({ message: 'IEEE member number must be a positive integer' });
+
 export const RegisterLocalSchema = z.object({
-  ieeeId: z
-    .number()
-    .int()
-    .positive({ message: 'IEEE ID must be a positive integer' })
-    .optional(),
+  ieeeId: IeeeIdSchema.optional(),
   phone: z
     .string()
     .regex(/^\+?[1-9]\d{1,14}$/, { message: 'Phone must be in E.164 format' }),
   gender: z.enum(['male', 'female'], {
     message: "Gender must be 'male' or 'female'",
   }),
-  participantType: z.nativeEnum(ParticipantType),
+  careerStage: z.nativeEnum(CareerStage),
+  // Required for students - the service checks it against `careerStage`.
   sb: z.nativeEnum(SB).optional(),
   country: z.nativeEnum(COUNTRY),
-  // RAS is an IEEE society, so this only ever applies to IEEE members.
-  // Absent means "no" - the service normalises it.
-  isRas: z.boolean().optional(),
   // Required for new registrations. Participants who registered while it was
   // optional keep a null column - see UpdateProfileSchema for how edits treat it.
   facebookLink: FacebookLinkSchema,
@@ -70,13 +73,13 @@ export type RegisterLocalInput = z.infer<typeof RegisterLocalSchema>;
  */
 export class RegisterLocalDto {
   @ApiPropertyOptional({
-    description: 'IEEE member ID (only for IEEE members)',
+    description: 'IEEE member number, used to look the participant up in IEEE\'s records (email is the fallback)',
     example: 12345678,
     minimum: 1,
   })
   @IsOptional()
-  @IsInt({ message: 'IEEE ID must be an integer' })
-  @IsPositive({ message: 'IEEE ID must be positive' })
+  @IsInt({ message: 'IEEE member number must be an integer' })
+  @IsPositive({ message: 'IEEE member number must be positive' })
   ieeeId?: number;
 
   @ApiProperty({
@@ -102,14 +105,14 @@ export class RegisterLocalDto {
   gender!: string;
 
   @ApiProperty({
-    description: 'Type of participant',
-    enum: ParticipantType,
+    description: 'Student or young professional, as the participant answers it. IEEE membership is not asked: it comes from IEEE\'s records.',
+    enum: CareerStage,
     example: 'Student',
   })
-  @IsEnum(ParticipantType, {
-    message: 'Invalid participant type',
+  @IsEnum(CareerStage, {
+    message: 'Invalid career stage',
   })
-  participantType!: ParticipantType;
+  careerStage!: CareerStage;
 
   @ApiPropertyOptional({
     description: 'Student branch (for students only)',
@@ -127,15 +130,6 @@ export class RegisterLocalDto {
   })
   @IsEnum(COUNTRY, { message: 'Invalid country' })
   country!: COUNTRY;
-
-  @ApiPropertyOptional({
-    description: 'IEEE RAS society membership (IEEE members only)',
-    example: false,
-    default: false,
-  })
-  @IsOptional()
-  @IsBoolean({ message: 'RAS membership must be a boolean' })
-  isRas?: boolean;
 
   @ApiProperty({
     description: 'Facebook profile URL (facebook.com or fb.com)',

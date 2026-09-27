@@ -4013,6 +4013,61 @@ select.reg-input option {
   color: rgba(255, 255, 255, 0.8);
 }
 
+/* IEEE membership, as IEEE's records answer it - spans the details grid. */
+.dash-ieee-status {
+  grid-column: 1 / -1;
+  gap: 6px;
+}
+.dash-ieee-status--ok .dash-detail-value {
+  color: var(--color-green);
+}
+.dash-ieee-status--warn .dash-detail-value {
+  color: #ffb547;
+}
+.dash-ieee-detail {
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.5);
+}
+.dash-ieee-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-top: 6px;
+}
+.dash-ieee-recheck {
+  min-height: 38px;
+  padding: 0 18px;
+  border: 1px solid rgba(0, 232, 122, 0.35);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-green);
+  font-family: var(--font-heading);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.dash-ieee-recheck:hover:not(:disabled) {
+  background: rgba(0, 232, 122, 0.08);
+  border-color: rgba(0, 232, 122, 0.6);
+}
+.dash-ieee-recheck:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+.dash-ieee-link {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .dash-detail-divider {
   font-family: var(--font-heading);
   font-size: 10.5px;
