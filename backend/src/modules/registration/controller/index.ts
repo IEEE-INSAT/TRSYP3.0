@@ -31,7 +31,12 @@ import {
 } from '@nestjs/swagger';
 import { plainToInstance } from 'class-transformer';
 import { RegistrationService } from '../service';
-import { computeFee, isVerificationStale, verificationSummaryOf } from '../domain';
+import {
+  computeFee,
+  isVerificationStale,
+  storedResultDisagrees,
+  verificationSummaryOf,
+} from '../domain';
 import { IeeeVerificationService } from '../../ieee/ieee-verification.service';
 import { IeeeApiError } from '../../ieee/ieee-api.client';
 import {
@@ -199,15 +204,24 @@ export class RegistrationController {
   async getMyProfile(
     @CurrentUser('sub') userId: string,
   ): Promise<ParticipantResponseDto> {
-    const participant = await this.registrationService.findByUserId(userId);
+    let participant = await this.registrationService.findByUserId(userId);
     if (!participant) {
       throw new NotFoundException('Profile not found'); // Will be caught by exception filter
+    }
+    const current = { ...participant, email: participant.user?.email ?? '' };
+    const row = participant.ieeeVerification;
+    // A stored result they aren't priced on yet (e.g. an admin's check):
+    // apply it now, so this very response carries the right fee.
+    if (row && storedResultDisagrees(row, current)) {
+      if (await this.ieeeVerification.applyStoredResult(participant.id)) {
+        participant = (await this.registrationService.findByUserId(userId)) ?? participant;
+      }
     }
     // The sweep can't run while the host sleeps, so a dashboard visit also
     // starts a check that is missing or out of date. It doesn't hold the
     // response: the next load shows the result.
-    const row = participant.ieeeVerification;
-    if (!row || isVerificationStale(row, { ...participant, email: participant.user?.email ?? '' })) {
+    const fresh = participant.ieeeVerification;
+    if (!fresh || isVerificationStale(fresh, { ...participant, email: current.email })) {
       this.ieeeVerification.verifyInBackground(participant.id);
     }
     return this.toParticipantResponse(ParticipantResponseDto, participant);

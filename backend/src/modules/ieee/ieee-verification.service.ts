@@ -8,6 +8,7 @@ import {
   checkStatusOf,
   isLookupableMemberNumber,
   membershipFrom,
+  storedResultDisagrees,
 } from '../registration/domain/ieee-membership';
 import {
   ParticipantIeeeDetailsChangedEvent,
@@ -18,6 +19,8 @@ import { IeeeApiClient, IeeeApiError, IeeeLookupResult } from './ieee-api.client
 
 /** How often the background sweep looks for participants to (re-)check. */
 const SWEEP_INTERVAL_MS = 5 * 60_000;
+/** First pass after start, once the app is up. */
+const STARTUP_DELAY_MS = 10_000;
 /** Checks per sweep. IEEE is slow, and they run one after another. */
 const SWEEP_BATCH = 20;
 /** Retry delay after a failed check: doubles per failure, up to the cap. */
@@ -51,6 +54,7 @@ export class IeeeVerificationService implements OnApplicationBootstrap, OnModule
   private readonly rerun = new Set<string>();
   private readonly retry = new Map<string, { failures: number; at: number }>();
   private sweepTimer: NodeJS.Timeout | null = null;
+  private startupTimer: NodeJS.Timeout | null = null;
   private sweeping = false;
 
   constructor(
@@ -61,14 +65,86 @@ export class IeeeVerificationService implements OnApplicationBootstrap, OnModule
   onApplicationBootstrap(): void {
     if (!this.ieee.isConfigured()) {
       this.logger.warn('IEEE API credentials are not set: membership checks are disabled');
-      return;
     }
-    this.sweepTimer = setInterval(() => void this.sweep(), SWEEP_INTERVAL_MS);
+    // Applying stored results needs no IEEE call, so it runs either way:
+    // once shortly after start, then before every sweep.
+    const tick = async () => {
+      await this.applyStoredResults();
+      await this.sweep();
+    };
+    this.startupTimer = setTimeout(() => void tick(), STARTUP_DELAY_MS);
+    this.startupTimer.unref();
+    this.sweepTimer = setInterval(() => void tick(), SWEEP_INTERVAL_MS);
     this.sweepTimer.unref();
   }
 
   onModuleDestroy(): void {
+    if (this.startupTimer) clearTimeout(this.startupTimer);
     if (this.sweepTimer) clearInterval(this.sweepTimer);
+  }
+
+  /**
+   * Price the participant on their stored result when it still describes
+   * them but their columns disagree - typically a check the admin portal
+   * ran, which records the result without updating the participant. No IEEE
+   * call. Returns whether anything changed.
+   */
+  async applyStoredResult(participantId: string): Promise<boolean> {
+    return this.prisma.$transaction(async (tx) => {
+      const current = await tx.participant.findUnique({
+        where: { id: participantId },
+        select: {
+          ieeeId: true,
+          participantType: true,
+          isRas: true,
+          careerStage: true,
+          sb: true,
+          user: { select: { email: true } },
+          ieeeVerification: true,
+        },
+      });
+      const row = current?.ieeeVerification;
+      if (!current || !row) return false;
+      if (!storedResultDisagrees(row, { ...current, email: current.user.email })) return false;
+
+      const { participantType, isRas } = membershipFrom(row, current);
+      await tx.participant.update({ where: { id: participantId }, data: { participantType, isRas } });
+      // Keep the row fresh for the admin portal. checked_by / checked_at stay:
+      // it is still that check's result.
+      await tx.ieeeVerification.update({
+        where: { participantId },
+        data: { claimedType: participantType, claimedIsRas: isRas },
+      });
+      return true;
+    });
+  }
+
+  /** `applyStoredResult` for everyone whose stored result disagrees with their pricing. */
+  async applyStoredResults(): Promise<void> {
+    try {
+      const rows = await this.prisma.participant.findMany({
+        where: { ieeeVerification: { isNot: null } },
+        select: {
+          id: true,
+          ieeeId: true,
+          participantType: true,
+          isRas: true,
+          careerStage: true,
+          sb: true,
+          user: { select: { email: true } },
+          ieeeVerification: true,
+        },
+      });
+      let applied = 0;
+      for (const p of rows) {
+        if (!p.ieeeVerification) continue;
+        if (!storedResultDisagrees(p.ieeeVerification, { ...p, email: p.user.email })) continue;
+        if (await this.applyStoredResult(p.id)) applied++;
+      }
+      if (applied > 0) this.logger.log(`Applied ${applied} stored IEEE result(s) to participant pricing`);
+    } catch (error) {
+      this.logger.error('Applying stored IEEE results failed', error as Error);
+    }
   }
 
   isEnabled(): boolean {

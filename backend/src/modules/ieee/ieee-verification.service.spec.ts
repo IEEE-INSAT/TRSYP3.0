@@ -126,6 +126,58 @@ describe('IeeeVerificationService', () => {
     expect(prisma.ieeeVerification.upsert).not.toHaveBeenCalled();
   });
 
+  describe('applyStoredResult', () => {
+    const adminRow = {
+      memberStatus: 'Active',
+      societies: ['MEMRA024'],
+      claimedIeeeId: 12345678,
+      claimedType: 'Student',
+      claimedIsRas: false,
+      claimedEmail: 'a@b.com',
+    };
+    const pricedWithoutRas = {
+      ...participant,
+      participantType: ParticipantType.Student,
+      isRas: false,
+      ieeeVerification: adminRow,
+    };
+
+    beforeEach(() => {
+      prisma.ieeeVerification.update = jest.fn();
+    });
+
+    it("prices a RAS member on an admin's check, without calling IEEE", async () => {
+      prisma.participant.findUnique.mockResolvedValue(pricedWithoutRas);
+
+      await expect(service.applyStoredResult('p1')).resolves.toBe(true);
+
+      expect(ieee.getStatus).not.toHaveBeenCalled();
+      expect(prisma.participant.update).toHaveBeenCalledWith({
+        where: { id: 'p1' },
+        data: { participantType: ParticipantType.Student, isRas: true },
+      });
+      // The row stays that admin's check, now matching the participant.
+      expect(prisma.ieeeVerification.update).toHaveBeenCalledWith({
+        where: { participantId: 'p1' },
+        data: { claimedType: ParticipantType.Student, claimedIsRas: true },
+      });
+    });
+
+    it('leaves a participant already priced on their result alone', async () => {
+      prisma.participant.findUnique.mockResolvedValue({ ...pricedWithoutRas, isRas: true });
+
+      await expect(service.applyStoredResult('p1')).resolves.toBe(false);
+      expect(prisma.participant.update).not.toHaveBeenCalled();
+    });
+
+    it('does not apply a result for a member number they no longer have', async () => {
+      prisma.participant.findUnique.mockResolvedValue({ ...pricedWithoutRas, ieeeId: 87654321 });
+
+      await expect(service.applyStoredResult('p1')).resolves.toBe(false);
+      expect(prisma.participant.update).not.toHaveBeenCalled();
+    });
+  });
+
   it('drops a result whose member number changed during the call', async () => {
     ieee.getStatus.mockResolvedValue(found('Active'));
     prisma.participant.findUnique

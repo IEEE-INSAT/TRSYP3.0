@@ -5,6 +5,7 @@ import {
   isLookupableMemberNumber,
   isVerificationStale,
   membershipFrom,
+  storedResultDisagrees,
 } from './ieee-membership';
 
 const student = { careerStage: CareerStage.Student, sb: SB.INSAT };
@@ -70,6 +71,32 @@ describe('isLookupableMemberNumber', () => {
     expect(isLookupableMemberNumber(1234)).toBe(false);
     expect(isLookupableMemberNumber(12345)).toBe(true);
     expect(isLookupableMemberNumber(null)).toBe(false);
+  });
+});
+
+describe('storedResultDisagrees', () => {
+  // An admin's check: Active with RAS, but the participant said "no RAS".
+  const row = { memberStatus: 'Active', societies: ['MEMRA024'], claimedIeeeId: 12345678, claimedEmail: 'a@b.com' };
+  const current = {
+    ieeeId: 12345678,
+    email: 'a@b.com',
+    participantType: ParticipantType.Student,
+    isRas: false,
+    careerStage: CareerStage.Student,
+    sb: SB.INSAT,
+  };
+
+  it('flags a RAS member who is priced without RAS', () => {
+    expect(storedResultDisagrees(row, current)).toBe(true);
+  });
+
+  it('is quiet once they are priced on the result', () => {
+    expect(storedResultDisagrees(row, { ...current, isRas: true })).toBe(false);
+  });
+
+  it('ignores a result for a member number or email they no longer have', () => {
+    expect(storedResultDisagrees(row, { ...current, ieeeId: 87654321 })).toBe(false);
+    expect(storedResultDisagrees(row, { ...current, email: 'c@d.com' })).toBe(false);
   });
 });
 

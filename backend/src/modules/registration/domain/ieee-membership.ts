@@ -130,6 +130,28 @@ export function verificationSummaryOf(
 }
 
 /**
+ * Whether a stored result still describes the participant (same member number
+ * and email as when it was checked) but they aren't priced on it. The admin
+ * portal writes results without touching the participant, so its checks land
+ * here until the backend applies them.
+ */
+export function storedResultDisagrees(
+  row: IeeeRecord & { claimedIeeeId: number | null; claimedEmail: string },
+  current: {
+    ieeeId: number | null;
+    email: string;
+    participantType: ParticipantType;
+    isRas: boolean;
+    careerStage: CareerStage | null;
+    sb: SB | null;
+  },
+): boolean {
+  if (row.claimedIeeeId !== current.ieeeId || row.claimedEmail !== current.email) return false;
+  const verdict = membershipFrom(row, current);
+  return verdict.participantType !== current.participantType || verdict.isRas !== current.isRas;
+}
+
+/**
  * The admin portal's staleness rule: a row describes the participant only
  * while every `claimed*` value still equals the participant's current one.
  */
