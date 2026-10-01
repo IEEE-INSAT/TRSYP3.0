@@ -3,28 +3,108 @@
 import { motion } from 'motion/react';
 import Image from 'next/image';
 
-const TEAM = [
-  { name: 'Rayhane Sahli', role: 'Chair', email: 'rayhanesahli@ieee.org', unit: 'GC-001', image:  "/team/rayhane.png"},
-  { name: 'Yassine Kolsi', role: 'Vice-Chair', email: 'yassine.kolsi@ieee.org', unit: 'VC-002', image:  "/team/yassineK.jpg" },
-  { name: 'Yassine Boudagga', role: 'Vice-Chair', email: 'boudegga91@gmail.com', unit: 'VC-003', image:  "/team/yassineB.png" },
-  { name: 'Mariem Jomaa', role: 'Secretary', email: 'mariem.education.jomaa@gmail.com', unit: 'SE-004', image:  "/team/mariem.jpg" },
-  { name: 'Yasmin Loukil', role: 'Secretary', email: 'itsyasminlouki@gmail.com', unit: 'SE-005', image:  "/team/yasmin.jpeg" },
-  { name: 'Ayette Batbout', role: 'Treasurer', email: 'ayetbetbout@gmail.com', unit: 'TR-006', image:  "/team/ayette.jpg" },
-  { name: 'Farouk Thabet', role: 'Administrative Affairs and External Relations', email: 'faroukthabet@ieee.org', unit: 'AE-007', image:  "/team/farouk.jpg" },
-  { name: 'Skander Loghmari', role: 'Technical Team Leader', email: 'loghmariskander@gmail.com', unit: 'TK-008', image:  "/team/skander.jpg" },
-  { name: 'Nermine Moumen', role: 'Organization Team Leader', email: 'nermine.moumen@gmail.com', unit: 'OR-009', image:  "/team/nermine.jpg" },
-  { name: 'Makki Aloulou', role: 'IT Team Leader', email: 'makkialoulou2005@gmail.com', unit: 'IT-010', image:  "/team/makki.jpg" },
-  { name: 'Mohamed Amine Achour', role: 'IT Team Leader', email: 'mohamedamineachour5@gmail.com', unit: 'IT-011', image:  "/team/achour.png" },
-  { name: 'Wyssem Neila', role: 'Media Team Leader', email: 'wyssemneila@ieee.org', unit: 'MD-012', image:  "/team/wyssem.jpg" },
-  { name: 'Khalil Khadraoui', role: 'Sponsorship Team Leader', email: 'Khalil.kkhadraoui@gmail.com', unit: 'SP-013', image:  "/team/khalil.jpg" },
+type Member = { name: string; role: string; image: string; email?: string };
+
+// Leaders first, then managers, within each department.
+const DEPARTMENTS: { name: string; short: string; code: string; members: Member[] }[] = [
+  {
+    name: 'Executive Committee',
+    short: 'Executive',
+    code: 'EX',
+    members: [
+      { name: 'Rayhane Sahli', role: 'Congress Chair', email: 'rayhanesahli@ieee.org', image: '/team/rayhane-sahli.webp' },
+      { name: 'Yassine Kolsi', role: 'Vice-Chair', email: 'yassine.kolsi@ieee.org', image: '/team/yassine-kolsi.webp' },
+      { name: 'Yassine Boudagga', role: 'Vice-Chair', email: 'boudegga91@gmail.com', image: '/team/yassine-boudagga.webp' },
+      { name: 'Mariem Jomaa', role: 'Secretary', email: 'mariem.education.jomaa@gmail.com', image: '/team/mariem-jomaa.webp' },
+      { name: 'Yasmin Loukil', role: 'Secretary', email: 'itsyasminlouki@gmail.com', image: '/team/yasmin-loukil.webp' },
+      { name: 'Ayette Betbout', role: 'Treasurer', email: 'ayetbetbout@gmail.com', image: '/team/ayette-betbout.webp' },
+    ],
+  },
+  {
+    name: 'Technical Department',
+    short: 'Technical',
+    code: 'TK',
+    members: [
+      { name: 'Skander Loghmari', role: 'Technical Team Leader', email: 'loghmariskander@gmail.com', image: '/team/skander-loghmari.webp' },
+      { name: 'Ghoafrane Faidi', role: 'Technical Manager', image: '/team/ghoafrane-faidi.webp' },
+      { name: 'Ilyes Arfa', role: 'Technical Manager', image: '/team/ilyes-arfa.webp' },
+      { name: 'Meriem Besbes', role: 'Technical Manager', image: '/team/meriem-besbes.webp' },
+      { name: 'Mohamed Nour Ben Ali', role: 'Technical Manager', image: '/team/mohamed-nour-ben-ali.webp' },
+    ],
+  },
+  {
+    name: 'Organization Department',
+    short: 'Organization',
+    code: 'OR',
+    members: [
+      { name: 'Nermine Moumen', role: 'Organization Team Leader', email: 'nermine.moumen@gmail.com', image: '/team/nermine-moumen.webp' },
+      { name: 'Ayoub Boulifa', role: 'Organization Manager', image: '/team/ayoub-boulifa.webp' },
+      { name: 'Eya Touati', role: 'Organization Manager', image: '/team/eya-touati.webp' },
+      { name: 'Ismail Koubaa', role: 'Organization Manager', image: '/team/ismail-koubaa.webp' },
+      { name: 'Kenza Hadj Sassi', role: 'Organization Manager', image: '/team/kenza-hadj-sassi.webp' },
+      { name: 'Mariem Maatoug', role: 'Organization Manager', image: '/team/mariem-maatoug.webp' },
+    ],
+  },
+  {
+    name: 'Sponsorship Department',
+    short: 'Sponsorship',
+    code: 'SP',
+    members: [
+      { name: 'Khalil Khadhraoui', role: 'Sponsorship Team Leader', email: 'Khalil.kkhadraoui@gmail.com', image: '/team/khalil-khadhraoui.webp' },
+      { name: 'Dalila Zaiter', role: 'Sponsorship Manager', image: '/team/dalila-zaiter.webp' },
+      { name: 'Ghayth Abidli', role: 'Sponsorship Manager', image: '/team/ghayth-abidli.webp' },
+      { name: 'Moemen Bejaoui', role: 'Sponsorship Manager', image: '/team/moemen-bejaoui.webp' },
+      { name: 'Ranim Dhiflaoui', role: 'Sponsorship Manager', image: '/team/ranim-dhiflaoui.webp' },
+    ],
+  },
+  {
+    name: 'Media Department',
+    short: 'Media',
+    code: 'MD',
+    members: [
+      { name: 'Wyssem Neila', role: 'Media Team Leader', email: 'wyssemneila@ieee.org', image: '/team/wyssem-neila.webp' },
+      { name: 'Sarah Sdiri', role: 'Media Manager', image: '/team/sarah-sdiri.webp' },
+      { name: 'Youssef Akermi', role: 'Media Manager', image: '/team/youssef-akermi.webp' },
+    ],
+  },
+  {
+    name: 'IT Department',
+    short: 'IT',
+    code: 'IT',
+    members: [
+      { name: 'Mohamed Amine Achour', role: 'IT Team Leader', email: 'mohamedamineachour5@gmail.com', image: '/team/mohamed-amine-achour.webp' },
+    ],
+  },
+  {
+    name: 'External Relations & Administrative Affairs',
+    short: 'External Relations',
+    code: 'ER',
+    members: [
+      { name: 'Amine Dammak', role: 'External Relations Manager', image: '/team/amine-dammak.webp' },
+      { name: 'Hene Nayet Yahia', role: 'External Relations & Administrative Affairs Manager', image: '/team/hene-nayet-yahia.webp' },
+      { name: 'Jihen Somai', role: 'External Relations & Administrative Affairs Manager', image: '/team/jihen-somai.webp' },
+      { name: 'Nour Asfour', role: 'External Relations & Administrative Affairs Manager', image: '/team/nour-asfour.webp' },
+      { name: 'Ranim Dhaouadi', role: 'YP & VIP Manager', image: '/team/ranim-dhaouadi.webp' },
+      { name: 'Youssef Rekik', role: 'Ambassador Coordinator', image: '/team/youssef-rekik.webp' },
+    ],
+  },
 ];
+
+const TEAM = DEPARTMENTS.map((dept) => ({
+  ...dept,
+  members: dept.members.map((m, i) => ({
+    ...m,
+    department: dept.short,
+    unit: `${dept.code}-${String(i + 1).padStart(3, '0')}`,
+  })),
+}));
 
 const BARCODE_WIDTHS = Array.from(
   { length: 24 },
   (_, index) => (index * 7) % 11 < 5 ? '3px' : '1.5px',
 );
 
-function IdCard({ member, index }: { member: typeof TEAM[0]; index: number }) {
+function IdCard({ member, index }: { member: Member & { unit: string; department: string }; index: number }) {
   return (
     <motion.div
       className="id-card-wrap"
@@ -48,10 +128,11 @@ function IdCard({ member, index }: { member: typeof TEAM[0]; index: number }) {
             <div className="id-card-avatar-ring">
               <div className="id-card-avatar-inner">
                 <Image
-                  src={member.image || "/rayhane.png"}
+                  src={member.image}
                   alt={member.name}
-                  width={80}
-                  height={80}
+                  width={600}
+                  height={600}
+                  unoptimized
                   style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
                 />
               </div>
@@ -62,6 +143,7 @@ function IdCard({ member, index }: { member: typeof TEAM[0]; index: number }) {
           <div className="id-card-info">
             <h3 className="id-card-name">{member.name}</h3>
             <span className="id-card-role">{member.role}</span>
+            <span className="id-card-dept">{member.department} Dept.</span>
           </div>
 
           <div className="id-card-footer">
@@ -102,9 +184,15 @@ function IdCard({ member, index }: { member: typeof TEAM[0]; index: number }) {
               <span className="id-card-back-value">{member.role}</span>
             </div>
             <div className="id-card-back-row">
-              <span className="id-card-back-label">COMMS</span>
-              <span className="id-card-back-value id-card-back-email">{member.email}</span>
+              <span className="id-card-back-label">DEPARTMENT</span>
+              <span className="id-card-back-value">{member.department}</span>
             </div>
+            {member.email && (
+              <div className="id-card-back-row">
+                <span className="id-card-back-label">COMMS</span>
+                <span className="id-card-back-value id-card-back-email">{member.email}</span>
+              </div>
+            )}
             <div className="id-card-back-row">
               <span className="id-card-back-label">STATUS</span>
               <span className="id-card-back-value">
@@ -172,11 +260,16 @@ export default function AboutPage() {
             </p>
           </div>
 
-          <div className="team-grid">
-            {TEAM.map((m, i) => (
-              <IdCard key={m.unit} member={m} index={i} />
-            ))}
-          </div>
+          {TEAM.map((dept) => (
+            <div key={dept.code} className="team-dept">
+              <h3 className="team-dept-title">{dept.name}</h3>
+              <div className="team-grid">
+                {dept.members.map((m, i) => (
+                  <IdCard key={m.unit} member={m} index={i} />
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </section>
     </div>

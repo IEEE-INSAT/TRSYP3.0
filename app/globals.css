@@ -5613,6 +5613,29 @@ select.reg-input option {
   justify-content: center;
 }
 
+.team-dept + .team-dept {
+  margin-top: 72px;
+}
+
+.team-dept-title {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+  font-family: var(--font-heading);
+  font-size: clamp(20px, 2.4vw, 28px);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #fff;
+}
+
+.team-dept-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
 /* ─── ID Card ─── */
 .id-card-wrap {
   perspective: 900px;
@@ -5729,8 +5752,8 @@ select.reg-input option {
 }
 
 .id-card-avatar-inner {
-  width: 70%;
-  height: 70%;
+  width: 90%;
+  height: 90%;
   color: rgba(0, 232, 122, 0.5);
 }
 
@@ -5797,6 +5820,15 @@ select.reg-input option {
   overflow-wrap: break-word;
   word-break: break-word;
   line-height: 1.3;
+}
+
+.id-card-dept {
+  display: block;
+  margin-top: 4px;
+  font-size: clamp(0.55rem, 1.3vw, 0.68rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
 }
 
 .id-card-footer {
