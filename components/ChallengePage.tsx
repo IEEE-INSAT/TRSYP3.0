@@ -597,7 +597,7 @@ export default function ChallengePage() {
               <ul className="fablab-facts">
                 <li>
                   <span>Fee</span>
-                  Included in your TRSYP 3.0 registration
+                  Up to 60% travel grant for IEEE RAS members 
                 </li>
                 <li>
                   <span>Prizes</span>
