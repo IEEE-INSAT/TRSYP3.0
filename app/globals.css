@@ -203,8 +203,12 @@ button {
   display: flex;
   align-items: center;
   text-decoration: none;
-  flex-shrink: 0;
+  /* The logo and the actions group grow from the same zero basis, so they end
+     up equally wide and the links between them sit at the navbar's centre.
+     Shrinking stays off: neither may get narrower than its content. */
+  flex: 1 0 0;
   margin-left: 24px;
+  transform-origin: left center;
   transition:
     opacity 0.3s ease,
     transform 0.3s ease;
@@ -310,6 +314,9 @@ button {
 .navbar-right-group {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  flex-grow: 1;
+  flex-basis: 0;
   gap: 12px;
   /* Never let the actions group be squeezed narrower than its buttons: the
      scrolled pill is width:fit-content, and if this group shrinks below its
@@ -397,15 +404,15 @@ button {
 
 /* ─── Guest actions (Log In + Register) ─── */
 .navbar-guest-actions {
-  /* Two equal columns so Log In and Register Now are the exact same size even
-     though their labels differ in length. When Log In isn't rendered (e.g. an
-     authenticated-but-unregistered user, who never sees Log In), the
-     --single modifier collapses this to one column so Register Now doesn't
-     leave a phantom empty column beside it. */
+  /* Two equal columns so Log In and the register button are the same size
+     even though their labels differ in length. When Log In isn't rendered (e.g.
+     an authenticated-but-unregistered user, who never sees Log In), the
+     --single modifier collapses this to one column so the register button
+     doesn't leave a phantom empty column beside it. */
   display: grid;
   grid-template-columns: 1fr 1fr;
   align-items: stretch;
-  gap: 12px;
+  gap: 10px;
   flex-shrink: 0;
 }
 
@@ -417,7 +424,11 @@ button {
 .navbar-guest-actions .navbar-login,
 .navbar-guest-actions .navbar-register {
   width: 100%;
-  min-height: 44px;
+  min-height: 38px;
+  padding: 9px 14px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
   justify-content: center;
 }
 
