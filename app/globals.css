@@ -199,6 +199,14 @@ button {
   gap: clamp(16px, 2.2vw, 40px);
 }
 
+/* The equal-width logo/actions split only suits the full-width header. In the
+   pill it starved the actions group, so the links ran into Log In - here the
+   items go back to their own widths, packed by the gap. */
+.navbar--scrolled .navbar-logo,
+.navbar--scrolled .navbar-right-group {
+  flex: 0 0 auto;
+}
+
 .navbar-logo {
   display: flex;
   align-items: center;
