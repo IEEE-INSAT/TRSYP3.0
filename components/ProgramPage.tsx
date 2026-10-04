@@ -5,138 +5,131 @@ import { motion } from 'motion/react';
 
 const PROGRAM = [
   {
-    id: 'pre',
-    label: 'Pre-Conference',
-    date: 'September 2026',
-    venue: 'INSAT, Tunis',
+    id: 'd1',
+    label: 'Day 1',
+    date: '16 October 2026 · Hackathon',
+    venue: 'Le Royal, Yasmine Hammamet',
     items: [
-      { time: '01', icon: 'mic', title: 'Opening Words', desc: 'Welcome addresses opening the TRSYP 3.0 pre-conference day.', where: 'INSAT', who: 'All attendees' },
-      { time: '02', icon: 'star', title: 'Online & Onsite Keynotes', desc: 'Keynote talks delivered on stage and streamed in from remote speakers.', where: 'INSAT · Online', who: 'All attendees' },
-      { time: '03', icon: 'poster', title: 'Projects Exposition', desc: 'Robotics projects built by IEEE RAS Student Branches, shown alongside partner exhibits.', where: 'Expo Area', who: 'Student Branches · Partners' },
-      { time: '04', icon: 'tools', title: 'Mentoring & Multi-Workshops', desc: 'Parallel hands-on workshops with mentors guiding teams through practical sessions.', where: 'Workshop Rooms', who: 'Registered participants' },
-      { time: '05', icon: 'food', title: 'Pause Café', desc: 'Coffee break to network between sessions.', where: 'INSAT', who: 'All attendees' },
-      { time: '06', icon: 'mic', title: 'Closing', desc: 'Closing remarks wrapping up the pre-conference day.', where: 'INSAT', who: 'All attendees' },
-      { time: '07', icon: 'trophy', title: 'Happy RAS Day Celebration', desc: 'Community celebration of RAS Day with the Tunisian robotics family.', where: 'INSAT', who: 'All attendees' },
+      { time: '11:00 – 12:00', icon: 'pin', title: 'Hackathon Check-in', desc: 'Registration and welcome for hackathon teams.', where: 'Le Royal', who: 'Hackathon participants' },
+      { time: '13:00 – 13:30', icon: 'rocket', title: 'Hackathon Launch', desc: 'Introduction and official launch of the hackathon with our partners.', where: 'Le Royal', who: 'Hackathon participants' },
+      { time: '13:30 – 14:30', icon: 'tools', title: 'Workshop', desc: 'A hands-on workshop to kick off the hackathon.', where: 'Le Royal', who: 'Hackathon participants' },
+      { time: '14:30 – 15:00', icon: 'food', title: 'Coffee Break', desc: 'A short break before the first build session.', where: 'Le Royal', who: 'Hackathon participants' },
+      { time: '15:00 – 19:00', icon: 'tools', title: 'Hackathon · Session 1', desc: 'First build session of the hackathon.', where: 'Le Royal', who: 'Hackathon participants' },
+      { time: '19:00 – 20:30', icon: 'food', title: 'Dinner', desc: 'Dinner break for hackathon teams.', where: 'Dining Hall', who: 'Hackathon participants' },
+      { time: '20:30 – 23:00', icon: 'tools', title: 'Hackathon · Session 2', desc: 'Second build session of the hackathon.', where: 'Le Royal', who: 'Hackathon participants' },
+      { time: '23:00 – 01:00', icon: 'people', title: 'Networking Activities', desc: 'Wind down and connect with fellow participants.', where: 'Le Royal', who: 'Hackathon participants' },
     ],
   },
-   {
-    id: "d1",
-    label: "Day 01 : Innovation & Networking",
-    date: "17 October 2026",
-    venue: "Le Royal, Yasmine Hammamet",
-    items: [
-      {
-        time: "08:00 – 12:00",
-        icon: "pin",
-        title: "Check-in & Booth Setup",
-        desc: "Participant registration alongside company booths and forum setup.",
-        where: "Lobby & Expo Hall",
-        who: "All attendees · Exhibitors",
-      },
-      {
-        time: "14:00 – 16:00",
-        icon: "mic",
-        title: "Opening Ceremony",
-        desc: "Official opening with keynote speeches and welcome addresses.",
-        where: "Main Hall",
-        who: "All attendees",
-      },
-      {
-        time: "16:00 – 16:30",
-        icon: "people",
-        title: "Networking Break",
-        desc: "Coffee break to connect with participants, speakers, and partners.",
-        where: "Atrium",
-        who: "All attendees",
-      },
-      {
-        time: "16:30 – 19:00",
-        icon: "poster",
-        title: "Job Fair · Exposition · Poster Session",
-        desc: "Explore company booths, discover innovative robotics projects, and engage with researchers.",
-        where: "Expo Hall",
-        who: "Open · Drop-in",
-      },
-      {
-        time: "19:00 – 20:00",
-        icon: "food",
-        title: "Dinner",
-        desc: "Enjoy dinner while continuing conversations with fellow attendees.",
-        where: "Dining Hall",
-        who: "All attendees",
-      },
-      {
-        time: "20:00 – 23:00",
-        icon: "trophy",
-        title: "Competition",
-        desc: "Competition sessions featuring participating teams.",
-        where: "Main Hall",
-        who: "Participants",
-      },
-      {
-        time: "23:00 – 01:00",
-        icon: "people",
-        title: "Networking Night & Social Activities",
-        desc: "Relax, network, and enjoy curated social activities with the community.",
-        where: "Outdoor Area",
-        who: "All attendees",
-      },
-    ],
-  },
-
   {
-    id: "d2",
-    label: "Day 02 : Learning & Celebration",
-    date: "18 October 2026",
-    venue: "Le Royal, Yasmine Hammamet",
+    id: 'd2',
+    label: 'Day 2',
+    date: '17 October 2026 · Opening & Competition',
+    venue: 'Le Royal, Yasmine Hammamet',
     items: [
+      { time: 'From 09:00', icon: 'pin', title: 'Check-in', desc: 'Participant registration and welcome.', where: 'Le Royal', who: 'All attendees' },
+      { time: '10:00', icon: 'building', title: 'Exhibition & Booth Setup', desc: 'Exhibitors and partners set up their booths.', where: 'Expo Area', who: 'Exhibitors · Partners' },
+      { time: '10:30 – 11:30', icon: 'trophy', title: 'Hackathon Pitching', desc: 'Hackathon teams pitch their projects to the jury.', where: 'Le Royal', who: 'Hackathon participants' },
+      { time: '13:30 – 14:00', icon: 'pin', title: 'Ceremony Check-in', desc: 'Doors open for the opening ceremony.', where: 'Salle de Cérémonies', who: 'All attendees' },
       {
-        time: "07:00 – 08:30",
-        icon: "food",
-        title: "Breakfast",
-        desc: "Start the day with breakfast and informal networking.",
-        where: "Dining Hall",
-        who: "All attendees",
+        time: '14:00 – 15:05',
+        icon: 'mic',
+        title: 'Opening Ceremony',
+        desc: 'Opening video, national anthems and welcome addresses.',
+        where: 'Salle de Cérémonies',
+        who: 'All attendees',
+        details: [
+          'Rayhane Sehli · TRSYP 3.0 Chair',
+          'Mr Sleh · Director of INSAT',
+          'Prof. Nadia Mzoughi Aguir · President of the University of Carthage',
+          'Mr Mondher Belaid · Minister of Higher Education and Scientific Research',
+          'Prof. Mourad Bellassoued · Director of Research',
+          'Firas Arfaoui · IEEE INSAT SB Chair',
+          'Adam Hbaieb · IEEE INSAT RAS SBC Chair',
+          'Yassin Aniba · IEEE RAS Tunisia Section Representative',
+          'Ahmed Aouididi · IEEE SAC Chair',
+          'Amine Elkadhi · Honoring the ICRA Best World RAS Chapter Award',
+        ],
+      },
+      { time: '15:07 – 15:10', icon: 'star', title: 'Sponsor Words', desc: 'A word from our partner Orange.', where: 'Salle de Cérémonies', who: 'All attendees' },
+      { time: '15:11 – 15:41', icon: 'mic', title: 'Keynote · Prof. Adel Alimi', desc: '“Human–Machine Interaction and Cognitive Robotics: Toward Intelligent and Collaborative Systems”.', where: 'Salle de Cérémonies', who: 'All attendees' },
+      {
+        time: '15:42 – 17:00',
+        icon: 'people',
+        title: 'Panel',
+        desc: 'Panel discussion with our keynote and distinguished speakers.',
+        where: 'Salle de Cérémonies',
+        who: 'All attendees',
+        details: ['Prof. Adel Alimi', 'Prof. Friederike Eyssel', 'Prof. Sahar Alimi'],
+      },
+      { time: '17:00 – 17:30', icon: 'food', title: 'Coffee Break', desc: 'Coffee break to network between sessions.', where: 'Le Royal', who: 'All attendees' },
+      { time: '17:30 – 18:30', icon: 'poster', title: 'Exhibition · Booths · Poster Session', desc: 'Explore partner booths, robotics projects and research posters.', where: 'Expo Area', who: 'Open · Drop-in' },
+      { time: '19:00 – 21:00', icon: 'food', title: 'Dinner', desc: 'Dinner with fellow attendees.', where: 'Dining Hall', who: 'All attendees' },
+      { time: '20:30 – 00:00', icon: 'trophy', title: 'Technical Competition', desc: 'Teams compete live, animated by a DJ.', where: 'Le Royal', who: 'Competition participants' },
+      { time: '23:00 – 01:00', icon: 'people', title: 'Party', desc: 'Celebrate the night with a DJ set.', where: 'Le Royal', who: 'All attendees' },
+    ],
+  },
+  {
+    id: 'd3',
+    label: 'Day 3',
+    date: '18 October 2026 · Learning & Celebration',
+    venue: 'Le Royal, Yasmine Hammamet',
+    items: [
+      { time: '07:00 – 08:30', icon: 'food', title: 'Breakfast', desc: 'Start the day with breakfast and informal networking.', where: 'Dining Hall', who: 'All attendees' },
+      {
+        time: '07:00 – 08:30',
+        icon: 'trophy',
+        title: 'Challenge Pitching · Session 1',
+        desc: 'First round of challenge pitches.',
+        where: 'Salle Luxor · Salle Ramsès',
+        who: 'Challenge participants',
+        details: ['Non-technical challenge pitching · Salle Luxor', 'Technical challenge pitching · Salle Ramsès'],
       },
       {
-        time: "09:00 – 10:30",
-        icon: "mic",
-        title: "Distinguished Lecturers Session",
-        desc: "Inspiring talks delivered by internationally recognized IEEE Distinguished Lecturers, sharing expertise and insights on the latest trends in robotics and automation.",
-        where: "Main Hall",
-        who: "All attendees",
+        time: '09:00 – 10:00',
+        icon: 'tools',
+        title: 'Workshops · Session 1',
+        desc: 'Parallel workshops - pick the one that fits you.',
+        where: 'Workshop Rooms',
+        who: 'Registered participants',
+        details: [
+          'Pitching · Tarek Lamouchi · Salle Césarion (mandatory for technical challenge participants)',
+          'IES Workshop · Salle Sphinx',
+          'YP Tech Session · Salle César',
+        ],
+      },
+      { time: '10:15 – 11:15', icon: 'mic', title: 'Distinguished Lecturer Session', desc: 'Social psychology and social robotics, by IEEE Distinguished Lecturer Prof. Friederike Eyssel.', where: 'Salle de Cérémonies', who: 'All attendees' },
+      { time: '11:15 – 12:00', icon: 'pin', title: 'Check-out & Lunch', desc: 'Hotel check-out followed by lunch.', where: 'Reception · Dining Hall', who: 'All attendees' },
+      { time: '12:00 – 13:00', icon: 'trophy', title: 'Technical Challenge Pitching · Session 2', desc: 'Technical teams pitch, followed by a 5-minute live demo.', where: 'Salle Ramsès', who: 'Technical challenge participants' },
+      {
+        time: '12:00 – 13:00',
+        icon: 'tools',
+        title: 'Workshops · Session 2',
+        desc: 'Parallel workshops and round tables.',
+        where: 'Workshop Rooms',
+        who: 'Registered participants',
+        details: [
+          'Building Agentic & Multimodal Systems · Mohamed Ali Farhat · Salle Sphinx',
+          'YP Round Tables · Salle César',
+          'RAS Leaders · Salle Césarion',
+        ],
       },
       {
-        time: "10:30 – 11:00",
-        icon: "pin",
-        title: "Check-out",
-        desc: "Hotel check-out before the afternoon program.",
-        where: "Reception",
-        who: "Accommodation guests",
-      },
-      {
-        time: "11:00 – 12:30",
-        icon: "tools",
-        title: "Workshops & Challenge Pitching",
-        desc: "Hands-on workshops followed by technical and non-technical challenge pitching sessions.",
-        where: "Workshop Rooms",
-        who: "Registered participants",
-      },
-      {
-        time: "12:30 – 14:00",
-        icon: "food",
-        title: "Lunch & Networking",
-        desc: "Lunch break with opportunities to connect with attendees and industry representatives.",
-        where: "Dining Hall",
-        who: "All attendees",
-      },
-      {
-        time: "14:30 – 17:00",
-        icon: "trophy",
-        title: "Closing Ceremony",
-        desc: "Celebration of the event with awards, acknowledgements, and closing remarks.",
-        where: "Main Hall",
-        who: "All attendees",
+        time: '15:00 – 17:00',
+        icon: 'trophy',
+        title: 'Closing Ceremony',
+        desc: 'Awards, acknowledgements and the final winner announcement.',
+        where: 'Salle de Cérémonies',
+        who: 'All attendees',
+        details: [
+          'Sponsor thanks',
+          'Best Ambassador',
+          'Hackathon winners',
+          'IEEE RAS Tunisia Student Branch Chapter of the Year Award',
+          'Outstanding IEEE RAS Day Tunisia Award 2026',
+          'Technical Challenge winners & jury thanks',
+          'Finalists announcement',
+          'Vote and winner announcement',
+        ],
       },
     ],
   },
@@ -158,7 +151,7 @@ const ICONS: Record<string, React.ReactNode> = {
 };
 
 export default function ProgramPage() {
-  const [activeTab, setActiveTab] = useState('d1');
+  const [activeTab, setActiveTab] = useState('d2');
 
   const activeDay = PROGRAM.find((d) => d.id === activeTab)!;
 
@@ -172,7 +165,7 @@ export default function ProgramPage() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
             <div className="prog-eyebrow">
               <span className="prog-eyebrow-line" />
-              <span className="prog-eyebrow-text">17–18 October 2026 · Le Royal, Yasmine Hammamet</span>
+              <span className="prog-eyebrow-text">16–18 October 2026 · Le Royal, Yasmine Hammamet</span>
               <span className="prog-eyebrow-line" />
             </div>
             <h1 className="prog-hero-h">PROGRAM</h1>
@@ -238,6 +231,13 @@ export default function ProgramPage() {
                     <div>
                       <h3 className="prog-tl-title">{item.title}</h3>
                       <p className="prog-tl-desc">{item.desc}</p>
+                      {item.details && (
+                        <ul className="prog-tl-details">
+                          {item.details.map((d) => (
+                            <li key={d}>{d}</li>
+                          ))}
+                        </ul>
+                      )}
                       <div className="prog-tl-meta">
                         <span className="prog-tl-meta-item">
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>

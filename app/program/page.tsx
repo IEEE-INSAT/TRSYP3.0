@@ -6,7 +6,7 @@ import GridBeam from '@/components/GridBeam';
 
 export const metadata: Metadata = {
   title: 'Program · TRSYP 3.0',
-  description: 'Full schedule for TRSYP 3.0 - Pre-Conference, Day 01, Day 02',
+  description: 'Full schedule for TRSYP 3.0 - Days 1 to 3',
 };
 
 export default function Program() {

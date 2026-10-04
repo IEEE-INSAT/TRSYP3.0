@@ -5358,6 +5358,34 @@ select.reg-input option {
   color: rgba(255, 255, 255, 0.5);
 }
 
+.prog-tl-details {
+  list-style: none;
+  margin-top: 10px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.prog-tl-details li {
+  position: relative;
+  padding-left: 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.prog-tl-details li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.6em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(0, 232, 122, 0.6);
+}
+
 .prog-tl-meta {
   display: flex;
   gap: 18px;
