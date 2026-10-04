@@ -97,11 +97,11 @@ export default function RegisterFlow({ initialChallenge = false }: { initialChal
           </Link>
           <div className="reg-info-banner">
             <div className="reg-info-badge">REGISTRATION</div>
-            <h2 className="reg-info-title">Registration opens soon</h2>
+            <h2 className="reg-info-title">Registration is closed</h2>
             <p className="reg-info-subtitle">
               {participantEntryClosed && REGISTRATION_OPEN
-                ? 'Participant registration is currently closed. Please check back soon.'
-                : 'Registration is temporarily closed. Please check back soon.'}
+                ? 'Participant registration for TRSYP 3.0 is now closed.'
+                : 'Registration for TRSYP 3.0 is now closed.'}
             </p>
           </div>
         </div>

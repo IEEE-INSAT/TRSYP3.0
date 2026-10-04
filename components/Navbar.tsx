@@ -186,11 +186,11 @@ export default function Navbar() {
                   className="navbar-register"
                   onClick={() => router.push('/register')}
                   disabled={!registerOpen}
-                  title={registerOpen ? undefined : 'Registration opens soon'}
+                  title={registerOpen ? undefined : 'Registration is closed'}
                   style={registerOpen ? undefined : { opacity: 0.5, cursor: 'not-allowed' }}
                 >
                   {registerOpen && <span className="navbar-register-pulse" />}
-                  {registerOpen ? 'Register Now' : 'Registration Soon'}
+                  {registerOpen ? 'Register Now' : 'Registration Closed'}
                 </button>
               </motion.div>
             ) : null}
@@ -276,7 +276,7 @@ export default function Navbar() {
               disabled={!registerOpen}
               style={registerOpen ? undefined : { opacity: 0.5, cursor: 'not-allowed' }}
             >
-              {registerOpen ? 'Register Now' : 'Registration Soon'}
+              {registerOpen ? 'Register Now' : 'Registration Closed'}
             </button>
           </>
         )}
