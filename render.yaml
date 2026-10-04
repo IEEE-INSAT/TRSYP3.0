@@ -33,7 +33,7 @@ services:
       - key: FABLAB_REGISTRATION_PHASE
         value: closed
       - key: FABLAB_SUBMISSION_PHASE
-        value: open
+        value: closed
       - key: PAYMENT_PROOF_OPEN
         value: "false"
       - key: NEXT_PUBLIC_API_URL
@@ -53,7 +53,7 @@ services:
       - key: NEXT_PUBLIC_FABLAB_PHASE
         value: closed
       - key: NEXT_PUBLIC_FABLAB_SUBMISSION_PHASE
-        value: open
+        value: closed
       - key: NEXT_PUBLIC_FABLAB_SPEC_URL
         sync: false
       - key: NEXT_PUBLIC_PARTICIPANT_REGISTRATION_OPEN

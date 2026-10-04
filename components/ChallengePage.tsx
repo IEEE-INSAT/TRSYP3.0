@@ -98,12 +98,12 @@ const TECHNICAL_AREAS = [
 
 /** Track 03 runs as a selection funnel; `current` marks where it stands now. */
 const FABLAB_STEPS = [
-  { id: 'submit', title: 'Submit your concept', meta: 'Now open' },
-  { id: 'select', title: 'Top 5 teams selected', meta: 'Selection' },
+  { id: 'submit', title: 'Submit your concept', meta: 'Closed' },
+  { id: 'select', title: 'Top 5 teams selected', meta: 'In progress' },
   { id: 'build', title: '12-hour makeathon', meta: 'Build the prototype' },
   { id: 'pitch', title: 'Pitch at TRSYP 3.0', meta: '17 October' },
 ];
-const FABLAB_CURRENT_STEP = 'submit';
+const FABLAB_CURRENT_STEP = 'select';
 
 /** The five questions the concept dossier must answer (from the spec book). */
 const FABLAB_QUESTIONS = [
@@ -466,7 +466,7 @@ export default function ChallengePage() {
           <div className="challenge-games-head">
             <div className="prog-eyebrow">
               <span className="prog-eyebrow-line" />
-              <span className="prog-eyebrow-text">Track 03 · Now open</span>
+              <span className="prog-eyebrow-text">Track 03 · Selection in progress</span>
               <span className="prog-eyebrow-line" />
             </div>
             <h2 className="challenge-story-h">
