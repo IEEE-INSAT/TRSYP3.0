@@ -1952,19 +1952,10 @@ button {
   grid-column: 2 / span 2;
 }
 
+/* The two rules above centre the bottom row of a 3 + 2 layout (both grids
+   hold five logos). */
 .partners-slot:last-child {
   grid-column: 4 / span 2;
-}
-
-/* The rules above centre a 3 + 2 layout (the five hosts). A grid of exactly
-   three - the partners - is one full row instead. Desktop only: the mobile
-   breakpoints already reset every slot to one column. */
-@media (min-width: 901px) {
-  .partners-grid--three .partners-slot,
-  .partners-grid--three .partners-slot:nth-last-child(2),
-  .partners-grid--three .partners-slot:last-child {
-    grid-column: span 2;
-  }
 }
 
 .partners-header--sub {
@@ -2466,6 +2457,13 @@ button {
     grid-column: auto;
   }
 
+  /* An odd logo out sits alone on the last row: centre it at one column's width */
+  .partners-slot:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: calc(50% - 7px);
+  }
+
   .partners-header {
     margin-bottom: 40px;
   }
@@ -2608,6 +2606,10 @@ button {
     grid-column: auto;
   }
 
+  .partners-slot:last-child:nth-child(odd) {
+    width: calc(50% - 6px);
+  }
+
   .partners-header {
     margin-bottom: 32px;
   }
@@ -2723,8 +2725,11 @@ button {
 
   .partners-slot,
   .partners-slot:nth-last-child(2),
-  .partners-slot:last-child {
+  .partners-slot:last-child,
+  .partners-slot:last-child:nth-child(odd) {
     grid-column: auto;
+    justify-self: stretch;
+    width: auto;
   }
 
   .footer {
