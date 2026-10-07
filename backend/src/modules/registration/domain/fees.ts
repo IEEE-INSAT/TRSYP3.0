@@ -12,12 +12,18 @@ export const FEE_CURRENCY = 'TND';
 /** Membership tier used to price a participant. */
 export type FeeTier = 'IEEE_RAS' | 'IEEE' | 'NON_IEEE';
 
-/** Visitor = attends only; Challenger = on a team in any activity (competition, technical challenge or Fablab). */
-export type FeeRole = 'VISITOR' | 'CHALLENGER';
+/**
+ * Visitor = attends only; Challenger = on a competition or technical challenge
+ * team; Fablab = on a Fablab team. Fablab wins over Challenger: a member of a
+ * Fablab team pays the Fablab fee whatever other teams they are on.
+ */
+export type FeeRole = 'VISITOR' | 'CHALLENGER' | 'FABLAB';
 
 export const FEES: Record<FeeRole, Record<FeeTier, number>> = {
   VISITOR: { IEEE_RAS: 170, IEEE: 175, NON_IEEE: 185 },
   CHALLENGER: { IEEE_RAS: 175, IEEE: 180, NON_IEEE: 190 },
+  // Flat, whatever the tier.
+  FABLAB: { IEEE_RAS: 100, IEEE: 100, NON_IEEE: 100 },
 };
 
 export interface FeeInput {
@@ -27,6 +33,8 @@ export interface FeeInput {
   isRas: boolean;
   /** Member of at least one team, whatever the activity. */
   isChallenger: boolean;
+  /** Member of a Fablab team. Takes precedence over `isChallenger`. */
+  isFablab: boolean;
 }
 
 export interface FeeBreakdown {
@@ -42,8 +50,18 @@ export function feeTierOf({ isIeee, isRas }: Pick<FeeInput, 'isIeee' | 'isRas'>)
   return isRas ? 'IEEE_RAS' : 'IEEE';
 }
 
+/** The team facts pricing needs, from the activity of each of the participant's memberships. */
+export function teamFeeFacts(
+  memberships: { activity: string }[] = [],
+): Pick<FeeInput, 'isChallenger' | 'isFablab'> {
+  return {
+    isChallenger: memberships.length > 0,
+    isFablab: memberships.some((m) => m.activity === 'FABLAB'),
+  };
+}
+
 export function computeFee(input: FeeInput): FeeBreakdown {
-  const feeRole: FeeRole = input.isChallenger ? 'CHALLENGER' : 'VISITOR';
+  const feeRole: FeeRole = input.isFablab ? 'FABLAB' : input.isChallenger ? 'CHALLENGER' : 'VISITOR';
   const feeTier = feeTierOf(input);
   return { fee: FEES[feeRole][feeTier], currency: FEE_CURRENCY, feeRole, feeTier };
 }

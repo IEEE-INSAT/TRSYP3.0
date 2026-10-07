@@ -579,7 +579,7 @@ describe('RegistrationService', () => {
         where: {},
         skip: 0,
         take: 10,
-        include: { internationalInfo: true, _count: { select: { memberships: true } } },
+        include: { internationalInfo: true, memberships: { select: { activity: true } } },
         orderBy: { createdAt: 'desc' },
       });
     });

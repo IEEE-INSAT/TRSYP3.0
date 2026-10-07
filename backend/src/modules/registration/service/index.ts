@@ -49,13 +49,13 @@ type ParticipantWithRelations = Participant & {
     id: string;
     visaApplication?: VisaApplication | null;
   } | null;
-  _count?: { memberships: number };
+  memberships?: { activity: TeamActivity }[];
   ieeeVerification?: IeeeVerification | null;
   user?: { email: string };
 };
 
-/** Team-membership count, enough to price the participant without loading the teams. */
-const MEMBERSHIP_COUNT = { _count: { select: { memberships: true } } } satisfies Prisma.ParticipantInclude;
+/** The activity of each team the participant is on, enough to price them without loading the teams. */
+const MEMBERSHIP_ACTIVITIES = { memberships: { select: { activity: true } } } satisfies Prisma.ParticipantInclude;
 
 /** The IEEE result and the email it is judged fresh against, for the participant's own view. */
 const IEEE_VERIFICATION = {
@@ -390,7 +390,7 @@ export class RegistrationService {
         return tx.participant.update({
           where: { id: participantId },
           data: updateData,
-          include: { internationalInfo: true, ...MEMBERSHIP_COUNT, ...IEEE_VERIFICATION },
+          include: { internationalInfo: true, ...MEMBERSHIP_ACTIVITIES, ...IEEE_VERIFICATION },
         });
       });
 
@@ -510,7 +510,7 @@ export class RegistrationService {
         return tx.participant.update({
           where: { id: participantId },
           data: { banned: true },
-          include: { internationalInfo: true, ...MEMBERSHIP_COUNT },
+          include: { internationalInfo: true, ...MEMBERSHIP_ACTIVITIES },
         });
       });
 
@@ -552,7 +552,7 @@ export class RegistrationService {
         return tx.participant.update({
           where: { id: participantId },
           data: { banned: false },
-          include: { internationalInfo: true, ...MEMBERSHIP_COUNT },
+          include: { internationalInfo: true, ...MEMBERSHIP_ACTIVITIES },
         });
       });
 
@@ -603,7 +603,7 @@ export class RegistrationService {
         return tx.participant.update({
           where: { id: participantId },
           data: { paid: true },
-          include: { internationalInfo: true, ...MEMBERSHIP_COUNT },
+          include: { internationalInfo: true, ...MEMBERSHIP_ACTIVITIES },
         });
       });
 
@@ -645,7 +645,7 @@ export class RegistrationService {
         return tx.participant.update({
           where: { id: participantId },
           data: { paid: false },
-          include: { internationalInfo: true, ...MEMBERSHIP_COUNT },
+          include: { internationalInfo: true, ...MEMBERSHIP_ACTIVITIES },
         });
       });
 
@@ -875,7 +875,7 @@ export class RegistrationService {
         internationalInfo: {
           include: { visaApplication: true },
         },
-        ...MEMBERSHIP_COUNT,
+        ...MEMBERSHIP_ACTIVITIES,
         ...IEEE_VERIFICATION,
       },
     });
@@ -893,7 +893,7 @@ export class RegistrationService {
         internationalInfo: {
           include: { visaApplication: true },
         },
-        ...MEMBERSHIP_COUNT,
+        ...MEMBERSHIP_ACTIVITIES,
         ...IEEE_VERIFICATION,
       },
     });
@@ -934,7 +934,7 @@ export class RegistrationService {
       where,
       skip: options?.skip,
       take: options?.take,
-      include: { internationalInfo: true, ...MEMBERSHIP_COUNT },
+      include: { internationalInfo: true, ...MEMBERSHIP_ACTIVITIES },
       orderBy: { createdAt: 'desc' },
     });
   }

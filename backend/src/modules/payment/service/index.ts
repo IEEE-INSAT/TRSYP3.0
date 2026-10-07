@@ -15,11 +15,12 @@ import {
   PaymentProof,
   PaymentProofStatus,
   Prisma,
+  TeamActivity,
 } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { RegistrationService } from '../../registration/service';
 import { AdminService } from '../../admin/service/admin.service';
-import { computeFee } from '../../registration/domain';
+import { computeFee, teamFeeFacts } from '../../registration/domain';
 import { DomainEvents } from '../../../common/events/event-names';
 import {
   ALLOWED_PROOF_MIME,
@@ -43,7 +44,7 @@ export type UploadedProof = {
 export type ProofWithParticipant = PaymentProof & {
   participant: Participant & {
     user: { name: string; lastName: string; email: string };
-    _count: { memberships: number };
+    memberships: { activity: TeamActivity }[];
   };
 };
 
@@ -81,13 +82,13 @@ export class PaymentService {
    */
   feeFor(
     participant: Pick<Participant, 'participantType' | 'isRas'> & {
-      _count?: { memberships: number };
+      memberships?: { activity: string }[];
     },
   ): number {
     return computeFee({
       isIeee: participant.participantType !== 'NonIEEE',
       isRas: participant.isRas,
-      isChallenger: (participant._count?.memberships ?? 0) > 0,
+      ...teamFeeFacts(participant.memberships),
     }).fee;
   }
 
@@ -185,7 +186,7 @@ export class PaymentService {
 
   /** Latest proof for a participant, or null when they have never submitted. */
   async latestProofForUser(userId: string): Promise<{
-    participant: Participant & { _count?: { memberships: number } };
+    participant: Participant & { memberships?: { activity: TeamActivity }[] };
     proof: PaymentProof | null;
   }> {
     const participant = await this.registrationService.findByUserId(userId);
@@ -226,7 +227,7 @@ export class PaymentService {
           participant: {
             include: {
               user: { select: { name: true, lastName: true, email: true } },
-              _count: { select: { memberships: true } },
+              memberships: { select: { activity: true } },
             },
           },
         },
@@ -242,7 +243,7 @@ export class PaymentService {
         participant: {
           include: {
             user: { select: { name: true, lastName: true, email: true } },
-            _count: { select: { memberships: true } },
+            memberships: { select: { activity: true } },
           },
         },
       },

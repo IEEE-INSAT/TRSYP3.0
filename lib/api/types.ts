@@ -310,7 +310,7 @@ export interface BackendParticipant {
   /** Registration fee, derived server-side from membership tier and team status. */
   fee?: number;
   currency?: string;
-  feeRole?: 'VISITOR' | 'CHALLENGER';
+  feeRole?: 'VISITOR' | 'CHALLENGER' | 'FABLAB';
   feeTier?: 'IEEE_RAS' | 'IEEE' | 'NON_IEEE';
   banned: boolean;
   /** What the participant is priced as - set from their IEEE check. */

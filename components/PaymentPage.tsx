@@ -50,7 +50,7 @@ const METHOD_DETAILS: Record<PaymentMethod, MethodDetail[]> = {
 };
 
 const TIER_ORDER: FeeTier[] = ['IEEE_RAS', 'IEEE', 'NON_IEEE'];
-const ROLE_ORDER: FeeRole[] = ['VISITOR', 'CHALLENGER'];
+const ROLE_ORDER: FeeRole[] = ['VISITOR', 'CHALLENGER', 'FABLAB'];
 
 export default function PaymentPage() {
   const { user, submitPayment } = useAuth();
@@ -92,11 +92,11 @@ export default function PaymentPage() {
 
   // Same three facts the server prices off, so the highlighted card tracks a
   // team join or a RAS toggle without waiting for a profile refetch.
-  // A team in *any* activity - Fablab included - makes a challenger, exactly
-  // like the server's membership count.
+  // A team in any activity makes a challenger, and a Fablab team wins over the
+  // rest - exactly like the server's membership check.
   const isChallenger =
     user.userType === 'challenger' || TEAM_ACTIVITIES.some((a) => !!teams[a]);
-  const myFee = computeFee({ isIeee: user.isIeee, isRas: user.isRas, isChallenger });
+  const myFee = computeFee({ isIeee: user.isIeee, isRas: user.isRas, isChallenger, isFablab: !!teams.FABLAB });
 
   // A rejected proof is still an open bill, so the form belongs to both
   // states - the only difference is the notice above it.
@@ -206,14 +206,17 @@ export default function PaymentPage() {
               <div className="pay-fee-group-label">
                 {FEE_ROLE_LABELS[role]}
                 <span className="pay-fee-group-hint">
-                  {role === 'CHALLENGER'
-                    ? 'On a competition or technical challenge team'
-                    : 'Attending without entering a track'}
+                  {role === 'FABLAB'
+                    ? 'On a Fablab team, whatever other teams you are on'
+                    : role === 'CHALLENGER'
+                      ? 'On a competition or technical challenge team'
+                      : 'Attending without entering a track'}
                 </span>
               </div>
               <div className="pay-fee-grid">
-                {TIER_ORDER.map((tier) => {
-                  const mine = role === myFee.feeRole && tier === myFee.feeTier;
+                {/* The Fablab fee is flat, so it gets one card instead of one per tier. */}
+                {(role === 'FABLAB' ? [myFee.feeTier] : TIER_ORDER).map((tier) => {
+                  const mine = role === myFee.feeRole && (role === 'FABLAB' || tier === myFee.feeTier);
                   return (
                     <div
                       key={tier}
@@ -221,7 +224,7 @@ export default function PaymentPage() {
                       aria-current={mine ? 'true' : undefined}
                     >
                       {mine && <span className="pay-fee-badge">Your fee</span>}
-                      <span className="pay-fee-tier">{FEE_TIER_LABELS[tier]}</span>
+                      <span className="pay-fee-tier">{role === 'FABLAB' ? 'Every tier' : FEE_TIER_LABELS[tier]}</span>
                       <span className="pay-fee-amount">
                         {FEES[role][tier]}
                         <span className="pay-fee-currency">{FEE_CURRENCY}</span>

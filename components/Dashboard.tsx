@@ -161,7 +161,8 @@ export default function Dashboard() {
 
   // Priced off the same three facts the server uses, so it tracks a team
   // join or a RAS toggle immediately instead of waiting for a profile refetch.
-  const feeInfo = computeFee({ isIeee: user.isIeee, isRas: user.isRas, isChallenger });
+  // A Fablab team wins over any other team: its members pay the Fablab fee.
+  const feeInfo = computeFee({ isIeee: user.isIeee, isRas: user.isRas, isChallenger, isFablab: !!teams.FABLAB });
 
   // Teams are opt-in: plenty of participants attend TRSYP 3.0 without entering
   // either track. So this is an invitation to join, never a required step - it

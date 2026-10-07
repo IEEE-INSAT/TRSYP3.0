@@ -191,7 +191,7 @@ export class ParticipantResponseDto {
   @Expose()
   currency!: string;
 
-  @ApiProperty({ description: 'Whether the participant is priced as a visitor or a challenger', enum: ['VISITOR', 'CHALLENGER'] })
+  @ApiProperty({ description: 'Whether the participant is priced as a visitor, a challenger or a Fablab member (Fablab wins)', enum: ['VISITOR', 'CHALLENGER', 'FABLAB'] })
   @Expose()
   feeRole!: string;
 

@@ -33,6 +33,7 @@ import { plainToInstance } from 'class-transformer';
 import { RegistrationService } from '../service';
 import {
   computeFee,
+  teamFeeFacts,
   isVerificationStale,
   storedResultDisagrees,
   verificationSummaryOf,
@@ -124,7 +125,7 @@ export class RegistrationController {
       participantType: ParticipantType;
       isRas: boolean;
       ieeeId: number | null;
-      _count?: { memberships: number };
+      memberships?: { activity: string }[];
       ieeeVerification?: IeeeVerification | null;
       user?: { email: string };
     },
@@ -141,7 +142,7 @@ export class RegistrationController {
         ...computeFee({
           isIeee: participant.participantType !== 'NonIEEE',
           isRas: participant.isRas,
-          isChallenger: (participant._count?.memberships ?? 0) > 0,
+          ...teamFeeFacts(participant.memberships),
         }),
       },
       { excludeExtraneousValues: true },

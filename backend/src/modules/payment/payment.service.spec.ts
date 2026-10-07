@@ -15,6 +15,7 @@ import {
   PaymentMethod,
   PaymentProofStatus,
   SB,
+  TeamActivity,
 } from '@prisma/client';
 import { PaymentService, UploadedProof } from './service';
 import { ProofStorageService } from './service/storage.service';
@@ -45,7 +46,7 @@ describe('PaymentService', () => {
     participantType: ParticipantType.NonIEEE,
     sb: SB.INSAT,
     country: COUNTRY.Tunisia,
-    _count: { memberships: 0 },
+    memberships: [],
   };
 
   const mockProof = {
@@ -141,9 +142,19 @@ describe('PaymentService', () => {
         ...mockParticipant,
         participantType: ParticipantType.Student,
         isRas: true,
-        _count: { memberships: 1 },
+        memberships: [{ activity: TeamActivity.COMPETITION }],
       });
       expect(fee).toBe(175);
+    });
+
+    it('prices a Fablab team member at 100 even when they are also a challenger', () => {
+      const fee = service.feeFor({
+        ...mockParticipant,
+        participantType: ParticipantType.Student,
+        isRas: true,
+        memberships: [{ activity: TeamActivity.COMPETITION }, { activity: TeamActivity.FABLAB }],
+      });
+      expect(fee).toBe(100);
     });
   });
 
