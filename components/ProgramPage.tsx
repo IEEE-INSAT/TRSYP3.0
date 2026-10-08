@@ -59,7 +59,7 @@ const PROGRAM = [
         desc: 'Panel discussion with our keynote and distinguished speakers.',
         where: 'Salle de Cérémonies',
         who: 'All attendees',
-        details: ['Prof. Adel Alimi', 'Prof. Friederike Eyssel', 'Prof. Sahar Alimi'],
+        details: ['Sahar Ammar', 'Prof. Friederike Eyssel', 'Prof. Adel Alimi', 'Dr. Jarreya'],
       },
       { time: '17:00 – 17:30', icon: 'food', title: 'Coffee Break', desc: 'Coffee break to network between sessions.', where: 'Le Royal', who: 'All attendees' },
       { time: '17:30 – 18:30', icon: 'poster', title: 'Exhibition · Booths · Poster Session', desc: 'Explore partner booths, robotics projects and research posters.', where: 'Expo Area', who: 'Open · Drop-in' },
@@ -92,7 +92,7 @@ const PROGRAM = [
         where: 'Workshop Rooms',
         who: 'Registered participants',
         details: [
-          'Pitching · Tarek Lamouchi · Salle Césarion (mandatory for technical challenge participants)',
+          'Pitching Workshop · Yosr Bayar · Salle Césarion (mandatory for technical challenge participants)',
           'IES Workshop · Salle Sphinx',
           'YP Tech Session · Salle César',
         ],
@@ -108,7 +108,7 @@ const PROGRAM = [
         where: 'Workshop Rooms',
         who: 'Registered participants',
         details: [
-          'Building Agentic & Multimodal Systems · Mohamed Ali Farhat · Salle Sphinx',
+          'NVIDIA Jetson Nano: Edge AI Workshop · Mohamed Ali Farhat · Salle Sphinx',
           'YP Round Tables · Salle César',
           'RAS Leaders · Salle Césarion',
         ],

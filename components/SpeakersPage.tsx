@@ -4,16 +4,40 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'motion/react';
 import Image from 'next/image';
 
-const SPEAKERS = [
+type Speaker = {
+  name: string;
+  photo: string;
+  title: string;
+  affiliation?: string;
+  topic: string;
+  email?: string;
+  linkedin?: string;
+  website?: string;
+};
+
+const SPEAKERS: Speaker[] = [
+  {
+    name: 'Adel Alimi',
+    photo: '/speakers/AdelAlimi.png',
+    title: 'Keynote · Panelist',
+    affiliation: 'Professor at the National Engineering School of Sfax (ENIS), University of Sfax, Tunisia · Founder and Past-Director of REGIM Lab (LR11ES48), REsearch Groups in Intelligent Machines · Past Chair of the IEEE Africa Council · Chair of the Sfax Smart City Living Lab',
+    topic: 'Human–Machine Interaction and Cognitive Robotics: Toward Intelligent and Collaborative Systems',
+    email: 'adel.alimi@enis.tn',
+  },
   {
     name: 'Friederike Eyssel',
     photo: '/speakers/FriederikeEyssel.png',
-    title: 'Distinguished Lecturer',
+    title: 'Distinguished Lecturer · Panelist',
     affiliation: 'Professor of Applied Social Psychology and Gender Research, Bielefeld University · Research bridging social psychology and social robotics: dehumanization and the attribution of humanlike traits to robots and technology · Pioneer in psychological approaches to anthropomorphism · IEEE-RAS Distinguished Lecturer Award (2022) · Karl-Peter Grotemeyer Prize for Excellence in Teaching (2021)',
-    topic: 'To Be Announced',
+    topic: 'Social Psychology and Social Robotics',
     email: 'feyssel@uni-bielefeld.de',
   },
-  
+  {
+    name: 'Sahar Ammar',
+    photo: '/speakers/SaharAmmar.jpg',
+    title: 'Panelist',
+    topic: 'Panel · 17 October',
+  },
   {
     name: 'Anis Koubaa',
     photo: '/speakers/AnisKoubaa.jpg',
@@ -37,21 +61,19 @@ const SPEAKERS = [
     photo: '/speakers/MedAliFarhat.png',
     title: 'Trainer',
     affiliation: 'AI Engineer | 19× Awards & Hackathons Winner | Building Agentic & Multimodal Systems',
-    topic: 'Jetson Nano Cards (Workshop)',
+    topic: 'NVIDIA Jetson Nano: Edge AI (Workshop)',
     email: 'mohamedali.farhat@hotmail.com',
     website: 'https://mohamedalifarhat.com/',
   },
   {
-    name: 'Tarek Lamouchi',
-    photo: '/speakers/TarekLamouchi.jpg',
+    name: 'Yosr Bayar',
+    photo: '/speakers/YosrBayar.jpg',
     title: 'Trainer',
-    affiliation: 'Deputy Head of Data Science Services · AI Speaker & Guest Lecturer · Mentor & Entrepreneur (Data, Data and Data)',
     topic: 'Pitching Workshop',
-    email: 'tareklamouchi@gmail.com',
   },
 ];
 
-function SpeakerCard({ speaker, index }: { speaker: (typeof SPEAKERS)[0]; index: number }) {
+function SpeakerCard({ speaker, index }: { speaker: Speaker; index: number }) {
   const [flipped, setFlipped] = useState(false);
 
   const unflip = useCallback(() => setFlipped(false), []);
@@ -82,7 +104,6 @@ function SpeakerCard({ speaker, index }: { speaker: (typeof SPEAKERS)[0]; index:
               alt={speaker.name}
               width={600}
               height={600}
-              quality={100}
               unoptimized
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
@@ -93,6 +114,7 @@ function SpeakerCard({ speaker, index }: { speaker: (typeof SPEAKERS)[0]; index:
           {/* Info */}
           <div className="spk-card-body">
             <h3 className="spk-card-name">{speaker.name}</h3>
+            {/* Always rendered: it reserves a fixed height so the separator lines up on every card. */}
             <p className="spk-card-affiliation">{speaker.affiliation}</p>
             <div className="spk-card-divider" />
             <div className="spk-card-topic">
@@ -130,7 +152,7 @@ function SpeakerCard({ speaker, index }: { speaker: (typeof SPEAKERS)[0]; index:
 
           <div className="spk-card-back-content">
             {/* Email */}
-            {'email' in speaker && speaker.email && (
+            {speaker.email && (
               <a href={`mailto:${speaker.email}`} className="spk-card-contact-row" target="_blank" rel="noopener noreferrer">
                 <div className="spk-card-contact-icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
@@ -146,7 +168,7 @@ function SpeakerCard({ speaker, index }: { speaker: (typeof SPEAKERS)[0]; index:
             )}
 
             {/* LinkedIn */}
-            {'linkedin' in speaker && speaker.linkedin && (
+            {speaker.linkedin && (
               <a href={speaker.linkedin} className="spk-card-contact-row" target="_blank" rel="noopener noreferrer">
                 <div className="spk-card-contact-icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
@@ -163,7 +185,7 @@ function SpeakerCard({ speaker, index }: { speaker: (typeof SPEAKERS)[0]; index:
             )}
 
             {/* Website */}
-            {'website' in speaker && speaker.website && (
+            {speaker.website && (
               <a href={speaker.website} className="spk-card-contact-row" target="_blank" rel="noopener noreferrer">
                 <div className="spk-card-contact-icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">

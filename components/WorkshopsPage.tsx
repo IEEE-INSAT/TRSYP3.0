@@ -39,7 +39,14 @@ const WORKSHOPS: Workshop[] = [
     mandatoryFor: 'Technical Challenge participants',
   },
   {
-    title: 'Building Agentic & Multimodal Systems',
+    title: 'Pitching Workshop',
+    dates: ['2026-10-18'],
+    by: 'Yosr Bayar',
+    mandatoryFor: 'Technical Challenge participants',
+    congress: { time: '09:00 – 10:00', where: 'Salle Césarion' },
+  },
+  {
+    title: 'NVIDIA Jetson Nano: Edge AI',
     dates: ['2026-10-18'],
     by: 'Mohamed Ali Farhat',
     congress: { time: '12:00 – 13:00', where: 'Salle Sphinx' },
