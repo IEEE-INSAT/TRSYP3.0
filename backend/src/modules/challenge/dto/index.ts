@@ -1,1 +1,1 @@
-export * from './riddle.dto';
+export * from './aruco.dto';

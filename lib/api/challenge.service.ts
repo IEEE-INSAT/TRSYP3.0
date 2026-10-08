@@ -1,27 +1,24 @@
 import { apiFetch } from './http';
-import type { RiddleAccessResponse, RiddleSubmitResponse } from './types';
+import type { ArucoStatusResponse, ArucoSubmitResponse } from './types';
 
 /**
- * Challenge (riddle) service.
+ * Challenge (ArUco) service.
  *
- * No auth token involved - a team is identified purely by the code it was
- * handed offline, which the backend decodes itself (see
- * backend/src/modules/challenge/riddle-code.util.ts).
+ * Only the collector (marker 4) talks to the backend; both calls need the
+ * signed-in user's token, and attempts are counted per account.
  */
 export const challengeService = {
-  /** POST /challenge/access - resolve a code into its riddle question + progress. */
-  async access(code: string): Promise<RiddleAccessResponse> {
-    return apiFetch<RiddleAccessResponse>('/challenge/access', {
-      method: 'POST',
-      body: { code },
-    });
+  /** GET /challenge/aruco/status - this account's attempts on the collector. */
+  async status(token: string): Promise<ArucoStatusResponse> {
+    return apiFetch<ArucoStatusResponse>('/challenge/aruco/status', { token });
   },
 
-  /** POST /challenge/submit - submit a solution word for the riddle behind this code. */
-  async submit(code: string, answer: string): Promise<RiddleSubmitResponse> {
-    return apiFetch<RiddleSubmitResponse>('/challenge/submit', {
+  /** POST /challenge/aruco/submit - submit the word assembled from the clues. */
+  async submit(answer: string, token: string): Promise<ArucoSubmitResponse> {
+    return apiFetch<ArucoSubmitResponse>('/challenge/aruco/submit', {
       method: 'POST',
-      body: { code, answer },
+      body: { answer },
+      token,
     });
   },
 };

@@ -1,108 +1,55 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { ArucoProgress } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { decodeRiddleCode } from '../riddle-code.util';
-import { getRiddle, isCorrectAnswer } from '../riddles.data';
-import { RiddleAccessResult, RiddleSubmitResult } from '../domain';
+import { MAX_ATTEMPTS, isCorrectAnswer } from '../aruco.data';
+import { ArucoStatusResult, ArucoSubmitResult } from '../domain';
+
+function toStatus(progress: Pick<ArucoProgress, 'solved' | 'attempts'> | null): ArucoStatusResult {
+  const solved = progress?.solved ?? false;
+  const attempts = progress?.attempts ?? 0;
+  return {
+    solved,
+    attempts,
+    attemptsLeft: solved ? 0 : Math.max(0, MAX_ATTEMPTS - attempts),
+  };
+}
 
 @Injectable()
 export class ChallengeService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Decodes the code, looks up the riddle text, and returns/creates the
-   * team's progress row for it. Called every time a team opens the page
-   * with a code (including re-opening after already solving it).
-   */
-  async access(code: string): Promise<RiddleAccessResult> {
-    const decoded = decodeRiddleCode(code);
-    if (!decoded) {
-      throw new BadRequestException('Invalid code');
-    }
-
-    const riddle = getRiddle(decoded.riddleNumber);
-    if (!riddle) {
-      throw new BadRequestException('Invalid code');
-    }
-
-    const team = await this.prisma.team.findUnique({
-      where: { code: decoded.teamCode },
-      select: { id: true },
-    });
-    if (!team) {
-      throw new NotFoundException('Team not found for this code');
-    }
-
-    const progress = await this.prisma.riddleProgress.upsert({
-      where: {
-        teamId_riddleNumber: { teamId: team.id, riddleNumber: decoded.riddleNumber },
-      },
-      create: { teamId: team.id, riddleNumber: decoded.riddleNumber },
-      update: {},
-    });
-
-    return {
-      riddleNumber: decoded.riddleNumber,
-      question: riddle.question,
-      solved: progress.solved,
-      attempts: progress.attempts,
-    };
+  /** The signed-in account's progress on the collector (marker 4). */
+  async status(userId: string): Promise<ArucoStatusResult> {
+    const progress = await this.prisma.arucoProgress.findUnique({ where: { userId } });
+    return toStatus(progress);
   }
 
   /**
-   * Validates the submitted answer and records the attempt.
-   * Once a riddle is solved, further submissions still return correct: true
-   * but no longer increment attempts.
+   * Checks the word and records the attempt. Once solved, or once all
+   * attempts are spent, further submissions are not counted - the current
+   * state is returned with `correct` reflecting only whether it's solved.
    */
-  async submit(code: string, answer: string): Promise<RiddleSubmitResult> {
-    const decoded = decodeRiddleCode(code);
-    if (!decoded) {
-      throw new BadRequestException('Invalid code');
-    }
-
-    const riddle = getRiddle(decoded.riddleNumber);
-    if (!riddle) {
-      throw new BadRequestException('Invalid code');
-    }
-
-    const team = await this.prisma.team.findUnique({
-      where: { code: decoded.teamCode },
-      select: { id: true },
-    });
-    if (!team) {
-      throw new NotFoundException('Team not found for this code');
-    }
-
-    const existing = await this.prisma.riddleProgress.findUnique({
-      where: {
-        teamId_riddleNumber: { teamId: team.id, riddleNumber: decoded.riddleNumber },
-      },
+  async submit(userId: string, answer: string): Promise<ArucoSubmitResult> {
+    await this.prisma.arucoProgress.upsert({
+      where: { userId },
+      create: { userId },
+      update: {},
     });
 
-    // Already solved earlier: don't count further attempts, just confirm.
-    if (existing?.solved) {
-      return { correct: true, solved: true, attempts: existing.attempts };
-    }
+    const correct = isCorrectAnswer(answer);
 
-    const correct = isCorrectAnswer(decoded.riddleNumber as 1 | 2 | 3, answer);
-
-    const progress = await this.prisma.riddleProgress.upsert({
-      where: {
-        teamId_riddleNumber: { teamId: team.id, riddleNumber: decoded.riddleNumber },
-      },
-      create: {
-        teamId: team.id,
-        riddleNumber: decoded.riddleNumber,
-        attempts: 1,
-        solved: correct,
-        solvedAt: correct ? new Date() : null,
-      },
-      update: {
+    // The attempt cap lives in the WHERE clause so two concurrent submits
+    // can't both slip in under it.
+    const { count } = await this.prisma.arucoProgress.updateMany({
+      where: { userId, solved: false, attempts: { lt: MAX_ATTEMPTS } },
+      data: {
         attempts: { increment: 1 },
-        solved: correct ? true : undefined,
-        solvedAt: correct ? new Date() : undefined,
+        ...(correct ? { solved: true, solvedAt: new Date() } : {}),
       },
     });
 
-    return { correct, solved: progress.solved, attempts: progress.attempts };
+    const progress = await this.prisma.arucoProgress.findUnique({ where: { userId } });
+    const status = toStatus(progress);
+    return { ...status, correct: count > 0 ? correct : status.solved };
   }
 }

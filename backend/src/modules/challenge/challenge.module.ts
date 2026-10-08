@@ -4,9 +4,9 @@ import { ChallengeService } from './service';
 import { ChallengeController } from './controller';
 
 /**
- * Challenge module: the riddle mini-game.
- * Public - teams authenticate implicitly via the code they were handed,
- * not via a logged-in session, so this module doesn't depend on Auth.
+ * Challenge module: the ArUco marker word game.
+ * Every route requires a signed-in account; attempts are counted per
+ * account (see ChallengeController).
  */
 @Module({
   imports: [PrismaModule],

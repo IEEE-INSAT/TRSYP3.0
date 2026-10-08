@@ -17,7 +17,6 @@ services:
     environment:
       NODE_ENV: production
       PORT: 10000
-      RIDDLE_CODE_SECRET: ${RIDDLE_CODE_SECRET:-local-compose-only-riddle-secret}
       PAYMENT_PROOF_OPEN: ${PAYMENT_PROOF_OPEN:-false}
     ports:
       - "3000:10000"

@@ -371,6 +371,19 @@ enum POSITION {
   Other
 }
 
+/// One row per account that has opened the ArUco collector (marker 4).
+model ArucoProgress {
+  id        String    @id @default(uuid())
+  userId    String    @unique @map("user_id")
+  solved    Boolean   @default(false)
+  attempts  Int       @default(0)
+  solvedAt  DateTime? @map("solved_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@map("aruco_progress")
+}
+
 // --- Payment Module ---
 // Define payment-related models here
 

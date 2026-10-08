@@ -425,32 +425,24 @@ export interface CreateTeamPayload {
   axis?: FablabAxis;
 }
 
-// ── Challenge (riddles) ───────────────────────────────────────────────────────
+// ── Challenge (ArUco markers) ─────────────────────────────────────────────────
 
-/** Body of POST /challenge/access. */
-export interface RiddleAccessPayload {
-  code: string;
-}
-
-/** Response of POST /challenge/access. */
-export interface RiddleAccessResponse {
-  riddleNumber: number;
-  question: string;
+/** Response of GET /challenge/aruco/status. */
+export interface ArucoStatusResponse {
   solved: boolean;
   attempts: number;
+  /** Attempts left before the collector locks (0 once solved or lost). */
+  attemptsLeft: number;
 }
 
-/** Body of POST /challenge/submit. */
-export interface RiddleSubmitPayload {
-  code: string;
+/** Body of POST /challenge/aruco/submit. */
+export interface ArucoSubmitPayload {
   answer: string;
 }
 
-/** Response of POST /challenge/submit. */
-export interface RiddleSubmitResponse {
+/** Response of POST /challenge/aruco/submit. */
+export interface ArucoSubmitResponse extends ArucoStatusResponse {
   correct: boolean;
-  solved: boolean;
-  attempts: number;
 }
 
 // ── Payment proofs ───────────────────────────────────────────────────────────

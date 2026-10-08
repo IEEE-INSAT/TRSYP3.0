@@ -32,7 +32,6 @@ import { PaymentModule } from './modules/payment/payment.module';
                 SUPABASE_JWT_SECRET: Joi.string().optional(),
                 FRONTEND_URL: Joi.string().uri().required(),
                 CORS_ORIGINS: Joi.string().optional(),
-                RIDDLE_CODE_SECRET: Joi.string().required(),
                 COMPETITION_REGISTRATION_PHASE: Joi.string()
                     .valid('soon', 'open', 'closed')
                     .default('closed'),
