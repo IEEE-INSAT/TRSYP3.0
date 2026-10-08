@@ -87,6 +87,7 @@ describe('PaymentService', () => {
 
     mockRegistrationService = {
       findByUserId: jest.fn().mockResolvedValue(mockParticipant),
+      findById: jest.fn().mockResolvedValue(mockParticipant),
       markAsPaid: jest.fn().mockResolvedValue({ ...mockParticipant, paid: true }),
       markAsUnpaid: jest.fn().mockResolvedValue({ ...mockParticipant, paid: false }),
     };
@@ -355,6 +356,45 @@ describe('PaymentService', () => {
       await service.rejectProof('proof-1', 'Receipt is unreadable');
 
       expect(mockRegistrationService.markAsUnpaid).toHaveBeenCalledWith('participant-1');
+    });
+  });
+
+  describe('recordCashPayment', () => {
+    it('writes an approved, fileless cash proof and settles the participant', async () => {
+      await service.recordCashPayment('participant-1');
+
+      expect(mockRegistrationService.markAsPaid).toHaveBeenCalledWith('participant-1');
+      expect(mockPrismaService.paymentProof.create).toHaveBeenCalledWith({
+        data: {
+          participantId: 'participant-1',
+          method: PaymentMethod.CASH,
+          amountSnapshot: 185,
+          status: PaymentProofStatus.APPROVED,
+          reviewedAt: expect.any(Date),
+        },
+      });
+      expect(mockStorage.upload).not.toHaveBeenCalled();
+    });
+
+    it('refuses while a proof is under review', async () => {
+      mockPrismaService.paymentProof.findFirst.mockResolvedValue(mockProof);
+
+      await expect(service.recordCashPayment('participant-1')).rejects.toThrow(ConflictException);
+      expect(mockRegistrationService.markAsPaid).not.toHaveBeenCalled();
+      expect(mockPrismaService.paymentProof.create).not.toHaveBeenCalled();
+    });
+
+    it('writes no proof when markAsPaid refuses', async () => {
+      mockRegistrationService.markAsPaid.mockRejectedValue(new ForbiddenException('banned'));
+
+      await expect(service.recordCashPayment('participant-1')).rejects.toThrow(ForbiddenException);
+      expect(mockPrismaService.paymentProof.create).not.toHaveBeenCalled();
+    });
+
+    it('throws when the participant does not exist', async () => {
+      mockRegistrationService.findById.mockResolvedValue(null);
+
+      await expect(service.recordCashPayment('nope')).rejects.toThrow(NotFoundException);
     });
   });
 

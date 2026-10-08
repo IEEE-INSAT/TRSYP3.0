@@ -293,4 +293,24 @@ export class PaymentController {
     const proof = await this.paymentService.rejectProof(id, dto.reason);
     return this.toAdminProofResponse(proof);
   }
+
+  /**
+   * Record a cash payment with no receipt and mark the participant paid.
+   */
+  @Post('admin/participants/:id/cash')
+  @UseGuards(AdminGuard)
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: '[Admin] Record a cash payment and mark the participant paid' })
+  @ApiParam({ name: 'id', description: 'Participant ID' })
+  @ApiResponse({ status: 201, description: 'Approved cash proof recorded, participant marked paid' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - admins only, or participant banned' })
+  @ApiResponse({ status: 404, description: 'Participant not found' })
+  @ApiResponse({ status: 409, description: 'Already paid, or a proof is under review' })
+  async recordCashPayment(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<AdminPaymentProofResponseDto> {
+    const proof = await this.paymentService.recordCashPayment(id);
+    return this.toAdminProofResponse(proof);
+  }
 }

@@ -326,6 +326,50 @@ export class PaymentService {
   }
 
   /**
+   * Record cash handed to a committee member and settle the participant.
+   *
+   * There is no receipt, so nothing goes to the review queue: the admin
+   * recording it is the review. The row is written already APPROVED so the
+   * payment still sits on the Payments page alongside receipted ones.
+   */
+  async recordCashPayment(participantId: string): Promise<ProofWithParticipant> {
+    const participant = await this.registrationService.findById(participantId);
+    if (!participant) {
+      throw new NotFoundException('Participant not found');
+    }
+
+    // The participant's own submission should be settled instead, or it would
+    // sit in the queue for someone who has already paid.
+    const pending = await this.prisma.paymentProof.findFirst({
+      where: { participantId, status: PaymentProofStatus.PENDING },
+    });
+    if (pending) {
+      throw new ConflictException('This participant has a proof under review - approve or reject it instead');
+    }
+
+    // The banned and already-paid guards, and PARTICIPANT_PAID, live here.
+    await this.registrationService.markAsPaid(participantId);
+
+    const proof = await this.prisma.paymentProof.create({
+      data: {
+        participantId,
+        method: PaymentMethod.CASH,
+        amountSnapshot: this.feeFor(participant),
+        status: PaymentProofStatus.APPROVED,
+        reviewedAt: new Date(),
+      },
+    });
+
+    this.eventEmitter.emit(DomainEvents.PAYMENT_STATUS_UPDATED, {
+      participantId,
+      proofId: proof.id,
+      status: PaymentProofStatus.APPROVED,
+    });
+
+    return this.getProofOrThrow(proof.id);
+  }
+
+  /**
    * Whether this Supabase account is an admin.
    *
    * Mirrors `AdminGuard` for the one route that authorises owner-or-admin
