@@ -13,14 +13,7 @@ const SPEAKERS = [
     topic: 'To Be Announced',
     email: 'feyssel@uni-bielefeld.de',
   },
-  {
-    name: 'Adel Alimi',
-    photo: '/speakers/AdelAlimi.png',
-    title: 'Speaker',
-    affiliation: 'Professor at the National Engineering School of Sfax (ENIS), University of Sfax, Tunisia · Founder and Past-Director of REGIM Lab (LR11ES48), REsearch Groups in Intelligent Machines · Past Chair of the IEEE Africa Council · Chair of the Sfax Smart City Living Lab',
-    topic: 'To Be Announced',
-    email: 'adel.alimi@enis.tn',
-  },
+  
   {
     name: 'Anis Koubaa',
     photo: '/speakers/AnisKoubaa.jpg',
@@ -29,15 +22,6 @@ const SPEAKERS = [
     topic: 'Agentic Robotics: From LLM Tool-Calling to Vision-Language-Action Models',
     email: 'akoubaa@alfaisal.edu',
     linkedin: 'https://www.linkedin.com/in/aniskoubaa/',
-  },
-  {
-    name: 'Firas Ben Hassen',
-    photo: '/speakers/FirasBenHassen.jpg',
-    title: 'Speaker',
-    affiliation: 'Deputy Head of Data Science Services · Artificial Intelligence Speaker · Artificial Intelligence Guest Lecturer · Mentor & Entrepreneur (Data, Data and Data)',
-    topic: 'AI and Robots',
-    email: 'Firas.ben-hassan@allianz.de',
-    linkedin: 'https://www.linkedin.com/in/firas-ben-hassan-22bab3101/',
   },
   {
     name: 'John McDonald',

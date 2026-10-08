@@ -29,6 +29,7 @@ const NAV_LINKS = [
   { label: 'Home', href: '/' },
   { label: 'Challenge', href: '/challenge' },
   { label: 'Program', href: '/program' },
+  { label: 'Workshops', href: '/workshops' },
   { label: 'Speakers', href: '/speakers' },
   { label: 'Venue', href: '/venue' },
   { label: 'Visa', href: '/visa' },
