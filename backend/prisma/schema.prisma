@@ -154,6 +154,9 @@ model Team {
   axis      FablabAxis? // FABLAB teams only - the axis the leader chose
   submissionUrl String?   @map("submission_url") // FABLAB only - Google Drive folder of the concept dossier
   submittedAt   DateTime? @map("submitted_at") // when submissionUrl was last set
+  // False once the team is out after the selection phase. Only selected teams
+  // make their members challengers (or Fablab members) for the fee.
+  selected  Boolean      @default(true)
   leaderId  String       @map("leader_id")
   createdAt DateTime     @default(now()) @map("created_at")
   updatedAt DateTime     @updatedAt @map("updated_at")

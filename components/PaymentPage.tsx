@@ -13,6 +13,7 @@ import {
   FEE_ROLE_LABELS,
   FEE_TIER_LABELS,
   computeFee,
+  teamFeeFacts,
   type FeeRole,
   type FeeTier,
 } from '@/lib/fees';
@@ -92,11 +93,15 @@ export default function PaymentPage() {
 
   // Same three facts the server prices off, so the highlighted card tracks a
   // team join or a RAS toggle without waiting for a profile refetch.
-  // A team in any activity makes a challenger, and a Fablab team wins over the
-  // rest - exactly like the server's membership check.
-  const isChallenger =
-    user.userType === 'challenger' || TEAM_ACTIVITIES.some((a) => !!teams[a]);
-  const myFee = computeFee({ isIeee: user.isIeee, isRas: user.isRas, isChallenger, isFablab: !!teams.FABLAB });
+  // Only selected teams count, and a Fablab team wins over the rest - exactly
+  // like the server's membership check.
+  const teamFacts = teamFeeFacts(TEAM_ACTIVITIES.map((a) => teams[a]));
+  const myFee = computeFee({
+    isIeee: user.isIeee,
+    isRas: user.isRas,
+    ...teamFacts,
+    isChallenger: user.userType === 'challenger' || teamFacts.isChallenger,
+  });
 
   // A rejected proof is still an open bill, so the form belongs to both
   // states - the only difference is the notice above it.

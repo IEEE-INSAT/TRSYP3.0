@@ -31,6 +31,7 @@ import {
   DEFAULT_TEAM_ACTIVITY,
 } from '../dto';
 import { isVerificationStale, membershipFrom } from '../domain/ieee-membership';
+import { PRICED_MEMBERSHIPS } from '../domain/fees';
 import {
   ParticipantRegisteredEvent,
   ParticipantIeeeDetailsChangedEvent,
@@ -54,8 +55,6 @@ type ParticipantWithRelations = Participant & {
   user?: { email: string };
 };
 
-/** The activity of each team the participant is on, enough to price them without loading the teams. */
-const MEMBERSHIP_ACTIVITIES = { memberships: { select: { activity: true } } } satisfies Prisma.ParticipantInclude;
 
 /** The IEEE result and the email it is judged fresh against, for the participant's own view. */
 const IEEE_VERIFICATION = {
@@ -390,7 +389,7 @@ export class RegistrationService {
         return tx.participant.update({
           where: { id: participantId },
           data: updateData,
-          include: { internationalInfo: true, ...MEMBERSHIP_ACTIVITIES, ...IEEE_VERIFICATION },
+          include: { internationalInfo: true, ...PRICED_MEMBERSHIPS, ...IEEE_VERIFICATION },
         });
       });
 
@@ -510,7 +509,7 @@ export class RegistrationService {
         return tx.participant.update({
           where: { id: participantId },
           data: { banned: true },
-          include: { internationalInfo: true, ...MEMBERSHIP_ACTIVITIES },
+          include: { internationalInfo: true, ...PRICED_MEMBERSHIPS },
         });
       });
 
@@ -552,7 +551,7 @@ export class RegistrationService {
         return tx.participant.update({
           where: { id: participantId },
           data: { banned: false },
-          include: { internationalInfo: true, ...MEMBERSHIP_ACTIVITIES },
+          include: { internationalInfo: true, ...PRICED_MEMBERSHIPS },
         });
       });
 
@@ -603,7 +602,7 @@ export class RegistrationService {
         return tx.participant.update({
           where: { id: participantId },
           data: { paid: true },
-          include: { internationalInfo: true, ...MEMBERSHIP_ACTIVITIES },
+          include: { internationalInfo: true, ...PRICED_MEMBERSHIPS },
         });
       });
 
@@ -645,7 +644,7 @@ export class RegistrationService {
         return tx.participant.update({
           where: { id: participantId },
           data: { paid: false },
-          include: { internationalInfo: true, ...MEMBERSHIP_ACTIVITIES },
+          include: { internationalInfo: true, ...PRICED_MEMBERSHIPS },
         });
       });
 
@@ -875,7 +874,7 @@ export class RegistrationService {
         internationalInfo: {
           include: { visaApplication: true },
         },
-        ...MEMBERSHIP_ACTIVITIES,
+        ...PRICED_MEMBERSHIPS,
         ...IEEE_VERIFICATION,
       },
     });
@@ -893,7 +892,7 @@ export class RegistrationService {
         internationalInfo: {
           include: { visaApplication: true },
         },
-        ...MEMBERSHIP_ACTIVITIES,
+        ...PRICED_MEMBERSHIPS,
         ...IEEE_VERIFICATION,
       },
     });
@@ -934,7 +933,7 @@ export class RegistrationService {
       where,
       skip: options?.skip,
       take: options?.take,
-      include: { internationalInfo: true, ...MEMBERSHIP_ACTIVITIES },
+      include: { internationalInfo: true, ...PRICED_MEMBERSHIPS },
       orderBy: { createdAt: 'desc' },
     });
   }

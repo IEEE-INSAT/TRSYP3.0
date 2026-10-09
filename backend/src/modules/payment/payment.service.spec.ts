@@ -157,6 +157,17 @@ describe('PaymentService', () => {
       });
       expect(fee).toBe(100);
     });
+
+    it('prices a member whose only team was not selected as a visitor', () => {
+      // Memberships of teams that are out are filtered out by the query.
+      const fee = service.feeFor({
+        ...mockParticipant,
+        participantType: ParticipantType.Student,
+        isRas: true,
+        memberships: [],
+      });
+      expect(fee).toBe(170);
+    });
   });
 
   describe('submitProof', () => {

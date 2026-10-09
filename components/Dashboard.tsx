@@ -16,7 +16,7 @@ import {
   teamSizeOptions,
   type FablabAxis,
 } from '@/lib/api/types';
-import { computeFee, formatFee } from '@/lib/fees';
+import { computeFee, formatFee, teamFeeFacts } from '@/lib/fees';
 import { fablabChallenge } from '@/lib/config';
 import ActivityToggle, { isActivityOpen, phaseOf } from './register/ActivityToggle';
 import { FablabAxisPicker, FablabEligibilityNotice } from './register/FablabFields';
@@ -157,12 +157,19 @@ export default function Dashboard() {
   // Fablab is for IEEE RAS members only; the server enforces it too.
   const notEligible = !canEnterActivity(activity, { isIeee: user.isIeee, isRas: user.isRas });
 
-  const isChallenger = user.userType === 'challenger' || !!team || !!otherTeam;
+  // On any team at all - decides whether the team card is worth waiting for.
+  const hasTeam = user.userType === 'challenger' || !!team || !!otherTeam;
+  // Only selected teams make a challenger; a team that is out after the
+  // selection phase leaves its members priced (and labelled) as visitors.
+  const teamFacts = teamFeeFacts(TEAM_ACTIVITIES.map((a) => teams[a]));
+  const isChallenger = user.userType === 'challenger' || teamFacts.isChallenger;
+  // The team the greeting names: the open tab's when it was selected, else any selected one.
+  const selectedTeam = [team, ...TEAM_ACTIVITIES.map((a) => teams[a])].find((t) => t && t.selected !== false);
 
   // Priced off the same three facts the server uses, so it tracks a team
   // join or a RAS toggle immediately instead of waiting for a profile refetch.
   // A Fablab team wins over any other team: its members pay the Fablab fee.
-  const feeInfo = computeFee({ isIeee: user.isIeee, isRas: user.isRas, isChallenger, isFablab: !!teams.FABLAB });
+  const feeInfo = computeFee({ isIeee: user.isIeee, isRas: user.isRas, isChallenger, isFablab: teamFacts.isFablab });
 
   // Teams are opt-in: plenty of participants attend TRSYP 3.0 without entering
   // either track. So this is an invitation to join, never a required step - it
@@ -193,7 +200,7 @@ export default function Dashboard() {
   // Team rows describe the *selected* activity only. Before the first fetch
   // resolves we still show the registration store's cached team name so the
   // card doesn't flash empty.
-  const showTeam = team ? true : !teamLoaded && isChallenger;
+  const showTeam = team ? true : !teamLoaded && hasTeam;
 
   // Derive leader status at render time so it self-corrects once both the team
   // and the participant id have loaded - the persisted `role` snapshot can be
@@ -340,7 +347,7 @@ export default function Dashboard() {
           <div className="dash-header-left">
             <h1 className="dash-welcome">
               {justRegistered ? 'Your registration is complete' : 'Welcome back'},{' '}
-              {isChallenger ? `Team ${team?.name || otherTeam?.name || user.teamName || 'Member'}` : user.fullName}!
+              {isChallenger ? `Team ${selectedTeam?.name || user.teamName || 'Member'}` : user.fullName}!
             </h1>
             <span className={`dash-type-badge ${isChallenger ? 'dash-type-challenger' : 'dash-type-participant'}`}>
               {isChallenger ? 'Challenger' : 'Participant'}

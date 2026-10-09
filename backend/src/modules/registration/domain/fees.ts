@@ -31,9 +31,9 @@ export interface FeeInput {
   isIeee: boolean;
   /** Only meaningful for IEEE members; the service already forces it false otherwise. */
   isRas: boolean;
-  /** Member of at least one team, whatever the activity. */
+  /** Member of at least one selected team, whatever the activity. */
   isChallenger: boolean;
-  /** Member of a Fablab team. Takes precedence over `isChallenger`. */
+  /** Member of a selected Fablab team. Takes precedence over `isChallenger`. */
   isFablab: boolean;
 }
 
@@ -50,7 +50,16 @@ export function feeTierOf({ isIeee, isRas }: Pick<FeeInput, 'isIeee' | 'isRas'>)
   return isRas ? 'IEEE_RAS' : 'IEEE';
 }
 
-/** The team facts pricing needs, from the activity of each of the participant's memberships. */
+/**
+ * Prisma include for the memberships pricing looks at: selected teams only. A
+ * team that did not pass the selection phase no longer makes its members
+ * challengers.
+ */
+export const PRICED_MEMBERSHIPS = {
+  memberships: { where: { team: { selected: true } }, select: { activity: true } },
+} as const;
+
+/** The team facts pricing needs, from the activity of each of the participant's selected memberships. */
 export function teamFeeFacts(
   memberships: { activity: string }[] = [],
 ): Pick<FeeInput, 'isChallenger' | 'isFablab'> {

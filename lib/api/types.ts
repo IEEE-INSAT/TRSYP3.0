@@ -403,6 +403,8 @@ export interface Team {
   submissionUrl?: string | null;
   /** ISO timestamp of the last submission. */
   submittedAt?: string | null;
+  /** False once the team is out after the selection phase. Absent from older backends - treat as selected. */
+  selected?: boolean;
   leaderId: string;
   memberCount: number;
   spotsLeft: number;

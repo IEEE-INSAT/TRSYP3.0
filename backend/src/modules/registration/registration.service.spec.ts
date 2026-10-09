@@ -579,7 +579,11 @@ describe('RegistrationService', () => {
         where: {},
         skip: 0,
         take: 10,
-        include: { internationalInfo: true, memberships: { select: { activity: true } } },
+        include: {
+          internationalInfo: true,
+          // Only selected teams count toward the fee.
+          memberships: { where: { team: { selected: true } }, select: { activity: true } },
+        },
         orderBy: { createdAt: 'desc' },
       });
     });

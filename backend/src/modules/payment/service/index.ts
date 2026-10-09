@@ -20,7 +20,7 @@ import {
 import { PrismaService } from '../../../prisma/prisma.service';
 import { RegistrationService } from '../../registration/service';
 import { AdminService } from '../../admin/service/admin.service';
-import { computeFee, teamFeeFacts } from '../../registration/domain';
+import { computeFee, PRICED_MEMBERSHIPS, teamFeeFacts } from '../../registration/domain';
 import { DomainEvents } from '../../../common/events/event-names';
 import {
   ALLOWED_PROOF_MIME,
@@ -227,7 +227,7 @@ export class PaymentService {
           participant: {
             include: {
               user: { select: { name: true, lastName: true, email: true } },
-              memberships: { select: { activity: true } },
+              ...PRICED_MEMBERSHIPS,
             },
           },
         },
@@ -243,7 +243,7 @@ export class PaymentService {
         participant: {
           include: {
             user: { select: { name: true, lastName: true, email: true } },
-            memberships: { select: { activity: true } },
+            ...PRICED_MEMBERSHIPS,
           },
         },
       },

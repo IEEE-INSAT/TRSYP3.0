@@ -36,9 +36,9 @@ export const FEE_ROLE_LABELS: Record<FeeRole, string> = {
 export interface FeeInput {
   isIeee: boolean;
   isRas: boolean;
-  /** On at least one team (competition or technical challenge). */
+  /** On at least one selected team, whatever the activity. */
   isChallenger: boolean;
-  /** Member of a Fablab team. Takes precedence over `isChallenger`. */
+  /** On a selected Fablab team. Takes precedence over `isChallenger`. */
   isFablab: boolean;
 }
 
@@ -52,6 +52,20 @@ export interface FeeBreakdown {
 export function feeTierOf({ isIeee, isRas }: Pick<FeeInput, 'isIeee' | 'isRas'>): FeeTier {
   if (!isIeee) return 'NON_IEEE';
   return isRas ? 'IEEE_RAS' : 'IEEE';
+}
+
+/**
+ * The team facts pricing needs, from the teams the participant is on. Teams
+ * that did not pass the selection phase don't count - same rule as the server.
+ */
+export function teamFeeFacts(
+  teams: ({ activity: string; selected?: boolean } | null | undefined)[],
+): Pick<FeeInput, 'isChallenger' | 'isFablab'> {
+  const counted = teams.filter((t): t is { activity: string; selected?: boolean } => !!t && t.selected !== false);
+  return {
+    isChallenger: counted.length > 0,
+    isFablab: counted.some((t) => t.activity === 'FABLAB'),
+  };
 }
 
 export function computeFee(input: FeeInput): FeeBreakdown {

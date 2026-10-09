@@ -1,4 +1,4 @@
-import { computeFee, FEES, teamFeeFacts } from './fees';
+import { computeFee, FEES, PRICED_MEMBERSHIPS, teamFeeFacts } from './fees';
 
 describe('computeFee', () => {
   // The published price list, one row per cell - keep in sync with FEES and lib/fees.ts.
@@ -37,5 +37,11 @@ describe('teamFeeFacts', () => {
   it('prices a Fablab member as Fablab even when they are on other teams too', () => {
     const facts = teamFeeFacts([{ activity: 'COMPETITION' }, { activity: 'CHALLENGE' }, { activity: 'FABLAB' }]);
     expect(computeFee({ isIeee: true, isRas: true, ...facts })).toMatchObject({ fee: 100, feeRole: 'FABLAB' });
+  });
+});
+
+describe('PRICED_MEMBERSHIPS', () => {
+  it('only loads memberships of selected teams', () => {
+    expect(PRICED_MEMBERSHIPS.memberships.where).toEqual({ team: { selected: true } });
   });
 });

@@ -329,6 +329,10 @@ export class TeamResponseDto {
   @Expose()
   submittedAt!: Date | null;
 
+  @ApiProperty({ description: 'False once the team is out after the selection phase; only selected teams count toward the fee' })
+  @Expose()
+  selected!: boolean;
+
   @ApiProperty({ description: 'Leader participant ID', format: 'uuid' })
   @Expose()
   leaderId!: string;
