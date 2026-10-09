@@ -1996,14 +1996,19 @@ button {
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
 }
 
-.partners-slot:nth-last-child(2) {
+/* Centre the bottom row of a 3 + 2 layout. Only a grid of exactly five logos
+   gets this; six fill two full rows of three on their own. */
+.partners-slot:nth-child(4):nth-last-child(2) {
   grid-column: 2 / span 2;
 }
 
-/* The two rules above centre the bottom row of a 3 + 2 layout (both grids
-   hold five logos). */
-.partners-slot:last-child {
+.partners-slot:nth-child(5):last-child {
   grid-column: 4 / span 2;
+}
+
+/* A logo left alone on the last row (4, 7, 10 logos) sits in the middle. */
+.partners-slot:nth-child(3n + 1):last-child {
+  grid-column: 3 / span 2;
 }
 
 .partners-header--sub {
@@ -2500,8 +2505,8 @@ button {
     grid-column: span 1;
   }
 
-  .partners-slot:nth-last-child(2),
-  .partners-slot:last-child {
+  .partners-slot:nth-child(4):nth-last-child(2),
+  .partners-slot:nth-child(5):last-child {
     grid-column: auto;
   }
 
@@ -2649,8 +2654,8 @@ button {
     grid-column: span 1;
   }
 
-  .partners-slot:nth-last-child(2),
-  .partners-slot:last-child {
+  .partners-slot:nth-child(4):nth-last-child(2),
+  .partners-slot:nth-child(5):last-child {
     grid-column: auto;
   }
 

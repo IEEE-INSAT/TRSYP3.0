@@ -13,8 +13,8 @@ const DEPARTMENTS: { name: string; short: string; code: string; members: Member[
     code: 'EX',
     members: [
       { name: 'Rayhane Sahli', role: 'Congress Chair', email: 'rayhanesahli@ieee.org', image: '/team/rayhane-sahli.webp' },
-      { name: 'Yassine Kolsi', role: 'Vice-Chair', email: 'yassine.kolsi@ieee.org', image: '/team/yassine-kolsi.webp' },
       { name: 'Yassine Boudagga', role: 'Vice-Chair', email: 'boudegga91@gmail.com', image: '/team/yassine-boudagga.webp' },
+      { name: 'Khalil Khadhraoui', role: 'Vice-Chair', email: 'Khalil.kkhadraoui@gmail.com', image: '/team/khalil-khadhraoui.webp' },
       { name: 'Mariem Jomaa', role: 'Secretary', email: 'mariem.education.jomaa@gmail.com', image: '/team/mariem-jomaa.webp' },
       { name: 'Yasmin Loukil', role: 'Secretary', email: 'itsyasminlouki@gmail.com', image: '/team/yasmin-loukil.webp' },
       { name: 'Ayette Betbout', role: 'Treasurer', email: 'ayetbetbout@gmail.com', image: '/team/ayette-betbout.webp' },
@@ -25,7 +25,7 @@ const DEPARTMENTS: { name: string; short: string; code: string; members: Member[
     short: 'Technical',
     code: 'TK',
     members: [
-      { name: 'Skander Loghmari', role: 'Technical Team Leader', email: 'loghmariskander@gmail.com', image: '/team/skander-loghmari.webp' },
+      
       { name: 'Ghoafrane Faidi', role: 'Technical Manager', image: '/team/ghoafrane-faidi.webp' },
       { name: 'Ilyes Arfa', role: 'Technical Manager', image: '/team/ilyes-arfa.webp' },
       { name: 'Meriem Besbes', role: 'Technical Manager', image: '/team/meriem-besbes.webp' },
@@ -132,7 +132,6 @@ function IdCard({ member, index }: { member: Member & { unit: string; department
                   alt={member.name}
                   width={600}
                   height={600}
-                  unoptimized
                   style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
                 />
               </div>

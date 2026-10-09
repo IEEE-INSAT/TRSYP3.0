@@ -104,7 +104,6 @@ function SpeakerCard({ speaker, index }: { speaker: Speaker; index: number }) {
               alt={speaker.name}
               width={600}
               height={600}
-              unoptimized
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
             <div className="spk-card-photo-overlay" />

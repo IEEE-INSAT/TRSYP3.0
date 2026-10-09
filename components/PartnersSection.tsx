@@ -9,13 +9,17 @@ const HOSTS = [
 ];
 
 // Adwya uses a cleaned dark-theme variant (transparent, flat colors);
-// irtsc-logo.png is png.png cropped to the logo (the original is mostly padding)
+// irtsc-logo.png is png.png cropped to the logo (the original is mostly padding);
+// yp-tunisia-logo.png is YP_Tunisia.png cropped, with its dark wordmark turned white;
+// ies-logo.png is ies.jpg with the white background removed and the navy wordmark turned white
 const PARTNERS = [
   { id: 1, src: "/partners/IEEEFoundation.png", label: "IEEE Foundation", scale: 0.8 },
   { id: 2, src: "/partners/IEEEYoungProfessionals.png", label: "IEEE Young Professionals", scale: 0.85 },
   { id: 3, src: "/partners/orange-tunisie.png", label: "Orange Tunisie", scale: 0.65 },
   { id: 4, src: "/partners/adwya-logo.png", label: "Adwya", scale: 0.75 },
   { id: 5, src: "/partners/irtsc-logo.png", label: "IRTSC", scale: 0.8 },
+  { id: 6, src: "/partners/yp-tunisia-logo.png", label: "IEEE Young Professionals Tunisia Section", scale: 0.8 },
+  { id: 7, src: "/partners/ies-logo.png", label: "IEEE Industrial Electronics Society", scale: 0.8 },
 ];
 
 export default function PartnersSection() {
