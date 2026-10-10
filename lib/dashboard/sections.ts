@@ -15,11 +15,10 @@
 export const PAYMENT_ENABLED = true;
 
 /**
- * The rooming backend is live (`/rooming/*`), but no UI has been built for it
- * yet. The section is listed rather than hidden so participants can see it is
- * coming; flip this once the screen exists.
+ * Rooming (`/rooming/*`): double rooms, formed like teams with a join code.
+ * `false` keeps the tab listed as a "Soon" chip.
  */
-export const ROOMING_ENABLED = false;
+export const ROOMING_ENABLED = true;
 
 export type DashboardSectionId =
   | 'overview'

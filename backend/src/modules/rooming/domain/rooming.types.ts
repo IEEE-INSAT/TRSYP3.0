@@ -1,10 +1,2 @@
-export enum InvitationStatus {
-	Pending = 'Pending',
-	Accepted = 'Accepted',
-	Rejected = 'Rejected',
-}
-
-export enum RoomStatus {
-	Pending = 'Pending',
-	Confirmed = 'Confirmed',
-}
+/** Every room is a double: the owner plus one roommate. */
+export const ROOM_CAPACITY = 2;

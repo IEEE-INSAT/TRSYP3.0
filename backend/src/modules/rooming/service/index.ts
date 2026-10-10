@@ -1,97 +1,113 @@
 import {
   Injectable,
-  NotFoundException,
-  ForbiddenException,
   ConflictException,
+  ForbiddenException,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
-import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
+import { ConfigService } from '@nestjs/config';
+import { Participant, Prisma, Room } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { CreateRoomDto, InviteParticipantDto, RespondInvitationDto } from '../dto';
-import { RoomCreatedEvent, RoomInvitationCreatedEvent, RoomInvitationRespondedEvent, RoomConfirmedEvent, RoomDeletedEvent } from '../events/rooming.events';
-import { DomainEvents } from '../../../common/events/event-names';
-import { RoomStatus, InvitationStatus, Prisma } from '@prisma/client';
+import { generateJoinCode } from '../../../common/utils/join-code';
+import { JoinRoomDto } from '../dto';
+import { ROOM_CAPACITY } from '../domain';
 
+/** Type for room with its occupants and their user info, owner first */
+export type RoomWithMembers = Room & {
+  members: (Participant & {
+    user: { name: string; lastName: string; email: string };
+  })[];
+};
+
+/** Raw shape returned by every room query - flattened by `shapeRoom`. */
+type RoomWithResidents = Room & {
+  residents: (Participant & {
+    user: { name: string; lastName: string; email: string };
+  })[];
+};
+
+/**
+ * Rooming window, from `ROOMING_PHASE`.
+ * `soon` and `closed` both block creating/joining; they differ only in the
+ * message shown, so the frontend can render the right copy.
+ */
+export type RoomingPhase = 'soon' | 'open' | 'closed';
+
+const ROOM_INCLUDE = {
+  residents: {
+    include: { user: { select: { name: true, lastName: true, email: true } } },
+  },
+} satisfies Prisma.RoomInclude;
+
+/**
+ * Rooming works like teams: the owner creates a room and shares its
+ * 6-character code, a roommate joins with it. Two rules on top of that:
+ * every room is a double (`ROOM_CAPACITY`), and both occupants share the
+ * gender stored on the room.
+ *
+ * A participant is in at most one room - `participants.roomId` is a single
+ * column - and the owner is one of the room's residents.
+ */
 @Injectable()
 export class RoomingService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly eventEmitter: EventEmitter2,
+    private readonly config: ConfigService,
   ) {}
 
   /**
-   * Helper: emit all collected events after a transaction commits.
-   * This prevents ghost notifications when a transaction rolls back.
+   * Create a room (owner path).
+   * Generates a unique 6-character join code. The creating participant
+   * becomes both owner and first occupant, and the room takes their gender.
+   *
+   * @param userId - JWT sub resolved to internal DB user ID
+   * @throws NotFoundException  if no participant profile exists for this user
+   * @throws ForbiddenException if the participant is banned or rooming is not open
+   * @throws ConflictException  if the participant is already in a room
    */
-  private emitPendingEvents(events: { name: string; payload: any }[]) {
-    for (const event of events) {
-      this.eventEmitter.emit(event.name, event.payload);
-    }
-  }
-
-  /**
-   * US3.1: Create a new room
-   * @param userId - The ID of the currently authenticated user
-   * @param dto - Data containing the room size
-   * @returns The created room including its residents
-   */
-  async createRoom(userId: string, dto: CreateRoomDto) {
-    const pendingEvents: { name: string; payload: any }[] = [];
+  async createRoom(userId: string): Promise<RoomWithMembers> {
+    this.assertRoomingOpen();
 
     try {
-      const room = await this.prisma.$transaction(
-        async (tx) => {
-        // 1. Look up participant by userId
+      const room = await this.prisma.$transaction(async (tx) => {
         const participant = await tx.participant.findUnique({
           where: { userId },
-          include: { ownedRoom: true, room: true },
+          select: { id: true, banned: true, gender: true, roomId: true },
         });
 
-        // 2. Validate participant exists and is not banned
         if (!participant) {
-          throw new NotFoundException('Participant not found');
+          throw new NotFoundException(
+            'Participant profile not found. Complete your registration first.',
+          );
         }
+
+        // Edge case: Banned participants cannot take a room
         if (participant.banned) {
-          throw new ForbiddenException('Banned participants cannot create rooms');
+          throw new ForbiddenException('Banned participants cannot create a room.');
         }
 
-        // 3. Validate participant doesn't already own or reside in a room
-        if (participant.ownedRoom || participant.roomId) {
-          throw new ConflictException('Participant already owns or resides in a room');
+        if (participant.roomId) {
+          throw new ConflictException('You are already in a room. Leave it first.');
         }
 
-        // 4 & 5. Create Room with status = Pending, size = dto.size, ownerId = participant.id
-        // and add owner as first resident (connect to residents relation)
-        const room = await tx.room.create({
+        const code = await generateJoinCode(
+          async (c) => !!(await tx.room.findUnique({ where: { code: c }, select: { id: true } })),
+          'room',
+        );
+
+        // Create the room and immediately move the owner in
+        return tx.room.create({
           data: {
-            size: dto.size,
-            status: RoomStatus.Pending,
-            owner: {
-              connect: { id: participant.id },
-            },
-            residents: {
-              connect: [{ id: participant.id }],
-            },
+            code,
+            gender: participant.gender,
+            owner: { connect: { id: participant.id } },
+            residents: { connect: { id: participant.id } },
           },
-          include: {
-            residents: true,
-          },
+          include: ROOM_INCLUDE,
         });
+      });
 
-        // 6. Collect event (will be emitted after commit)
-        pendingEvents.push({
-          name: DomainEvents.ROOM_CREATED,
-          payload: new RoomCreatedEvent(room.id, participant.id, new Date(), room.size),
-        });
-
-        // 7. Return room with residents
-        return room;
-        },
-        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
-      );
-
-      this.emitPendingEvents(pendingEvents);
-      return room;
+      return this.shapeRoom(room);
     } catch (error) {
       this.handlePrismaError(error);
       throw error;
@@ -99,47 +115,200 @@ export class RoomingService {
   }
 
   /**
-   * Delete a room (Owner only)
+   * Join an existing room using a 6-character code (roommate path).
+   *
+   * The room row is locked for the rest of the transaction, so two people
+   * racing for the last spot cannot both get it.
+   *
+   * @param userId - JWT sub resolved to internal DB user ID
+   * @param dto    - The join code
+   * @throws NotFoundException  if no participant profile or room with that code exists
+   * @throws ForbiddenException if the participant is banned, the room is full,
+   *                            the room is for the other gender, or rooming is not open
+   * @throws ConflictException  if the participant is already in a room
    */
-  async deleteRoom(userId: string, roomId: string) {
-    const pendingEvents: { name: string; payload: any }[] = [];
+  async joinRoom(userId: string, dto: JoinRoomDto): Promise<RoomWithMembers> {
+    this.assertRoomingOpen();
+    const code = dto.code.toUpperCase();
 
     try {
-      await this.prisma.$transaction(async (tx) => {
-        const room = await tx.room.findUnique({
-          where: { id: roomId },
-          include: { owner: true },
+      const room = await this.prisma.$transaction(async (tx) => {
+        const participant = await tx.participant.findUnique({
+          where: { userId },
+          select: { id: true, banned: true, gender: true, roomId: true },
         });
 
-        if (!room) {
-          throw new NotFoundException('Room not found');
+        if (!participant) {
+          throw new NotFoundException(
+            'Participant profile not found. Complete your registration first.',
+          );
         }
 
-        if (room.status === RoomStatus.Confirmed) {
-          throw new ConflictException('Cannot delete a confirmed room');
+        // Edge case: Banned participants cannot take a room
+        if (participant.banned) {
+          throw new ForbiddenException('Banned participants cannot join a room.');
         }
 
-        if (room.owner.userId !== userId) {
-          throw new ForbiddenException('Only the room owner can delete the room');
+        const [locked] = await tx.$queryRaw<{ id: string }[]>`
+          SELECT id FROM rooms WHERE code = ${code} FOR UPDATE`;
+
+        if (!locked) {
+          throw new NotFoundException('No room found with that code. Check the code and try again.');
         }
 
-        // Disconnect all residents before deleting (avoids FK violation)
-        await tx.participant.updateMany({
-          where: { roomId: roomId },
+        const target = await tx.room.findUniqueOrThrow({
+          where: { id: locked.id },
+          include: { residents: { select: { id: true } } },
+        });
+
+        if (participant.roomId) {
+          throw new ConflictException(
+            participant.roomId === target.id
+              ? 'You are already in this room.'
+              : 'You are already in a room. Leave it first.',
+          );
+        }
+
+        // Rooms never mix genders
+        if (participant.gender !== target.gender) {
+          throw new ForbiddenException(
+            `This room is for ${target.gender} participants only - rooms can't mix genders.`,
+          );
+        }
+
+        // Enforce the double-room cap
+        if (target.residents.length >= ROOM_CAPACITY) {
+          throw new ForbiddenException(
+            `This room is already full (${ROOM_CAPACITY}/${ROOM_CAPACITY}).`,
+          );
+        }
+
+        return tx.room.update({
+          where: { id: target.id },
+          data: { residents: { connect: { id: participant.id } } },
+          include: ROOM_INCLUDE,
+        });
+      });
+
+      return this.shapeRoom(room);
+    } catch (error) {
+      this.handlePrismaError(error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get the current user's room.
+   *
+   * @param userId - JWT sub resolved to internal DB user ID
+   * @returns The room, or `null` when the participant is not in one
+   * @throws NotFoundException if the user has no participant profile
+   */
+  async getMyRoom(userId: string): Promise<RoomWithMembers | null> {
+    const participant = await this.prisma.participant.findUnique({
+      where: { userId },
+      select: { room: { include: ROOM_INCLUDE } },
+    });
+
+    if (!participant) {
+      throw new NotFoundException('Participant profile not found.');
+    }
+
+    return participant.room ? this.shapeRoom(participant.room) : null;
+  }
+
+  /**
+   * Leave the room the participant is in (roommate path only).
+   * Owners cannot use this - they must disband the room instead, since
+   * removing the owner would orphan the roommate.
+   *
+   * @param userId - JWT sub resolved to internal DB user ID
+   * @throws NotFoundException if no participant profile exists, or the participant isn't in a room
+   * @throws ConflictException if the participant owns the room
+   */
+  async leaveRoom(userId: string): Promise<void> {
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        const participant = await tx.participant.findUnique({
+          where: { userId },
+          select: { id: true, roomId: true, ownedRoom: { select: { id: true } } },
+        });
+
+        if (!participant) {
+          throw new NotFoundException('Participant profile not found.');
+        }
+
+        if (participant.ownedRoom) {
+          throw new ConflictException(
+            'Room owners cannot leave their own room. Disband the room instead.',
+          );
+        }
+
+        if (!participant.roomId) {
+          throw new NotFoundException('You are not in a room.');
+        }
+
+        await tx.participant.update({
+          where: { id: participant.id },
+          data: { roomId: null },
+        });
+      });
+    } catch (error) {
+      this.handlePrismaError(error);
+      throw error;
+    }
+  }
+
+  /**
+   * Remove the roommate from a room (owner path only).
+   * The owner cannot remove themselves - use disbandRoom for that.
+   *
+   * @param userId   - JWT sub of the caller, resolved to internal DB user ID
+   * @param memberId - Participant ID of the roommate to remove
+   * @throws NotFoundException if the caller has no profile, doesn't own a room,
+   *                           or the target isn't in that room
+   * @throws ConflictException if the owner tries to remove themselves
+   */
+  async removeRoommate(userId: string, memberId: string): Promise<RoomWithMembers> {
+    try {
+      const room = await this.prisma.$transaction(async (tx) => {
+        const participant = await tx.participant.findUnique({
+          where: { userId },
+          select: { id: true, ownedRoom: { select: { id: true } } },
+        });
+
+        if (!participant) {
+          throw new NotFoundException('Participant profile not found.');
+        }
+
+        const ownedRoom = participant.ownedRoom;
+
+        if (!ownedRoom) {
+          throw new NotFoundException('You do not own a room.');
+        }
+
+        if (memberId === participant.id) {
+          throw new ConflictException(
+            'Owners cannot remove themselves. Disband the room instead.',
+          );
+        }
+
+        const { count } = await tx.participant.updateMany({
+          where: { id: memberId, roomId: ownedRoom.id },
           data: { roomId: null },
         });
 
-        await tx.room.delete({
-          where: { id: roomId },
-        });
+        if (count === 0) {
+          throw new NotFoundException('That participant is not in your room.');
+        }
 
-        pendingEvents.push({
-          name: DomainEvents.ROOM_DELETED,
-          payload: new RoomDeletedEvent(room.id, room.owner.id, new Date()),
+        return tx.room.findUniqueOrThrow({
+          where: { id: ownedRoom.id },
+          include: ROOM_INCLUDE,
         });
       });
 
-      this.emitPendingEvents(pendingEvents);
+      return this.shapeRoom(room);
     } catch (error) {
       this.handlePrismaError(error);
       throw error;
@@ -147,446 +316,30 @@ export class RoomingService {
   }
 
   /**
-   * US3.2: Invite a participant to a room
-   * @param userId - The ID of the currently authenticated user (room owner)
-   * @param roomId - The ID of the room
-   * @param dto - Data containing the guestId
-   * @returns The created invitation
+   * Disband a room entirely (owner path only).
+   * Deletes the Room row; `participants.roomId` is `ON DELETE SET NULL`, so
+   * both occupants are freed at the database level.
+   *
+   * @param userId - JWT sub resolved to internal DB user ID
+   * @throws NotFoundException if the caller has no participant profile or does not own a room
    */
-  async inviteParticipant(userId: string, roomId: string, dto: InviteParticipantDto) {
-    const pendingEvents: { name: string; payload: any }[] = [];
-
+  async disbandRoom(userId: string): Promise<void> {
     try {
-      const invitation = await this.prisma.$transaction(
-        async (tx) => {
-        // 1. Look up room by roomId with owner, residents, and pending invitations
-        const room = await tx.room.findUnique({
-          where: { id: roomId },
-          include: {
-            owner: {
-              include: { user: true },
-            },
-            residents: true,
-            invitations: { where: { status: InvitationStatus.Pending } },
-          },
-        });
-
-        // 2. Validate room exists
-        if (!room) {
-          throw new NotFoundException('Room not found');
-        }
-
-        // 3. Validate caller is the room owner
-        if (room.owner.userId !== userId) {
-          throw new ForbiddenException('Only the room owner can invite participants');
-        }
-
-        // 4. Validate room is not already confirmed
-        if (room.status === RoomStatus.Confirmed) {
-          throw new ConflictException('Cannot invite to a confirmed room');
-        }
-
-        // 5. Look up guest by dto.guestId
-        const guest = await tx.participant.findUnique({
-          where: { id: dto.guestId },
-          include: { user: true, room: true },
-        });
-
-        // 6. Validate guest exists and is not banned
-        if (!guest) {
-          throw new NotFoundException('Guest not found');
-        }
-        if (guest.banned) {
-          throw new ForbiddenException('Cannot invite banned participants');
-        }
-
-        // 7. Capacity check: room.residents.length + pendingInvitations.length < room.size
-        if (room.residents.length + room.invitations.length >= room.size) {
-          throw new ConflictException('Room is at maximum capacity (including pending invitations)');
-        }
-
-        // 8. Gender compatibility: guest.gender === owner.gender
-        if (guest.gender !== room.owner.gender) {
-          throw new ConflictException('Guest gender does not match the room owner');
-        }
-
-        // 9. Duplicate check: guest is not already a resident or has a pending invitation
-        const isResident = room.residents.some((r) => r.id === guest.id);
-        if (isResident) {
-          throw new ConflictException('Guest is already a resident of this room');
-        }
-
-        // 10. Single-room check: guest is not already in another room
-        if (guest.roomId) {
-          throw new ConflictException('Guest is already a resident of another room');
-        }
-
-        // 11. Create Invitation with status = Pending
-        const invitation = await tx.invitation.create({
-          data: {
-            roomId: room.id,
-            guestId: guest.id,
-            status: InvitationStatus.Pending,
-          },
-        });
-
-        // 12. Collect event (will be emitted after commit)
-        pendingEvents.push({
-          name: DomainEvents.ROOM_INVITATION_CREATED,
-          payload: new RoomInvitationCreatedEvent(
-            invitation.id,
-            room.id,
-            guest.id,
-            guest.user.email,
-            `${guest.user.name} ${guest.user.lastName}`,
-            `${room.owner.user.name} ${room.owner.user.lastName}`,
-            InvitationStatus.Pending,
-            new Date(),
-          ),
-        });
-
-        // 13. Return invitation
-        return invitation;
-        },
-        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
-      );
-
-      this.emitPendingEvents(pendingEvents);
-      return invitation;
-    } catch (error) {
-      this.handlePrismaError(error);
-      throw error;
-    }
-  }
-
-  /**
-   * US3.3: Respond to Invitation
-   * @param userId - The ID of the currently authenticated user (invited guest)
-   * @param invitationId - The ID of the invitation
-   * @param dto - Data containing the accept boolean
-   * @returns The updated invitation with the room
-   */
-  async respondToInvitation(userId: string, invitationId: string, dto: RespondInvitationDto) {
-    const pendingEvents: { name: string; payload: any }[] = [];
-
-    const result = await this.prisma.$transaction(
-      async (tx) => {
-      // 1. Look up invitation by invitationId with room, guest, owner.
-      const invitation = await tx.invitation.findUnique({
-        where: { id: invitationId },
-        include: {
-          guest: true,
-          room: {
-            include: {
-              owner: true,
-              residents: true,
-            },
-          },
-        },
-      });
-
-      // 2. Validate invitation exists.
-      if (!invitation) {
-        throw new NotFoundException('Invitation not found');
-      }
-
-      // 3. Validate caller is the invited guest.
-      if (invitation.guest.userId !== userId) {
-        throw new ForbiddenException('You can only respond to your own invitations');
-      }
-
-      // 4. Validate invitation is in Pending status.
-      if (invitation.status !== InvitationStatus.Pending) {
-        throw new ConflictException(`Invitation is already ${invitation.status}`);
-      }
-
-      const { room, guest } = invitation;
-      let newStatus: InvitationStatus;
-
-      if (dto.accept) {
-        // a. Re-check capacity: current room.residents.length < room.size.
-        if (room.residents.length >= room.size) {
-          throw new ConflictException('Room is already at maximum capacity');
-        }
-
-        // b. Re-check gender compatibility.
-        if (guest.gender !== room.owner.gender) {
-          throw new ConflictException('Guest gender does not match the room owner');
-        }
-
-        // c. Re-check single-room: guest not in another room.
-        if (guest.roomId) {
-          throw new ConflictException('You are already a resident of a room');
-        }
-
-        newStatus = InvitationStatus.Accepted;
-
-        // d. Update invitation status to Accepted.
-        await tx.invitation.update({
-          where: { id: invitationId },
-          data: { status: newStatus },
-        });
-
-        // e. Add guest to room.residents.
-        const updatedRoom = await tx.room.update({
-          where: { id: room.id },
-          data: {
-            residents: {
-              connect: { id: guest.id },
-            },
-          },
-          include: {
-            residents: true,
-          },
-        });
-
-        // f. After adding, check if all residents have paid = true -> if so, auto-confirm room.
-        const allPaid = updatedRoom.residents.every((r) => r.paid === true);
-        if (allPaid) {
-          await tx.room.update({
-            where: { id: room.id },
-            data: { status: RoomStatus.Confirmed },
-          });
-
-          pendingEvents.push({
-            name: DomainEvents.ROOM_CONFIRMED,
-            payload: new RoomConfirmedEvent(
-              room.id,
-              room.owner.id,
-              new Date(),
-              updatedRoom.residents.map((r) => r.id),
-            ),
-          });
-        }
-      } else {
-        newStatus = InvitationStatus.Rejected;
-        // a. Update invitation status to Rejected.
-        await tx.invitation.update({
-          where: { id: invitationId },
-          data: { status: newStatus },
-        });
-      }
-
-      // Collect RoomInvitationRespondedEvent.
-      const eventName =
-        newStatus === InvitationStatus.Accepted
-          ? DomainEvents.ROOM_INVITATION_ACCEPTED
-          : DomainEvents.ROOM_INVITATION_REJECTED;
-
-      pendingEvents.push({
-        name: eventName,
-        payload: new RoomInvitationRespondedEvent(
-          invitation.id,
-          room.id,
-          guest.id,
-          newStatus,
-          new Date(),
-          room.owner.id,
-        ),
-      });
-
-      // Return updated invitation with room.
-      return tx.invitation.findUnique({
-        where: { id: invitationId },
-        include: {
-          room: {
-            include: {
-              residents: true,
-            },
-          },
-        },
-      });
-      },
-      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
-    );
-
-    this.emitPendingEvents(pendingEvents);
-    return result;
-  }
-
-  /**
-   * US3.4: Confirm a room (Internal or via explicit API call)
-   */
-  async confirmRoom(userId: string, roomId: string) {
-    const pendingEvents: { name: string; payload: any }[] = [];
-
-    try {
-      const updatedRoom = await this.prisma.$transaction(async (tx) => {
-        const room = await tx.room.findUnique({
-          where: { id: roomId },
-          include: { residents: true, owner: true },
-        });
-
-        if (!room) {
-          throw new NotFoundException('Room not found');
-        }
-
-        // Verify the caller is the room owner or a resident
-        const isOwner = room.owner.userId === userId;
-        const isResident = room.residents.some((r) => r.userId === userId);
-        if (!isOwner && !isResident) {
-          throw new ForbiddenException('Only room members can request confirmation');
-        }
-
-        if (room.status === RoomStatus.Confirmed) {
-          throw new ConflictException('Room is already confirmed');
-        }
-
-        const allPaid = room.residents.every((r) => r.paid === true);
-        if (!allPaid) {
-          throw new BadRequestException('Not all residents have paid. Room cannot be confirmed.');
-        }
-
-        const updatedRoom = await tx.room.update({
-          where: { id: roomId },
-          data: { status: RoomStatus.Confirmed },
-          include: { residents: true },
-        });
-
-        pendingEvents.push({
-          name: DomainEvents.ROOM_CONFIRMED,
-          payload: new RoomConfirmedEvent(
-            room.id,
-            room.owner.id,
-            new Date(),
-            updatedRoom.residents.map((r) => r.id),
-          ),
-        });
-
-        return updatedRoom;
-      });
-
-      this.emitPendingEvents(pendingEvents);
-      return updatedRoom;
-    } catch (error) {
-      this.handlePrismaError(error);
-      throw error;
-    }
-  }
-
-  /**
-   * Listener for Payment Status Updates
-   */
-  //@OnEvent(DomainEvents.PAYMENT_STATUS_UPDATED)
-  //async handlePaymentStatusUpdated(event: PaymentStatusUpdatedEvent) {
-    //if (event.status !== 'Approved') return;
-
-    /*try {
-      // Find the participant and their room
-      const participant = await this.prisma.participant.findUnique({
-        where: { id: event.participantId },
-        select: { roomId: true, room: { select: { status: true } } },
-      });
-
-      if (participant?.roomId && participant.room?.status !== RoomStatus.Confirmed) {
-        // Attempt to confirm the room
-        await this.confirmRoom(participant.roomId).catch((err) => {
-          // It's possible not all residents have paid yet, so confirmRoom will throw BadRequestException.
-          // We can safely ignore it here because it just means the room isn't ready to be confirmed.
-          if (!(err instanceof BadRequestException)) {
-            throw err;
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Error handling PAYMENT_STATUS_UPDATED for room confirmation:', error);
-    }
-  }*/
-
-  // --- Additional Methods ---
-
-  async getRoom(userId: string) {
-    const participant = await this.prisma.participant.findUnique({
-      where: { userId },
-      select: { roomId: true },
-    });
-
-    if (!participant || !participant.roomId) {
-      throw new NotFoundException('You are not currently in a room');
-    }
-
-    return this.getRoomById(participant.roomId);
-  }
-
-  async getMyInvitations(userId: string) {
-    return this.prisma.invitation.findMany({
-      where: { guest: { userId }, status: InvitationStatus.Pending },
-      include: {
-        room: {
-          include: { owner: true, residents: true },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-
-  async getRoomById(roomId: string) {
-    const room = await this.prisma.room.findUnique({
-      where: { id: roomId },
-      include: {
-        owner: true,
-        residents: true,
-        invitations: { where: { status: InvitationStatus.Pending } },
-      },
-    });
-
-    if (!room) {
-      throw new NotFoundException('Room not found');
-    }
-    return room;
-  }
-
-
-
-  async leaveRoom(userId: string, roomId: string) {
-    try {
-      return await this.prisma.$transaction(async (tx) => {
-        // Fetch the participant to get their id
+      await this.prisma.$transaction(async (tx) => {
         const participant = await tx.participant.findUnique({
           where: { userId },
-          select: { id: true, roomId: true },
+          select: { id: true, ownedRoom: { select: { id: true } } },
         });
 
-        if (!participant || participant.roomId !== roomId) {
-          throw new ForbiddenException('You are not a resident of this room');
+        if (!participant) {
+          throw new NotFoundException('Participant profile not found.');
         }
 
-        const room = await tx.room.findUnique({
-          where: { id: roomId },
-          include: { owner: true },
-        });
-
-        if (!room) {
-          throw new NotFoundException('Room not found');
+        if (!participant.ownedRoom) {
+          throw new NotFoundException('You do not own a room.');
         }
 
-        if (room.owner.userId === userId) {
-          throw new ForbiddenException('The owner cannot leave the room. Use deleteRoom instead.');
-        }
-
-        if (room.status === RoomStatus.Confirmed) {
-          throw new ConflictException('Cannot leave a confirmed room');
-        }
-
-        // Revoke the accepted invitation so it doesn't show stale "Accepted" status
-        await tx.invitation.updateMany({
-          where: {
-            roomId: roomId,
-            guestId: participant.id,
-            status: InvitationStatus.Accepted,
-          },
-          data: { status: InvitationStatus.Rejected },
-        });
-
-        return tx.room.update({
-          where: { id: roomId },
-          data: {
-            residents: {
-              disconnect: { id: participant.id },
-            },
-          },
-          include: { residents: true },
-        });
+        await tx.room.delete({ where: { id: participant.ownedRoom.id } });
       });
     } catch (error) {
       this.handlePrismaError(error);
@@ -594,68 +347,108 @@ export class RoomingService {
     }
   }
 
-  async removeParticipant(userId: string, roomId: string, participantId: string) {
-    try {
-      return await this.prisma.$transaction(async (tx) => {
-        const room = await tx.room.findUnique({
-          where: { id: roomId },
-          include: { owner: true, residents: true },
-        });
+  /**
+   * List all rooms with optional pagination, search and gender filter (Admin only).
+   * Search matches the join code or an occupant's name/email (case-insensitive).
+   */
+  async listRooms(options?: {
+    search?: string;
+    gender?: string;
+    skip?: number;
+    take?: number;
+  }): Promise<RoomWithMembers[]> {
+    const rooms = await this.prisma.room.findMany({
+      where: this.roomFilter(options),
+      skip: options?.skip,
+      take: options?.take,
+      include: ROOM_INCLUDE,
+      orderBy: { createdAt: 'desc' },
+    });
 
-        if (!room) {
-          throw new NotFoundException('Room not found');
-        }
-
-        if (room.owner.userId !== userId) {
-          throw new ForbiddenException('Only the room owner can remove participants');
-        }
-
-        if (room.owner.id === participantId) {
-          throw new ForbiddenException('Cannot remove the room owner');
-        }
-
-        // Verify the target is actually a resident of this room
-        const isResident = room.residents.some((r) => r.id === participantId);
-        if (!isResident) {
-          throw new NotFoundException('Participant is not a resident of this room');
-        }
-
-        if (room.status === RoomStatus.Confirmed) {
-          throw new ConflictException('Cannot remove participants from a confirmed room');
-        }
-
-        // Revoke the accepted invitation so it doesn't show stale "Accepted" status
-        await tx.invitation.updateMany({
-          where: {
-            roomId: roomId,
-            guestId: participantId,
-            status: InvitationStatus.Accepted,
-          },
-          data: { status: InvitationStatus.Rejected },
-        });
-
-        return tx.room.update({
-          where: { id: roomId },
-          data: {
-            residents: {
-              disconnect: { id: participantId },
-            },
-          },
-          include: { residents: true },
-        });
-      });
-    } catch (error) {
-      this.handlePrismaError(error);
-      throw error;
-    }
+    return rooms.map((room) => this.shapeRoom(room));
   }
 
+  /** Count rooms matching the optional search/gender filter (Admin only). */
+  async countRooms(options?: { search?: string; gender?: string }): Promise<number> {
+    return this.prisma.room.count({ where: this.roomFilter(options) });
+  }
+
+  /**
+   * Current rooming window, from the environment. Unrecognised values mean
+   * closed rather than accidentally opening a window that should be shut.
+   */
+  getRoomingPhase(): RoomingPhase {
+    const raw = this.config.get<string>('ROOMING_PHASE')?.trim().toLowerCase();
+    return raw === 'open' || raw === 'soon' || raw === 'closed' ? raw : 'closed';
+  }
+
+  // ============================================================================
+  // PRIVATE HELPERS
+  // ============================================================================
+
+  /**
+   * Guard for the two write paths that fill a room (create and join).
+   * Managing an existing room stays available after the window shuts so
+   * occupants can still leave, remove a roommate or disband.
+   */
+  private assertRoomingOpen(): void {
+    const phase = this.getRoomingPhase();
+    if (phase === 'open') return;
+
+    throw new ForbiddenException(
+      phase === 'soon' ? 'Rooming has not opened yet.' : 'Rooming is closed.',
+    );
+  }
+
+  /** Rename `residents` to `members`, owner first, to match the team responses. */
+  private shapeRoom(room: RoomWithResidents): RoomWithMembers {
+    const { residents, ...rest } = room;
+    const members = [...residents].sort(
+      (a, b) => Number(b.id === room.ownerId) - Number(a.id === room.ownerId),
+    );
+    return { ...rest, members };
+  }
+
+  /** Shared `where` for the admin room list/count. */
+  private roomFilter(options?: { search?: string; gender?: string }): Prisma.RoomWhereInput {
+    const where: Prisma.RoomWhereInput = {};
+
+    if (options?.gender) where.gender = options.gender;
+
+    if (options?.search) {
+      const contains = { contains: options.search, mode: 'insensitive' as const };
+      where.OR = [
+        { code: contains },
+        {
+          residents: {
+            some: {
+              user: { OR: [{ name: contains }, { lastName: contains }, { email: contains }] },
+            },
+          },
+        },
+      ];
+    }
+
+    return where;
+  }
+
+  /**
+   * Handle Prisma errors and convert to appropriate NestJS exceptions
+   * @throws ConflictException for unique constraint violations (P2002)
+   * @throws NotFoundException for record not found errors (P2025)
+   */
   private handlePrismaError(error: unknown): void {
+    // Edge case: a concurrent create won the race for the owner slot or code
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === 'P2002'
     ) {
-      throw new ConflictException('A record with this data already exists');
+      const target = String(error.meta?.target ?? '');
+      throw new ConflictException(
+        target.includes('owner_id')
+          ? 'You already own a room.'
+          : 'A record with this data already exists. Please try again.',
+      );
     }
 
     if (

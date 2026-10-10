@@ -310,6 +310,13 @@ describe('RegistrationService', () => {
       await expect(service.updateProfile('participant-2', dto)).rejects.toThrow(ConflictException);
     });
 
+    it('should refuse a gender change while in a room - rooms hold one gender', async () => {
+      mockPrismaService.participant.findUnique.mockResolvedValue({ ...mockParticipant, roomId: 'room-1' });
+
+      await expect(service.updateProfile('participant-1', { gender: 'female' })).rejects.toThrow(ConflictException);
+      expect(mockPrismaService.participant.update).not.toHaveBeenCalled();
+    });
+
     it('should update profile successfully for unpaid participant', async () => {
       const updated = { ...mockParticipant, phone: '+21687654321' };
       const dto: UpdateProfileDto = { phone: '+21687654321' };

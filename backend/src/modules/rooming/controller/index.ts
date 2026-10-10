@@ -1,37 +1,46 @@
 import {
   Controller,
-  Post,
   Get,
+  Post,
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
-  HttpStatus,
   HttpCode,
+  HttpStatus,
   ParseUUIDPipe,
+  ParseIntPipe,
+  DefaultValuePipe,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { plainToInstance } from 'class-transformer';
-import { JwtAuthGuard } from '../../../common/guards';
-import { CurrentUser } from '../../../common/decorators';
+import { JwtAuthGuard, RolesGuard } from '../../../common/guards';
+import { CurrentUser, Roles } from '../../../common/decorators';
 import { ZodValidationPipe } from '../../../common/pipes';
-import { RoomingService } from '../service';
+import { RoomingService, RoomWithMembers } from '../service';
+import { ROOM_CAPACITY } from '../domain';
 import {
-  CreateRoomDto,
-  CreateRoomSchema,
-  InviteParticipantDto,
-  InviteParticipantSchema,
-  RespondInvitationDto,
-  RespondInvitationSchema,
+  JoinRoomDto,
+  JoinRoomSchema,
   RoomResponseDto,
-  InvitationResponseDto,
+  MyRoomResponseDto,
+  RoomListResponseDto,
 } from '../dto';
 
+const GENDERS = ['male', 'female'];
+
+/**
+ * Rooming controller - same create / join-by-code flow as teams. Every room
+ * is a double and holds a single gender.
+ */
 @ApiTags('Rooming')
 @ApiBearerAuth('JWT-auth')
 @Controller('rooming')
@@ -39,146 +48,168 @@ import {
 export class RoomingController {
   constructor(private readonly roomingService: RoomingService) {}
 
-  // US3.1 - Create Room
+  /**
+   * Shape a service-level room (participants + their user rows) into the flat
+   * API response, adding the derived occupant counts.
+   */
+  private toRoomResponse(room: RoomWithMembers): RoomResponseDto {
+    return plainToInstance(
+      RoomResponseDto,
+      {
+        ...room,
+        capacity: ROOM_CAPACITY,
+        memberCount: room.members.length,
+        spotsLeft: ROOM_CAPACITY - room.members.length,
+        members: room.members.map((m) => ({
+          id: m.id,
+          name: m.user.name,
+          lastName: m.user.lastName,
+          email: m.user.email,
+        })),
+      },
+      { excludeExtraneousValues: true },
+    );
+  }
 
+  /**
+   * Create a room (owner path).
+   * The authenticated participant becomes the owner and first occupant.
+   * Returns the room including the generated join code.
+   */
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create a new room' })
-  @ApiResponse({ status: HttpStatus.CREATED, description: 'Room created successfully.', type: RoomResponseDto })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Participant not found.' })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Banned participants cannot create rooms.' })
-  @ApiResponse({ status: HttpStatus.CONFLICT, description: 'Participant already owns or resides in a room.' })
-  async createRoom(
+  @ApiOperation({ summary: 'Create a double room and receive a join code (owner path)' })
+  @ApiResponse({ status: 201, description: 'Room created successfully', type: RoomResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Participant is banned, or rooming is not open' })
+  @ApiResponse({ status: 404, description: 'Participant profile not found' })
+  @ApiResponse({ status: 409, description: 'Already in a room' })
+  async createRoom(@CurrentUser('sub') userId: string): Promise<RoomResponseDto> {
+    return this.toRoomResponse(await this.roomingService.createRoom(userId));
+  }
+
+  /**
+   * Join an existing room using a 6-character code (roommate path).
+   */
+  @Post('join')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Join a room using a join code (roommate path)' })
+  @ApiResponse({ status: 200, description: 'Joined room successfully', type: RoomResponseDto })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Room is full or for the other gender, participant is banned, or rooming is not open' })
+  @ApiResponse({ status: 404, description: 'Participant or room not found' })
+  @ApiResponse({ status: 409, description: 'Already in a room' })
+  async joinRoom(
     @CurrentUser('sub') userId: string,
-    @Body(new ZodValidationPipe(CreateRoomSchema)) dto: CreateRoomDto,
+    @Body(new ZodValidationPipe(JoinRoomSchema)) dto: JoinRoomDto,
   ): Promise<RoomResponseDto> {
-    const room = await this.roomingService.createRoom(userId, dto);
-    return plainToInstance(RoomResponseDto, room, { excludeExtraneousValues: true });
+    return this.toRoomResponse(await this.roomingService.joinRoom(userId, dto));
   }
 
-  // GET - My Room
-
-  @Get('my-room')
-  @HttpCode(HttpStatus.OK)
+  /**
+   * Get the current user's room - `{ room: null }` when they have none.
+   */
+  @Get()
   @ApiOperation({ summary: 'Get the current user\'s room' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Returns the room the user resides in.', type: RoomResponseDto })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'User is not in a room.' })
-  async getMyRoom(@CurrentUser('sub') userId: string): Promise<RoomResponseDto> {
-    const room = await this.roomingService.getRoom(userId);
-    return plainToInstance(RoomResponseDto, room, { excludeExtraneousValues: true });
+  @ApiResponse({ status: 200, description: 'Room retrieved successfully', type: MyRoomResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Participant profile not found' })
+  async getMyRoom(@CurrentUser('sub') userId: string): Promise<MyRoomResponseDto> {
+    const room = await this.roomingService.getMyRoom(userId);
+    return plainToInstance(
+      MyRoomResponseDto,
+      { room: room ? this.toRoomResponse(room) : null },
+      { excludeExtraneousValues: true },
+    );
   }
 
-  // DELETE - Delete Room (Owner only)
-
-  @Delete(':roomId')
+  /**
+   * Leave the current room (roommate path only - owners disband instead).
+   */
+  @Delete('leave')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Delete a room (Owner only)' })
-  @ApiResponse({ status: HttpStatus.NO_CONTENT, description: 'Room deleted successfully.' })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Room not found.' })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Only the room owner can delete the room.' })
-  async deleteRoom(
-    @CurrentUser('sub') userId: string,
-    @Param('roomId', ParseUUIDPipe) roomId: string,
-  ): Promise<void> {
-    await this.roomingService.deleteRoom(userId, roomId);
+  @ApiOperation({ summary: 'Leave your room (roommate only)' })
+  @ApiResponse({ status: 204, description: 'Left room successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Not in a room' })
+  @ApiResponse({ status: 409, description: 'Owners must disband instead' })
+  async leaveRoom(@CurrentUser('sub') userId: string): Promise<void> {
+    await this.roomingService.leaveRoom(userId);
   }
 
-  // US3.2 - Invite Participant
-
-  @Post(':roomId/invite')
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Invite a participant to a room' })
-  @ApiResponse({ status: HttpStatus.CREATED, description: 'Invitation sent successfully.', type: InvitationResponseDto })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Room or guest not found.' })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Only the room owner can invite / guest is banned.' })
-  @ApiResponse({ status: HttpStatus.CONFLICT, description: 'Capacity full / gender mismatch / duplicate.' })
-  async inviteParticipant(
-    @CurrentUser('sub') userId: string,
-    @Param('roomId', ParseUUIDPipe) roomId: string,
-    @Body(new ZodValidationPipe(InviteParticipantSchema)) dto: InviteParticipantDto,
-  ): Promise<InvitationResponseDto> {
-    const invitation = await this.roomingService.inviteParticipant(userId, roomId, dto);
-    return plainToInstance(InvitationResponseDto, invitation, { excludeExtraneousValues: true });
-  }
-
-  // Remove Participant (Owner only)
-
-  @Post(':roomId/remove/:participantId')
+  /**
+   * Remove the roommate from your room (owner path only).
+   */
+  @Delete('members/:participantId')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Remove a participant from the room (Owner only)' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Participant removed successfully.', type: RoomResponseDto })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Room not found.' })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Only the owner can remove participants.' })
-  @ApiResponse({ status: HttpStatus.CONFLICT, description: 'Cannot remove from a confirmed room.' })
-  async removeParticipant(
+  @ApiOperation({ summary: 'Remove your roommate (owner only)' })
+  @ApiResponse({ status: 200, description: 'Roommate removed', type: RoomResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Not a room owner, or participant not in your room' })
+  @ApiResponse({ status: 409, description: 'Cannot remove yourself' })
+  async removeRoommate(
     @CurrentUser('sub') userId: string,
-    @Param('roomId', ParseUUIDPipe) roomId: string,
     @Param('participantId', ParseUUIDPipe) participantId: string,
   ): Promise<RoomResponseDto> {
-    const room = await this.roomingService.removeParticipant(userId, roomId, participantId);
-    return plainToInstance(RoomResponseDto, room, { excludeExtraneousValues: true });
+    return this.toRoomResponse(await this.roomingService.removeRoommate(userId, participantId));
   }
 
-  // US3.3 - Get My Invitations
-
-  @Get('invitations')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Get pending invitations for the current user' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'List of pending invitations.', type: [InvitationResponseDto] })
-  async getMyInvitations(@CurrentUser('sub') userId: string): Promise<InvitationResponseDto[]> {
-    const invitations = await this.roomingService.getMyInvitations(userId);
-    return plainToInstance(InvitationResponseDto, invitations, { excludeExtraneousValues: true });
+  /**
+   * Disband your room (owner path only). Frees both occupants.
+   */
+  @Delete()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Disband your room (owner only)' })
+  @ApiResponse({ status: 204, description: 'Room disbanded' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Not a room owner' })
+  async disbandRoom(@CurrentUser('sub') userId: string): Promise<void> {
+    await this.roomingService.disbandRoom(userId);
   }
 
-  // US3.3 - Respond to Invitation
+  // ============================================================================
+  // ADMIN ROUTES
+  // ============================================================================
 
-  @Post('invitations/:invitationId/respond')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Respond to an invitation (Accept/Reject)' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Invitation response processed.', type: InvitationResponseDto })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Invitation not found.' })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Can only respond to your own invitations.' })
-  @ApiResponse({ status: HttpStatus.CONFLICT, description: 'Invitation already responded / capacity full.' })
-  async respondToInvitation(
-    @CurrentUser('sub') userId: string,
-    @Param('invitationId', ParseUUIDPipe) invitationId: string,
-    @Body(new ZodValidationPipe(RespondInvitationSchema)) dto: RespondInvitationDto,
-  ): Promise<InvitationResponseDto> {
-    const invitation = await this.roomingService.respondToInvitation(userId, invitationId, dto);
-    return plainToInstance(InvitationResponseDto, invitation, { excludeExtraneousValues: true });
-  }
+  /**
+   * List all rooms (admin only)
+   */
+  @Get('admin/rooms')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @ApiOperation({ summary: '[Admin] List all rooms' })
+  @ApiQuery({ name: 'skip', required: false, type: Number })
+  @ApiQuery({ name: 'take', required: false, type: Number })
+  @ApiQuery({ name: 'search', required: false, type: String, description: 'Filter by join code or occupant name/email' })
+  @ApiQuery({ name: 'gender', required: false, enum: GENDERS, description: 'Filter by gender; omit for all' })
+  @ApiResponse({ status: 200, description: 'Rooms list', type: RoomListResponseDto })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - admin only' })
+  async listRooms(
+    @Query('skip', new DefaultValuePipe(0), ParseIntPipe) skip: number,
+    @Query('take', new DefaultValuePipe(20), ParseIntPipe) take: number,
+    @Query('search') search?: string,
+    @Query('gender') gender?: string,
+  ): Promise<RoomListResponseDto> {
+    if (gender !== undefined && !GENDERS.includes(gender)) {
+      throw new BadRequestException("gender must be 'male' or 'female'");
+    }
 
-  // US3.4 - Request Room Confirmation
+    const [rooms, total] = await Promise.all([
+      this.roomingService.listRooms({ skip, take, search, gender }),
+      this.roomingService.countRooms({ search, gender }),
+    ]);
 
-  @Post(':roomId/confirm')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Request room confirmation (all residents must have paid)' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Room confirmed successfully.', type: RoomResponseDto })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Room not found.' })
-  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Not all residents have paid.' })
-  @ApiResponse({ status: HttpStatus.CONFLICT, description: 'Room is already confirmed.' })
-  async requestConfirmation(
-    @CurrentUser('sub') userId: string,
-    @Param('roomId', ParseUUIDPipe) roomId: string,
-  ): Promise<RoomResponseDto> {
-    const room = await this.roomingService.confirmRoom(userId, roomId);
-    return plainToInstance(RoomResponseDto, room, { excludeExtraneousValues: true });
-  }
-
-  // Leave Room (Non-owner resident)
-
-  @Post(':roomId/leave')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Leave a room (Resident only, not owner)' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Successfully left the room.', type: RoomResponseDto })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Room not found.' })
-  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Owner cannot leave / not a resident.' })
-  @ApiResponse({ status: HttpStatus.CONFLICT, description: 'Cannot leave a confirmed room.' })
-  async leaveRoom(
-    @CurrentUser('sub') userId: string,
-    @Param('roomId', ParseUUIDPipe) roomId: string,
-  ): Promise<RoomResponseDto> {
-    const room = await this.roomingService.leaveRoom(userId, roomId);
-    return plainToInstance(RoomResponseDto, room, { excludeExtraneousValues: true });
+    return plainToInstance(
+      RoomListResponseDto,
+      {
+        data: rooms.map((r) => this.toRoomResponse(r)),
+        total,
+        skip,
+        take,
+      },
+      { excludeExtraneousValues: true },
+    );
   }
 }

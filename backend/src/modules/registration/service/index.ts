@@ -19,6 +19,7 @@ import {
   VisaStatus,
 } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { generateJoinCode } from '../../../common/utils/join-code';
 import {
   RegisterLocalDto,
   RegisterInternationalDto,
@@ -290,6 +291,14 @@ export class RegistrationService {
         ) {
           throw new ConflictException(
             'Cannot update profile while visa application is being processed',
+          );
+        }
+
+        // Edge case: A room holds one gender only (stored on the room), so a
+        // change would leave it mixed or mislabelled.
+        if (dto.gender !== undefined && dto.gender !== current.gender && current.roomId) {
+          throw new ConflictException(
+            'Leave your room (or disband it) before changing your gender.',
           );
         }
 
@@ -1652,28 +1661,12 @@ export class RegistrationService {
     );
   }
 
-  /**
-   * Generate a unique 6-character alphanumeric team code.
-   * Uses an unambiguous character set (no 0/O, 1/I/L).
-   * Retries up to 5 times before giving up (practically impossible to exhaust).
-   */
-  private async generateUniqueCode(tx: Prisma.TransactionClient): Promise<string> {
-    const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    for (let attempt = 0; attempt < 5; attempt++) {
-      const code = Array.from(
-        { length: 6 },
-        () => CHARS[Math.floor(Math.random() * CHARS.length)],
-      ).join('');
-
-      const existing = await tx.team.findUnique({
-        where: { code },
-        select: { id: true },
-      });
-
-      if (!existing) return code;
-    }
-
-    throw new Error('Failed to generate a unique team code. Please try again.');
+  /** Generate a unique 6-character team join code. */
+  private generateUniqueCode(tx: Prisma.TransactionClient): Promise<string> {
+    return generateJoinCode(
+      async (code) => !!(await tx.team.findUnique({ where: { code }, select: { id: true } })),
+      'team',
+    );
   }
 
   /**

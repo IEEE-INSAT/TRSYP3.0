@@ -99,6 +99,14 @@ export const activityPhases = {
 } as const satisfies Record<'competition' | 'challenge' | 'fablab', RegistrationPhase>;
 
 /**
+ * Rooming window: whether the dashboard offers creating/joining a room.
+ * Mirrors the backend's `ROOMING_PHASE`, which is what actually enforces it -
+ * keep the two in sync. Participants already in a room can still manage it
+ * when this is not `open`.
+ */
+export const roomingPhase = readPhase(process.env.NEXT_PUBLIC_ROOMING_PHASE, 'closed');
+
+/**
  * Adwya × Orange Fablab Challenge (Track 03). Teams register on the site like
  * any other activity; the leader then submits a Google Drive folder link from
  * the dashboard. `submissionPhase` mirrors the backend's

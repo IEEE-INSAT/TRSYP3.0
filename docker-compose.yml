@@ -11,6 +11,7 @@ services:
         NEXT_PUBLIC_COMPETITION_PHASE: ${NEXT_PUBLIC_COMPETITION_PHASE:-closed}
         NEXT_PUBLIC_CHALLENGE_PHASE: ${NEXT_PUBLIC_CHALLENGE_PHASE:-closed}
         NEXT_PUBLIC_PARTICIPANT_REGISTRATION_OPEN: ${NEXT_PUBLIC_PARTICIPANT_REGISTRATION_OPEN:-true}
+        NEXT_PUBLIC_ROOMING_PHASE: ${NEXT_PUBLIC_ROOMING_PHASE:-closed}
     env_file:
       - path: .env
         required: false
@@ -18,6 +19,7 @@ services:
       NODE_ENV: production
       PORT: 10000
       PAYMENT_PROOF_OPEN: ${PAYMENT_PROOF_OPEN:-false}
+      ROOMING_PHASE: ${ROOMING_PHASE:-closed}
     ports:
       - "3000:10000"
     restart: unless-stopped

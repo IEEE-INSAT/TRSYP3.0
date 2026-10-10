@@ -427,6 +427,36 @@ export interface CreateTeamPayload {
   axis?: FablabAxis;
 }
 
+// ── Rooming ───────────────────────────────────────────────────────────────────
+
+export interface RoomMember {
+  id: string;
+  name: string;
+  lastName: string;
+  email: string;
+}
+
+/**
+ * Room object returned by /rooming*. Every room is a double and holds one
+ * gender - the owner's. `code` is what the owner shares with their roommate.
+ */
+export interface Room {
+  id: string;
+  code: string;
+  gender: Gender;
+  ownerId: string;
+  capacity: number;
+  memberCount: number;
+  spotsLeft: number;
+  /** Owner first. */
+  members: RoomMember[];
+}
+
+/** GET /rooming - `room` is null when the caller is not in one. */
+export interface MyRoom {
+  room: Room | null;
+}
+
 // ── Challenge (ArUco markers) ─────────────────────────────────────────────────
 
 /** Response of GET /challenge/aruco/status. */

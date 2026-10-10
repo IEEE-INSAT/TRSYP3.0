@@ -1,17 +1,13 @@
 import { Participant } from '../../registration/entities/participant.entity';
-import { Invitation } from './invitation.entity';
 
 export class Room {
   roomId!: string;
-  size!: number;
-  confirmed!: boolean;
+  code!: string;
+  gender!: string;
 
   // Room "1" -- "1" Participant : Owner
   owner!: Participant;
 
-  // Room "1" -- "0..*" Participant : Residents
+  // Room "1" -- "1..2" Participant : Residents (owner included)
   residents!: Participant[];
-
-  // Room "1" -- "0..*" Invitation
-  invitations!: Invitation[];
 }
