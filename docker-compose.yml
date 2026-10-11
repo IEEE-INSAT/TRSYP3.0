@@ -19,6 +19,9 @@ services:
       NODE_ENV: production
       PORT: 10000
       PAYMENT_PROOF_OPEN: ${PAYMENT_PROOF_OPEN:-false}
+      ARUCO_OPEN: ${ARUCO_OPEN:-false}
+      ARUCO_COLLECTOR_1_ANSWER: ${ARUCO_COLLECTOR_1_ANSWER:-}
+      ARUCO_COLLECTOR_2_ANSWER: ${ARUCO_COLLECTOR_2_ANSWER:-}
       ROOMING_PHASE: ${ROOMING_PHASE:-closed}
     ports:
       - "3000:10000"

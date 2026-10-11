@@ -44,6 +44,15 @@ import { PaymentModule } from './modules/payment/payment.module';
                 PAYMENT_PROOF_OPEN: Joi.string()
                     .valid('true', 'false')
                     .default('false'),
+                // The ArUco challenge switch. Read per request and reported
+                // by GET /challenge/aruco/state, so no frontend rebuild.
+                ARUCO_OPEN: Joi.string()
+                    .valid('true', 'false')
+                    .default('false'),
+                // The word each collector accepts (case-insensitive). A
+                // collector without one refuses submissions.
+                ARUCO_COLLECTOR_1_ANSWER: Joi.string().optional(),
+                ARUCO_COLLECTOR_2_ANSWER: Joi.string().optional(),
                 FABLAB_REGISTRATION_PHASE: Joi.string()
                     .valid('soon', 'open', 'closed')
                     .default('closed'),

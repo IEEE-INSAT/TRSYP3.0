@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  ParseIntPipe,
+  HttpCode,
+  HttpStatus,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { plainToInstance } from 'class-transformer';
@@ -6,7 +16,9 @@ import { ChallengeService } from '../service';
 import {
   SubmitArucoAnswerDto,
   SubmitArucoAnswerSchema,
-  ArucoStatusResponseDto,
+  ArucoStateResponseDto,
+  ArucoMarkerResponseDto,
+  ArucoCollectorStatusResponseDto,
   ArucoSubmitResponseDto,
 } from '../dto';
 import { ZodValidationPipe } from '../../../common/pipes';
@@ -14,39 +26,68 @@ import { JwtAuthGuard } from '../../../common/guards';
 import { CurrentUser } from '../../../common/decorators';
 
 /**
- * ArUco challenge controller.
- * The clues behind markers 0-3 are public and live in the frontend; only the
- * collector (marker 4) talks to the backend, and only for signed-in accounts,
- * each of which gets a fixed number of attempts.
+ * ArUco challenge controller (Garden and Mine games).
+ * Everything but `state` is refused while ARUCO_OPEN is not "true". Marker
+ * lookups are public; the collectors need a signed-in member of a
+ * Competition team, and attempts are counted per team.
  */
 @ApiTags('Challenge')
-@ApiBearerAuth()
 @Controller('challenge/aruco')
-@UseGuards(JwtAuthGuard)
 export class ChallengeController {
   constructor(private readonly challengeService: ChallengeService) {}
 
-  @Get('status')
-  @ApiOperation({ summary: "The signed-in account's progress on the collector" })
-  @ApiResponse({ status: 200, type: ArucoStatusResponseDto })
-  @ApiResponse({ status: 401, description: 'Not signed in' })
-  async status(@CurrentUser('sub') userId: string): Promise<ArucoStatusResponseDto> {
-    const result = await this.challengeService.status(userId);
-    return plainToInstance(ArucoStatusResponseDto, result, { excludeExtraneousValues: true });
+  @Get('state')
+  @ApiOperation({ summary: 'Whether the ArUco challenge is open' })
+  @ApiResponse({ status: 200, type: ArucoStateResponseDto })
+  state(): ArucoStateResponseDto {
+    return plainToInstance(ArucoStateResponseDto, this.challengeService.state(), {
+      excludeExtraneousValues: true,
+    });
   }
 
-  @Post('submit')
+  @Get('markers/:id')
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @ApiOperation({ summary: 'What scanning a marker reveals' })
+  @ApiResponse({ status: 200, type: ArucoMarkerResponseDto })
+  @ApiResponse({ status: 403, description: 'Challenge closed' })
+  @ApiResponse({ status: 404, description: 'No marker with that ID' })
+  marker(@Param('id', ParseIntPipe) id: number): ArucoMarkerResponseDto {
+    return plainToInstance(ArucoMarkerResponseDto, this.challengeService.marker(id), {
+      excludeExtraneousValues: true,
+    });
+  }
+
+  @Get('collectors/:collector/status')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "The signed-in user's team progress on a collector" })
+  @ApiResponse({ status: 200, type: ArucoCollectorStatusResponseDto })
+  @ApiResponse({ status: 401, description: 'Not signed in' })
+  @ApiResponse({ status: 403, description: 'Challenge closed, or not in a Competition team' })
+  async collectorStatus(
+    @CurrentUser('sub') userId: string,
+    @Param('collector', ParseIntPipe) collector: number,
+  ): Promise<ArucoCollectorStatusResponseDto> {
+    const result = await this.challengeService.collectorStatus(userId, collector);
+    return plainToInstance(ArucoCollectorStatusResponseDto, result, { excludeExtraneousValues: true });
+  }
+
+  @Post('collectors/:collector/submit')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
-  @ApiOperation({ summary: 'Submit the word assembled from the ArUco clues' })
+  @ApiOperation({ summary: "Submit the team's word for a collector" })
   @ApiResponse({ status: 200, type: ArucoSubmitResponseDto })
-  @ApiResponse({ status: 400, description: 'Invalid answer' })
   @ApiResponse({ status: 401, description: 'Not signed in' })
+  @ApiResponse({ status: 403, description: 'Challenge closed, or not in a Competition team' })
+  @ApiResponse({ status: 503, description: 'Collector word not configured' })
   async submit(
     @CurrentUser('sub') userId: string,
+    @Param('collector', ParseIntPipe) collector: number,
     @Body(new ZodValidationPipe(SubmitArucoAnswerSchema)) dto: SubmitArucoAnswerDto,
   ): Promise<ArucoSubmitResponseDto> {
-    const result = await this.challengeService.submit(userId, dto.answer);
+    const result = await this.challengeService.submit(userId, collector, dto.answer);
     return plainToInstance(ArucoSubmitResponseDto, result, { excludeExtraneousValues: true });
   }
 }

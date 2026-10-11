@@ -4,7 +4,8 @@ import { ChallengeService } from './service';
 import { ChallengeController } from './controller';
 
 /**
- * Challenge module: the ArUco marker word game.
+ * Challenge module: the ArUco marker game (Garden and Mine), switched by
+ * ARUCO_OPEN.
  * Every route requires a signed-in account; attempts are counted per
  * account (see ChallengeController).
  */

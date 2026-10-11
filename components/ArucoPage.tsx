@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, FormEvent, ReactNode } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { challengeService, ApiError } from '@/lib/api';
-import type { ArucoStatusResponse } from '@/lib/api';
+import type { ArucoCollectorStatusResponse, ArucoMarker } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/auth-store';
 import { useHydrated } from '@/lib/store/use-hydrated';
 import AuthModal from './AuthModal';
@@ -13,51 +13,57 @@ import AuthModal from './AuthModal';
 const DICTIONARY = 'DICT_4X4_50';
 
 /**
- * Inner 4×4 bits of each marker in OpenCV's DICT_4X4_50 (1 = white cell),
- * read straight from cv2.aruco.generateImageMarker so the drawings match the
- * printed markers.
+ * Inner 4×4 bits of every ID in the beacon register, in OpenCV's DICT_4X4_50
+ * (1 = white cell), read straight from cv2.aruco.generateImageMarker so the
+ * drawings match the printed markers. What each marker gives comes from the
+ * backend, so closing the challenge hides it.
  */
 const MARKER_BITS: Record<number, string[]> = {
   0: ['1011', '0101', '0011', '0010'],
-  1: ['0000', '1111', '1001', '1010'],
   2: ['0011', '0011', '0010', '1101'],
   3: ['1001', '1001', '0100', '0110'],
-  4: ['0101', '0100', '1001', '1110'],
+  6: ['1001', '1110', '0010', '1110'],
+  7: ['1100', '0100', '1111', '0010'],
+  10: ['1111', '1001', '1001', '0001'],
+  12: ['0000', '1110', '1011', '0111'],
+  17: ['0110', '0110', '0000', '0000'],
+  20: ['1000', '0110', '1000', '1011'],
+  22: ['1100', '1100', '1101', '0101'],
+  27: ['1010', '0101', '0101', '0100'],
+  28: ['0010', '0001', '0010', '0011'],
+  30: ['0100', '0100', '0001', '0101'],
+  32: ['1001', '1110', '1100', '1111'],
+  37: ['0000', '0100', '1111', '1111'],
+  40: ['0001', '0111', '0001', '1000'],
+  43: ['0011', '1000', '1011', '0010'],
+  47: ['0100', '1011', '0110', '0100'],
 };
 
-type MarkerInfo =
-  | { role: 'clue'; source: string; tone: 'red' | 'blue'; clue: string }
-  | { role: 'collector' };
-
-/** What each marker hands out. Marker 4 is the collector, where the word is typed in. */
-const MARKERS: Record<number, MarkerInfo> = {
-  0: { role: 'clue', source: 'Red beacon', tone: 'red', clue: 'k' },
-  1: { role: 'clue', source: 'Blue indicator', tone: 'blue', clue: 'it’s in blue and high' },
-  2: { role: 'clue', source: 'Red beacon', tone: 'red', clue: 'y' },
-  3: { role: 'clue', source: 'Red beacon', tone: 'red', clue: 's' },
-  4: { role: 'collector' },
-};
-
-const MARKER_IDS = Object.keys(MARKERS).map(Number);
 const MAX_ATTEMPTS = 3;
 const EASE_OUT = [0.16, 1, 0.3, 1] as const;
 
 // ── Field log (per-device convenience, never authoritative) ─────────────────
 
-const LOG_KEY = 'trsyp_aruco_log';
+const LOG_KEY = 'trsyp_aruco_log_v2';
 
-function readLog(): number[] {
+function isMarker(value: unknown): value is ArucoMarker {
+  if (!value || typeof value !== 'object') return false;
+  const m = value as Record<string, unknown>;
+  return typeof m.id === 'number' && m.id in MARKER_BITS && typeof m.kind === 'string' && typeof m.name === 'string';
+}
+
+function readLog(): ArucoMarker[] {
   try {
     const parsed: unknown = JSON.parse(window.localStorage.getItem(LOG_KEY) ?? '[]');
-    return Array.isArray(parsed) ? parsed.filter((id) => typeof id === 'number' && id in MARKERS) : [];
+    return Array.isArray(parsed) ? parsed.filter(isMarker) : [];
   } catch {
     return [];
   }
 }
 
-function writeLog(ids: number[]) {
+function writeLog(markers: ArucoMarker[]) {
   try {
-    window.localStorage.setItem(LOG_KEY, JSON.stringify(ids));
+    window.localStorage.setItem(LOG_KEY, JSON.stringify(markers));
   } catch {
     // Storage blocked (private mode etc.) - the log just won't persist.
   }
@@ -77,9 +83,16 @@ function errorMessage(err: unknown): string {
   return 'Something went wrong. Please try again.';
 }
 
+/** Short label for a marker in the field log. */
+function logLabel(m: ArucoMarker): string {
+  if (m.kind !== 'collector' && m.clue && m.clue.length === 1) return `“${m.clue}”`;
+  return m.name;
+}
+
 /** A marker drawn the way it's printed: white quiet zone, black border, 4×4 bits. */
 function MarkerGlyph({ id, className }: { id: number; className?: string }) {
   const bits = MARKER_BITS[id];
+  if (!bits) return null;
   return (
     <svg viewBox="0 0 8 8" className={className} shapeRendering="crispEdges" aria-hidden="true">
       <rect width="8" height="8" fill="#fff" />
@@ -98,51 +111,98 @@ function MarkerGlyph({ id, className }: { id: number; className?: string }) {
 /** `seq` bumps on every detection so the scanner replays even for the same ID. */
 interface Scan {
   seq: number;
+  phase: 'idle' | 'loading' | 'detected' | 'missing' | 'error';
   input: string;
-  id: number | null;
+  marker?: ArucoMarker;
+  message?: string;
 }
 
-type ScanState = 'idle' | 'detected' | 'missing';
+type ScopeState = 'idle' | 'loading' | 'detected' | 'missing' | 'closed';
 
 export default function ArucoPage() {
   const reduce = useReducedMotion() ?? false;
   const hydrated = useHydrated();
 
+  // ARUCO_OPEN on the backend; null until the server answers.
+  const [open, setOpen] = useState<boolean | null>(null);
+  const [stateError, setStateError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    challengeService
+      .state()
+      .then((s) => !cancelled && setOpen(s.open))
+      .catch((err) => !cancelled && setStateError(errorMessage(err)));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const [idInput, setIdInput] = useState('');
-  const [scan, setScan] = useState<Scan>({ seq: 0, input: '', id: null });
+  const [scan, setScan] = useState<Scan>({ seq: 0, phase: 'idle', input: '' });
 
   // Stored log + anything found this visit (storage is read once hydrated, so
-  // server and first client render agree).
-  const [foundNow, setFoundNow] = useState<number[]>([]);
-  const found = useMemo(
-    () => new Set([...(hydrated ? readLog() : []), ...foundNow]),
-    [hydrated, foundNow],
-  );
+  // server and first client render agree). Later scans replace earlier ones.
+  const [foundNow, setFoundNow] = useState<ArucoMarker[]>([]);
+  const found = useMemo(() => {
+    const byId = new Map<number, ArucoMarker>();
+    for (const m of [...(hydrated ? readLog() : []), ...foundNow]) byId.set(m.id, m);
+    return [...byId.values()];
+  }, [hydrated, foundNow]);
 
-  function detect(raw: string) {
+  async function detect(raw: string) {
     const input = raw.trim();
-    if (!input) return;
-    const id = /^\d{1,3}$/.test(input) ? Number(input) : null;
-    const known = id !== null && id in MARKERS;
-    setScan((prev) => ({ seq: prev.seq + 1, input, id: known ? id : null }));
-    if (known && !found.has(id)) {
-      setFoundNow((prev) => [...prev, id]);
-      writeLog([...found, id]);
+    if (!input || open !== true) return;
+    const seq = scan.seq + 1;
+    const settle = (next: Omit<Scan, 'seq' | 'input'>) =>
+      setScan((prev) => (prev.seq === seq ? { seq, input, ...next } : prev));
+
+    setScan({ seq, phase: 'loading', input });
+    if (!/^\d{1,3}$/.test(input)) {
+      settle({ phase: 'missing' });
+      return;
+    }
+    try {
+      const marker = await challengeService.marker(Number(input));
+      settle({ phase: 'detected', marker });
+      setFoundNow((prev) => [...prev.filter((m) => m.id !== marker.id), marker]);
+      writeLog([...found.filter((m) => m.id !== marker.id), marker]);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404) {
+        settle({ phase: 'missing' });
+      } else if (err instanceof ApiError && err.status === 403) {
+        // Closed while the page was open.
+        setOpen(false);
+        settle({ phase: 'idle' });
+      } else {
+        settle({ phase: 'error', message: errorMessage(err) });
+      }
     }
   }
 
   function handleDetect(e: FormEvent) {
     e.preventDefault();
-    detect(idInput);
+    void detect(idInput);
   }
 
   function revisit(id: number) {
     setIdInput(String(id));
-    detect(String(id));
+    void detect(String(id));
   }
 
-  const state: ScanState = scan.seq === 0 ? 'idle' : scan.id !== null ? 'detected' : 'missing';
-  const info = scan.id !== null ? MARKERS[scan.id] : null;
+  const scopeState: ScopeState =
+    open === false
+      ? 'closed'
+      : scan.phase === 'detected'
+        ? 'detected'
+        : scan.phase === 'missing'
+          ? 'missing'
+          : scan.phase === 'loading'
+            ? 'loading'
+            : 'idle';
+  const marker = scan.phase === 'detected' ? scan.marker : undefined;
+  const ready = open === true;
+  const resultKey = open !== true ? `state-${String(open)}` : scan.phase === 'idle' ? 'idle' : `scan-${scan.seq}-${scan.phase}`;
 
   return (
     <div className="challenge-pg aruco-pg">
@@ -154,7 +214,7 @@ export default function ArucoPage() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
             <div className="prog-eyebrow">
               <span className="prog-eyebrow-line" />
-              <span className="prog-eyebrow-text">TRSYP 3.0 · Marker Hunt</span>
+              <span className="prog-eyebrow-text">TRSYP 3.0 · Garden &amp; Mine Games</span>
               <span className="prog-eyebrow-line" />
             </div>
             <h1 className="prog-hero-h">ARUCO</h1>
@@ -164,7 +224,7 @@ export default function ArucoPage() {
 
       <section className="aruco-stage">
         <div className="aruco-console">
-          <Scope scan={scan} state={state} reduce={reduce} />
+          <Scope scan={scan} state={scopeState} marker={marker} reduce={reduce} />
 
           <div className="aruco-readout">
             <form className="aruco-scanbar" onSubmit={handleDetect}>
@@ -181,10 +241,15 @@ export default function ArucoPage() {
                   placeholder="0"
                   inputMode="numeric"
                   autoComplete="off"
+                  disabled={!ready}
                   aria-describedby="aruco-result"
                 />
-                <button type="submit" className="aruco-cta" disabled={!idInput.trim()}>
-                  Detect
+                <button
+                  type="submit"
+                  className="aruco-cta"
+                  disabled={!ready || !idInput.trim() || scan.phase === 'loading'}
+                >
+                  {scan.phase === 'loading' ? 'Reading…' : 'Detect'}
                 </button>
               </div>
             </form>
@@ -192,7 +257,7 @@ export default function ArucoPage() {
             <div id="aruco-result" className="aruco-result" aria-live="polite">
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div
-                  key={state === 'idle' ? 'idle' : `scan-${scan.seq}`}
+                  key={resultKey}
                   className="aruco-result-inner"
                   initial={reduce ? { opacity: 0 } : { opacity: 0, y: 12, filter: 'blur(4px)' }}
                   animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
@@ -200,63 +265,119 @@ export default function ArucoPage() {
                   transition={{
                     duration: reduce ? 0.15 : 0.4,
                     ease: EASE_OUT,
-                    delay: state === 'detected' && !reduce ? 0.25 : 0,
+                    delay: scan.phase === 'detected' && !reduce ? 0.25 : 0,
                   }}
                 >
-                  {state === 'idle' && (
+                  {open === null && !stateError && <p className="aruco-result-text">Connecting to the scanner…</p>}
+
+                  {open === null && stateError && (
                     <>
-                      <h2 className="aruco-result-title">Find the markers</h2>
+                      <h2 className="aruco-result-title">Scanner offline</h2>
+                      <p className="aruco-feedback">{stateError}</p>
+                    </>
+                  )}
+
+                  {open === false && (
+                    <>
+                      <h2 className="aruco-result-title">The ArUco challenge is closed</h2>
                       <p className="aruco-result-text">
-                        Each ArUco marker on the field hides something. Enter a marker’s ID above to see what it
-                        gives you. One of them is the collector, and that’s where you type the word.
+                        Markers can’t be read right now. Check back once the organizers open the challenge.
                       </p>
                     </>
                   )}
 
-                  {state === 'missing' && (
+                  {ready && scan.phase === 'idle' && (
+                    <>
+                      <h2 className="aruco-result-title">Find the markers</h2>
+                      <p className="aruco-result-text">
+                        Each ArUco marker on the field hides something. Enter a marker’s ID above to see what it
+                        gives you. The collectors are where your team types its words.
+                      </p>
+                    </>
+                  )}
+
+                  {ready && scan.phase === 'loading' && <p className="aruco-result-text">Reading marker {scan.input}…</p>}
+
+                  {ready && scan.phase === 'missing' && (
                     <>
                       <h2 className="aruco-result-title">No marker with ID {scan.input}</h2>
                       <p className="aruco-result-text">Check the ID your robot read and try again.</p>
                     </>
                   )}
 
-                  {state === 'detected' && info?.role === 'clue' && (
-                    <>
-                      <p className="aruco-source">
-                        <span className={`aruco-source-dot aruco-source-dot--${info.tone}`} />
-                        {info.source} gives you
-                      </p>
-                      {info.clue.length === 1 ? (
-                        <span className="aruco-letter">{info.clue}</span>
-                      ) : (
-                        <p className="aruco-phrase">“{info.clue}”</p>
-                      )}
-                    </>
-                  )}
+                  {ready && scan.phase === 'error' && <p className="aruco-feedback">{scan.message}</p>}
 
-                  {state === 'detected' && info?.role === 'collector' && <Collector />}
+                  {ready && marker && <MarkerResult marker={marker} />}
                 </motion.div>
               </AnimatePresence>
             </div>
           </div>
         </div>
 
-        <FieldLog found={found} activeId={state === 'detected' ? scan.id : null} onOpen={revisit} />
+        <FieldLog found={found} activeId={marker?.id ?? null} canOpen={ready} onOpen={revisit} />
       </section>
     </div>
   );
 }
 
+// ── Result for a detected marker ────────────────────────────────────────────
+
+function MarkerResult({ marker }: { marker: ArucoMarker }) {
+  if (marker.kind === 'collector' && marker.collector) {
+    return <Collector collector={marker.collector} name={marker.name} />;
+  }
+
+  const tone = marker.kind === 'beacon' ? 'red' : 'neutral';
+  const source = (
+    <p className="aruco-source">
+      <span className={`aruco-source-dot aruco-source-dot--${tone}`} />
+      {marker.name} · {marker.game}
+    </p>
+  );
+
+  if (!marker.clue) {
+    return (
+      <>
+        {source}
+        <h2 className="aruco-result-title">Nothing here yet</h2>
+        <p className="aruco-result-text">This marker doesn’t give anything yet.</p>
+      </>
+    );
+  }
+
+  return (
+    <>
+      {source}
+      {marker.clue.length === 1 ? (
+        <span className="aruco-letter">{marker.clue}</span>
+      ) : (
+        <p className="aruco-phrase">“{marker.clue}”</p>
+      )}
+    </>
+  );
+}
+
 // ── Scanner viewport ────────────────────────────────────────────────────────
 
-function Scope({ scan, state, reduce }: { scan: Scan; state: ScanState; reduce: boolean }) {
-  const id = scan.id;
-  const info = id !== null ? MARKERS[id] : null;
-
+function Scope({
+  scan,
+  state,
+  marker,
+  reduce,
+}: {
+  scan: Scan;
+  state: ScopeState;
+  marker?: ArucoMarker;
+  reduce: boolean;
+}) {
   let status: string;
-  if (state === 'idle') status = 'Waiting for a marker';
+  if (state === 'closed') status = 'Challenge closed';
+  else if (state === 'loading') status = `Reading · ID ${scan.input}`;
   else if (state === 'missing') status = `No match · ID ${scan.input}`;
-  else status = `Detected · id=${id} · ${info?.role === 'clue' ? info.source : 'Collector'}`;
+  else if (state === 'detected' && marker) status = `Detected · id=${marker.id} · ${marker.name}`;
+  else status = 'Waiting for a marker';
+
+  const id = marker?.id;
 
   return (
     <div className={`aruco-scope aruco-scope--${state}`} aria-hidden="true">
@@ -272,7 +393,7 @@ function Scope({ scan, state, reduce }: { scan: Scan; state: ScanState; reduce: 
       </div>
 
       <AnimatePresence mode="wait">
-        {state === 'detected' && id !== null && (
+        {state === 'detected' && id !== undefined && (
           <motion.div
             key={scan.seq}
             className="aruco-scope-target"
@@ -317,7 +438,9 @@ function Scope({ scan, state, reduce }: { scan: Scan; state: ScanState; reduce: 
           transition={{ duration: 0.8, ease: EASE_OUT }}
         />
       )}
-      {state !== 'detected' && <span className="aruco-scope-sweep aruco-scope-sweep--idle" />}
+      {(state === 'idle' || state === 'loading' || state === 'missing') && (
+        <span className="aruco-scope-sweep aruco-scope-sweep--idle" />
+      )}
 
       {state === 'missing' && (
         <motion.span
@@ -344,10 +467,12 @@ function Scope({ scan, state, reduce }: { scan: Scan; state: ScanState; reduce: 
 function FieldLog({
   found,
   activeId,
+  canOpen,
   onOpen,
 }: {
-  found: Set<number>;
+  found: ArucoMarker[];
   activeId: number | null;
+  canOpen: boolean;
   onOpen: (id: number) => void;
 }) {
   return (
@@ -355,47 +480,41 @@ function FieldLog({
       <div className="aruco-log-head">
         <h2 className="aruco-log-title">Field log</h2>
         <p className="aruco-log-count">
-          {found.size} of {MARKER_IDS.length} scanned on this device
+          {found.length} marker{found.length === 1 ? '' : 's'} scanned on this device
         </p>
       </div>
-      <ol className="aruco-log-grid">
-        {MARKER_IDS.map((id) => {
-          const info = MARKERS[id];
-          if (!found.has(id)) {
-            return (
-              <li key={id} className="aruco-slot aruco-slot--empty">
-                <span className="aruco-slot-blank" />
-                <span className="aruco-slot-id aruco-slot-id--empty">id=?</span>
-                <span className="aruco-slot-label">Not scanned</span>
-              </li>
-            );
-          }
-          return (
-            <li key={id}>
+      {found.length === 0 ? (
+        <p className="aruco-log-empty">Markers you scan show up here so you can reopen them.</p>
+      ) : (
+        <ol className="aruco-log-grid">
+          {found.map((m) => (
+            <li key={m.id}>
               <button
                 type="button"
-                className={`aruco-slot${activeId === id ? ' aruco-slot--active' : ''}`}
-                onClick={() => onOpen(id)}
-                aria-label={`Open marker ${id}`}
+                className={`aruco-slot${activeId === m.id ? ' aruco-slot--active' : ''}`}
+                onClick={() => onOpen(m.id)}
+                disabled={!canOpen}
+                aria-label={`Open marker ${m.id}, ${m.name}`}
               >
-                <MarkerGlyph id={id} className="aruco-slot-marker" />
-                <span className="aruco-slot-id">id={id}</span>
-                <span className="aruco-slot-label">
-                  {info.role === 'collector' ? 'Collector' : info.clue.length === 1 ? `“${info.clue}”` : info.source}
-                </span>
+                <MarkerGlyph id={m.id} className="aruco-slot-marker" />
+                <span className="aruco-slot-id">id={m.id}</span>
+                <span className="aruco-slot-label">{logLabel(m)}</span>
               </button>
             </li>
-          );
-        })}
-      </ol>
+          ))}
+        </ol>
+      )}
     </div>
   );
 }
 
-// ── Collector (marker 4) ────────────────────────────────────────────────────
+// ── Collector ───────────────────────────────────────────────────────────────
 
-/** The answer form. Needs a signed-in account; 3 attempts per account. */
-function Collector() {
+/**
+ * A collector's answer form. Needs a signed-in member of a Competition team;
+ * each team gets 3 attempts per collector.
+ */
+function Collector({ collector, name }: { collector: number; name: string }) {
   const initialized = useAuthStore((s) => s.initialized);
   const accessToken = useAuthStore((s) => s.accessToken);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -404,7 +523,7 @@ function Collector() {
   // never shows the previous account's progress.
   const [loaded, setLoaded] = useState<{
     token: string;
-    status?: ArucoStatusResponse;
+    status?: ArucoCollectorStatusResponse;
     error?: string;
   } | null>(null);
   const current = accessToken && loaded?.token === accessToken ? loaded : null;
@@ -423,7 +542,7 @@ function Collector() {
       try {
         const token = await useAuthStore.getState().getAccessToken();
         if (!token) return;
-        const result = await challengeService.status(token);
+        const result = await challengeService.collectorStatus(collector, token);
         if (!cancelled) setLoaded({ token: accessToken, status: result });
       } catch (err) {
         if (!cancelled) setLoaded({ token: accessToken, error: errorMessage(err) });
@@ -432,7 +551,7 @@ function Collector() {
     return () => {
       cancelled = true;
     };
-  }, [accessToken]);
+  }, [accessToken, collector]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -444,7 +563,7 @@ function Collector() {
     try {
       const token = await useAuthStore.getState().getAccessToken();
       if (!token) return;
-      const result = await challengeService.submit(trimmed, token);
+      const result = await challengeService.submit(collector, trimmed, token);
       if (accessToken) setLoaded({ token: accessToken, status: result });
       if (!result.correct && result.attemptsLeft > 0) {
         setFeedback(`Incorrect, you have ${attemptsText(result.attemptsLeft)}.`);
@@ -467,7 +586,8 @@ function Collector() {
       <>
         <h2 className="aruco-result-title">Log in to submit</h2>
         <p className="aruco-result-text">
-          Put your clues together, then log in to enter the word. You get {MAX_ATTEMPTS} attempts.
+          Put your clues together, then log in to enter your team’s word. Each team gets {MAX_ATTEMPTS} attempts
+          on this collector.
         </p>
         <button type="button" className="aruco-cta" onClick={() => setShowAuthModal(true)}>
           Log in
@@ -501,7 +621,7 @@ function Collector() {
       <form className={`aruco-answer${shake ? ' adm-gate-shake' : ''}`} onSubmit={handleSubmit}>
         <div className="aruco-answer-head">
           <label className="aruco-field-label" htmlFor="aruco-answer">
-            The word
+            Your team’s word
           </label>
           <span
             className="aruco-pips"
@@ -538,7 +658,8 @@ function Collector() {
     <>
       <p className="aruco-source">
         <span className="aruco-source-dot aruco-source-dot--green" />
-        The collector
+        {name}
+        {status && <span className="aruco-source-team">· Team {status.teamName}</span>}
       </p>
       {body}
       {showAuthModal && (

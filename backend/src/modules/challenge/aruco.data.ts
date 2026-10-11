@@ -1,27 +1,76 @@
 import * as crypto from 'crypto';
 
 /**
- * Normalizes a candidate answer before hashing/comparing so that
- * case and surrounding whitespace don't cause a correct answer to be rejected.
+ * The ArUco beacon register (Garden and Mine games, 11 October 2026).
+ * All markers are OpenCV DICT_4X4_50; each ID belongs to one beacon only.
+ * The clues live here, not in the frontend bundle, so closing the challenge
+ * (ARUCO_OPEN=false) really hides them.
+ */
+
+export type ArucoGame = 'Garden' | 'Mine';
+export type CollectorNumber = 1 | 2;
+
+export type ArucoMarker =
+  | { id: number; kind: 'beacon'; game: ArucoGame; name: string; clue: string }
+  | { id: number; kind: 'indicator'; game: ArucoGame; name: string; clue: string }
+  | { id: number; kind: 'collector'; game: ArucoGame; name: string; collector: CollectorNumber };
+
+/** Submissions allowed per team, per collector, before that collector locks. */
+export const MAX_ATTEMPTS = 3;
+
+const MARKERS: ArucoMarker[] = [
+  // Red beacons - Garden (L and E are each placed twice on the field, same ID).
+  { id: 0, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'A' },
+  { id: 10, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'L' },
+  { id: 20, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'I' },
+  { id: 30, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'E' },
+  { id: 40, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'N' },
+  { id: 12, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'C' },
+  { id: 22, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'S' },
+  { id: 32, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'k' },
+
+  // Red beacons - Mine. Clues not decided yet: fill `clue` in when they are.
+  { id: 28, kind: 'beacon', game: 'Mine', name: 'Red beacon 1', clue: '' },
+  { id: 2, kind: 'beacon', game: 'Mine', name: 'Red beacon 2', clue: '' },
+  { id: 3, kind: 'beacon', game: 'Mine', name: 'Red beacon 3', clue: '' },
+  { id: 43, kind: 'beacon', game: 'Mine', name: 'Red beacon 4', clue: '' },
+
+  // Indicators - Garden.
+  { id: 7, kind: 'indicator', game: 'Garden', name: 'Indicator 1', clue: 'two worlds don’t need to be one in order to move together' },
+  { id: 17, kind: 'indicator', game: 'Garden', name: 'Indicator 2', clue: 'some connections are stronger if one hand holds the other' },
+  { id: 27, kind: 'indicator', game: 'Garden', name: 'Indicator 3', clue: 'One extra letter on the left' },
+  { id: 37, kind: 'indicator', game: 'Garden', name: 'Indicator 4', clue: 'At least 3 correct letters on the right' },
+
+  // Collectors - Garden. Their words come from ARUCO_COLLECTOR_<n>_ANSWER.
+  { id: 47, kind: 'collector', game: 'Garden', name: 'Collector 1', collector: 1 },
+  { id: 6, kind: 'collector', game: 'Garden', name: 'Collector 2', collector: 2 },
+];
+
+const BY_ID = new Map(MARKERS.map((m) => [m.id, m]));
+
+export function getMarker(id: number): ArucoMarker | null {
+  return BY_ID.get(id) ?? null;
+}
+
+export function isCollectorNumber(n: number): n is CollectorNumber {
+  return n === 1 || n === 2;
+}
+
+/** Env var holding a collector's word, e.g. ARUCO_COLLECTOR_1_ANSWER. */
+export function answerEnvKey(collector: CollectorNumber): string {
+  return `ARUCO_COLLECTOR_${collector}_ANSWER`;
+}
+
+/**
+ * Normalizes an answer before comparing so case and surrounding whitespace
+ * don't cause a correct answer to be rejected.
  */
 export function normalizeAnswer(raw: string): string {
   return raw.trim().toLowerCase();
 }
 
-function hashAnswer(plain: string): string {
-  return crypto.createHash('sha256').update(normalizeAnswer(plain)).digest('hex');
-}
-
-/** Submissions allowed per account before the collector locks. */
-export const MAX_ATTEMPTS = 3;
-
-/**
- * The word the ArUco clues spell out (markers 0-3 hand out the pieces,
- * marker 4 - the collector - is where it's typed in). Only its SHA-256 hash
- * lives here so the plaintext isn't sitting in the repo.
- */
-const ANSWER_HASH = '05f514fae7ca5710f9e9289a20a5c9b372af781bfc94dd23d9cb8a044122460f';
-
-export function isCorrectAnswer(candidate: string): boolean {
-  return hashAnswer(candidate) === ANSWER_HASH;
+/** Constant-time comparison of a candidate against the configured word. */
+export function matchesAnswer(candidate: string, expected: string): boolean {
+  const digest = (s: string) => crypto.createHash('sha256').update(normalizeAnswer(s)).digest();
+  return crypto.timingSafeEqual(digest(candidate), digest(expected));
 }

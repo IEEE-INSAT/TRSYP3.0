@@ -461,21 +461,41 @@ export interface MyRoom {
 
 // ── Challenge (ArUco markers) ─────────────────────────────────────────────────
 
-/** Response of GET /challenge/aruco/status. */
-export interface ArucoStatusResponse {
+/** Response of GET /challenge/aruco/state (the backend's ARUCO_OPEN). */
+export interface ArucoStateResponse {
+  open: boolean;
+}
+
+/** Response of GET /challenge/aruco/markers/:id - what scanning a marker reveals. */
+export interface ArucoMarker {
+  id: number;
+  kind: 'beacon' | 'indicator' | 'collector';
+  game: 'Garden' | 'Mine';
+  /** Designation, e.g. "Red beacon", "Indicator 2", "Collector 1". */
+  name: string;
+  /** What a beacon or indicator gives. Empty while not set yet. */
+  clue?: string;
+  /** Collector number, for collectors only. */
+  collector?: number;
+}
+
+/** Response of GET /challenge/aruco/collectors/:n/status - the team's progress. */
+export interface ArucoCollectorStatusResponse {
+  collector: number;
+  teamName: string;
   solved: boolean;
   attempts: number;
-  /** Attempts left before the collector locks (0 once solved or lost). */
+  /** Attempts left before this collector locks (0 once solved or lost). */
   attemptsLeft: number;
 }
 
-/** Body of POST /challenge/aruco/submit. */
+/** Body of POST /challenge/aruco/collectors/:n/submit. */
 export interface ArucoSubmitPayload {
   answer: string;
 }
 
-/** Response of POST /challenge/aruco/submit. */
-export interface ArucoSubmitResponse extends ArucoStatusResponse {
+/** Response of POST /challenge/aruco/collectors/:n/submit. */
+export interface ArucoSubmitResponse extends ArucoCollectorStatusResponse {
   correct: boolean;
 }
 

@@ -9653,6 +9653,10 @@ select.reg-input option {
   --scope-accent: var(--color-pink);
 }
 
+.aruco-scope--closed {
+  --scope-accent: rgba(255, 255, 255, 0.18);
+}
+
 .aruco-scope-grid {
   position: absolute;
   inset: 0;
@@ -9729,8 +9733,17 @@ select.reg-input option {
   text-overflow: ellipsis;
 }
 
-.aruco-scope--idle .aruco-scope-status {
+.aruco-scope--idle .aruco-scope-status,
+.aruco-scope--loading .aruco-scope-status {
   color: rgba(255, 255, 255, 0.5);
+}
+
+.aruco-scope--closed .aruco-scope-status {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.aruco-scope--closed .aruco-scope-grid {
+  opacity: 0.4;
 }
 
 .aruco-scope-status-dot {
@@ -9741,8 +9754,13 @@ select.reg-input option {
   background: currentColor;
 }
 
-.aruco-scope--idle .aruco-scope-status-dot {
+.aruco-scope--idle .aruco-scope-status-dot,
+.aruco-scope--loading .aruco-scope-status-dot {
   animation: arucoBlink 1.6s ease-in-out infinite;
+}
+
+.aruco-scope--loading .aruco-scope-status-dot {
+  animation-duration: 0.6s;
 }
 
 @keyframes arucoBlink {
@@ -9893,6 +9911,11 @@ select.reg-input option {
   background: rgba(255, 255, 255, 0.05);
 }
 
+.aruco-scanbar-input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .aruco-cta {
   display: inline-flex;
   align-items: center;
@@ -9991,8 +10014,12 @@ select.reg-input option {
 }
 
 .aruco-source-dot--red { background: var(--color-pink); }
-.aruco-source-dot--blue { background: #4da3ff; }
+.aruco-source-dot--neutral { background: rgba(255, 255, 255, 0.7); }
 .aruco-source-dot--green { background: var(--color-green); }
+
+.aruco-source-team {
+  color: rgba(255, 255, 255, 0.4);
+}
 
 .aruco-letter {
   display: grid;
@@ -10129,10 +10156,20 @@ select.reg-input option {
 
 .aruco-log-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
   gap: 14px;
   margin-top: 18px;
   list-style: none;
+}
+
+.aruco-log-empty {
+  margin-top: 18px;
+  padding: 28px 24px;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.45);
+  text-align: center;
 }
 
 .aruco-slot {
@@ -10153,7 +10190,12 @@ select.reg-input option {
     transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-button.aruco-slot:hover {
+button.aruco-slot:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+button.aruco-slot:hover:not(:disabled) {
   border-color: rgba(255, 255, 255, 0.16);
   background: rgba(255, 255, 255, 0.04);
   transform: translateY(-2px);
@@ -10167,20 +10209,10 @@ button.aruco-slot--active:hover {
     rgba(255, 255, 255, 0.02);
 }
 
-.aruco-slot-marker,
-.aruco-slot-blank {
+.aruco-slot-marker {
   display: block;
   width: 64px;
   height: 64px;
-}
-
-.aruco-slot-blank {
-  border: 1px dashed rgba(255, 255, 255, 0.14);
-  background: repeating-linear-gradient(
-    -45deg,
-    rgba(255, 255, 255, 0.035) 0 1px,
-    transparent 1px 7px
-  );
 }
 
 .aruco-slot-id {
@@ -10199,11 +10231,6 @@ button.aruco-slot--active:hover {
   white-space: nowrap;
   font-size: 13px;
   color: rgba(255, 255, 255, 0.62);
-}
-
-.aruco-slot--empty .aruco-slot-label,
-.aruco-slot-id--empty {
-  color: rgba(255, 255, 255, 0.3);
 }
 
 @media (max-width: 860px) {
@@ -10275,6 +10302,7 @@ button.aruco-slot--active:hover {
   }
 
   .aruco-log-grid {
+    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
     gap: 8px;
   }
 
@@ -10284,8 +10312,7 @@ button.aruco-slot--active:hover {
     border-radius: 12px;
   }
 
-  .aruco-slot-marker,
-  .aruco-slot-blank {
+  .aruco-slot-marker {
     width: 40px;
     height: 40px;
   }
@@ -10297,14 +10324,12 @@ button.aruco-slot--active:hover {
     text-align: center;
   }
 
-  .aruco-slot--empty .aruco-slot-label {
-    display: none;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .aruco-scope-sweep--idle,
-  .aruco-scope--idle .aruco-scope-status-dot {
+  .aruco-scope--idle .aruco-scope-status-dot,
+  .aruco-scope--loading .aruco-scope-status-dot {
     animation: none;
   }
 
