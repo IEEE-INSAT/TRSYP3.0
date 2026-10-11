@@ -78,13 +78,16 @@ export class PaymentService {
    * The fee this participant owes right now, priced like the dashboard does.
    *
    * Takes only the three facts pricing depends on rather than a whole
-   * participant, so callers that hold a partial row can still ask.
+   * participant, so callers that hold a partial row can still ask. An agreed
+   * exception (`feeOverride`) wins over the fee table.
    */
   feeFor(
     participant: Pick<Participant, 'participantType' | 'isRas'> & {
+      feeOverride?: number | null;
       memberships?: { activity: string }[];
     },
   ): number {
+    if (participant.feeOverride != null) return participant.feeOverride;
     return computeFee({
       isIeee: participant.participantType !== 'NonIEEE',
       isRas: participant.isRas,
