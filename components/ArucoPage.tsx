@@ -83,6 +83,13 @@ function errorMessage(err: unknown): string {
   return 'Something went wrong. Please try again.';
 }
 
+/** The backend's machine-readable error code (e.g. NO_COMPETITION_TEAM), if any. */
+function errorCode(err: unknown): string | undefined {
+  if (!(err instanceof ApiError) || !err.body || typeof err.body !== 'object') return undefined;
+  const code = (err.body as { code?: unknown }).code;
+  return typeof code === 'string' ? code : undefined;
+}
+
 /** Short label for a marker in the field log. */
 function logLabel(m: ArucoMarker): string {
   if (m.kind !== 'collector' && m.clue && m.clue.length === 1) return `“${m.clue}”`;
@@ -519,14 +526,18 @@ function Collector({ collector, name }: { collector: number; name: string }) {
   const accessToken = useAuthStore((s) => s.accessToken);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
-  // Keyed by the token it was fetched with, so a sign-out / account switch
-  // never shows the previous account's progress.
+  // Keyed by the token (and retry) it was fetched with, so a sign-out,
+  // account switch or retry never shows a stale result.
+  const [attempt, setAttempt] = useState(0);
   const [loaded, setLoaded] = useState<{
     token: string;
+    attempt: number;
     status?: ArucoCollectorStatusResponse;
     error?: string;
+    errorCode?: string;
   } | null>(null);
-  const current = accessToken && loaded?.token === accessToken ? loaded : null;
+  const current =
+    accessToken && loaded?.token === accessToken && loaded.attempt === attempt ? loaded : null;
   const status = current?.status ?? null;
   const loadError = current?.error ?? null;
 
@@ -543,15 +554,17 @@ function Collector({ collector, name }: { collector: number; name: string }) {
         const token = await useAuthStore.getState().getAccessToken();
         if (!token) return;
         const result = await challengeService.collectorStatus(collector, token);
-        if (!cancelled) setLoaded({ token: accessToken, status: result });
+        if (!cancelled) setLoaded({ token: accessToken, attempt, status: result });
       } catch (err) {
-        if (!cancelled) setLoaded({ token: accessToken, error: errorMessage(err) });
+        if (!cancelled) {
+          setLoaded({ token: accessToken, attempt, error: errorMessage(err), errorCode: errorCode(err) });
+        }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [accessToken, collector]);
+  }, [accessToken, collector, attempt]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -564,7 +577,7 @@ function Collector({ collector, name }: { collector: number; name: string }) {
       const token = await useAuthStore.getState().getAccessToken();
       if (!token) return;
       const result = await challengeService.submit(collector, trimmed, token);
-      if (accessToken) setLoaded({ token: accessToken, status: result });
+      if (accessToken) setLoaded({ token: accessToken, attempt, status: result });
       if (!result.correct && result.attemptsLeft > 0) {
         setFeedback(`Incorrect, you have ${attemptsText(result.attemptsLeft)}.`);
         setAnswer('');
@@ -594,8 +607,40 @@ function Collector({ collector, name }: { collector: number; name: string }) {
         </button>
       </>
     );
+  } else if (current?.errorCode === 'NO_COMPETITION_TEAM') {
+    body = (
+      <div className="aruco-notice">
+        <span className="aruco-notice-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 00-3-3.87" />
+            <path d="M16 3.13a4 4 0 010 7.75" />
+          </svg>
+        </span>
+        <h2 className="aruco-result-title">Collectors are for Competition teams</h2>
+        <p className="aruco-result-text">
+          Your account isn’t on a Competition team, so it can’t submit here. If you’re competing and seeing this,
+          speak to an organizer.
+        </p>
+      </div>
+    );
   } else if (loadError || !status) {
-    body = <p className="aruco-feedback">{loadError}</p>;
+    body = (
+      <div className="aruco-notice aruco-notice--error">
+        <span className="aruco-notice-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 8v5M12 16.5v.01" />
+          </svg>
+        </span>
+        <h2 className="aruco-result-title">Couldn’t open this collector</h2>
+        <p className="aruco-result-text">{loadError}</p>
+        <button type="button" className="aruco-cta aruco-cta--ghost" onClick={() => setAttempt((a) => a + 1)}>
+          Try again
+        </button>
+      </div>
+    );
   } else if (status.solved) {
     body = (
       <div className="aruco-verdict aruco-verdict--won">

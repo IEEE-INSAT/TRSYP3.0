@@ -10050,6 +10050,49 @@ select.reg-input option {
 }
 
 /* ── Collector ── */
+.aruco-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.aruco-notice-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(0, 232, 122, 0.22);
+  background: rgba(0, 232, 122, 0.07);
+  color: var(--color-green);
+}
+
+.aruco-notice-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.aruco-notice--error .aruco-notice-icon {
+  border-color: rgba(248, 113, 113, 0.3);
+  background: rgba(248, 113, 113, 0.08);
+  color: #f87171;
+}
+
+.aruco-notice .aruco-cta {
+  margin-top: 22px;
+}
+
+.aruco-cta--ghost {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.aruco-cta--ghost:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+}
+
 .aruco-answer {
   display: grid;
   gap: 12px;

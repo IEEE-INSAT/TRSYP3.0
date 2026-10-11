@@ -27,7 +27,7 @@ const MARKERS: ArucoMarker[] = [
   { id: 40, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'N' },
   { id: 12, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'C' },
   { id: 22, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'S' },
-  { id: 32, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'k' },
+  { id: 32, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'K' },
 
   // Red beacons - Mine. Clues not decided yet: fill `clue` in when they are.
   { id: 28, kind: 'beacon', game: 'Mine', name: 'Red beacon 1', clue: '' },

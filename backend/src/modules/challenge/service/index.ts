@@ -84,7 +84,12 @@ export class ChallengeService {
     const n = this.assertCollector(collector);
     const expected = this.config.get<string>(answerEnvKey(n))?.trim();
     if (!expected) {
-      throw new ServiceUnavailableException('This collector is not set up yet. Ask the organizers.');
+      throw new ServiceUnavailableException({
+        statusCode: 503,
+        error: 'Service Unavailable',
+        code: 'COLLECTOR_NOT_SET',
+        message: 'This collector is not set up yet. Ask the organizers.',
+      });
     }
     const team = await this.competitionTeam(userId);
     const key = { teamId_collector: { teamId: team.id, collector: n } };
@@ -113,7 +118,14 @@ export class ChallengeService {
   }
 
   private assertOpen() {
-    if (!this.isOpen()) throw new ForbiddenException('The ArUco challenge is closed.');
+    if (!this.isOpen()) {
+      throw new ForbiddenException({
+        statusCode: 403,
+        error: 'Forbidden',
+        code: 'ARUCO_CLOSED',
+        message: 'The ArUco challenge is closed.',
+      });
+    }
   }
 
   private assertCollector(collector: number): CollectorNumber {
@@ -128,7 +140,13 @@ export class ChallengeService {
       select: { team: { select: { id: true, name: true } } },
     });
     if (!membership) {
-      throw new ForbiddenException('You need to be in a Competition team to use the collectors.');
+      // `code` lets the page show a proper "join a team" state instead of the raw message.
+      throw new ForbiddenException({
+        statusCode: 403,
+        error: 'Forbidden',
+        code: 'NO_COMPETITION_TEAM',
+        message: 'You need to be in a Competition team to use the collectors.',
+      });
     }
     return membership.team;
   }
