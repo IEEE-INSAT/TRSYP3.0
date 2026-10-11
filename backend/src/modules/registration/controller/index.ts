@@ -124,6 +124,7 @@ export class RegistrationController {
     participant: Parameters<typeof plainToInstance>[1] & {
       participantType: ParticipantType;
       isRas: boolean;
+      feeOverride?: number | null;
       ieeeId: number | null;
       memberships?: { activity: string }[];
       ieeeVerification?: IeeeVerification | null;
@@ -144,6 +145,8 @@ export class RegistrationController {
           isRas: participant.isRas,
           ...teamFeeFacts(participant.memberships),
         }),
+        // An agreed exception wins over the fee table, as in PaymentService.feeFor.
+        ...(participant.feeOverride != null && { fee: participant.feeOverride }),
       },
       { excludeExtraneousValues: true },
     );

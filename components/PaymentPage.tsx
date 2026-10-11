@@ -96,12 +96,16 @@ export default function PaymentPage() {
   // Only selected teams count, and a Fablab team wins over the rest - exactly
   // like the server's membership check.
   const teamFacts = teamFeeFacts(TEAM_ACTIVITIES.map((a) => teams[a]));
-  const myFee = computeFee({
+  const computedFee = computeFee({
     isIeee: user.isIeee,
     isRas: user.isRas,
     ...teamFacts,
     isChallenger: user.userType === 'challenger' || teamFacts.isChallenger,
   });
+  // An agreed exception (feeOverride) replaces the computed amount, and then
+  // no card in the table is theirs.
+  const overridden = user.feeOverride != null;
+  const myFee = overridden ? { ...computedFee, fee: user.feeOverride as number } : computedFee;
 
   // A rejected proof is still an open bill, so the form belongs to both
   // states - the only difference is the notice above it.
@@ -221,7 +225,7 @@ export default function PaymentPage() {
               <div className="pay-fee-grid">
                 {/* The Fablab fee is flat, so it gets one card instead of one per tier. */}
                 {(role === 'FABLAB' ? [myFee.feeTier] : TIER_ORDER).map((tier) => {
-                  const mine = role === myFee.feeRole && (role === 'FABLAB' || tier === myFee.feeTier);
+                  const mine = !overridden && role === myFee.feeRole && (role === 'FABLAB' || tier === myFee.feeTier);
                   return (
                     <div
                       key={tier}

@@ -155,6 +155,10 @@ export class ParticipantResponseDto {
   @Expose()
   facebookLink?: string | null;
 
+  @ApiPropertyOptional({ description: 'Agreed exception to the fee table, in TND; null when priced normally', nullable: true })
+  @Expose()
+  feeOverride?: number | null;
+
   @ApiProperty({
     description: 'What the participant is priced as. Set from their IEEE verification once there is one; NonIEEE until then for new registrations.',
     enum: ParticipantType,

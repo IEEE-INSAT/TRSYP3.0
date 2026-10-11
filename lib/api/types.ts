@@ -309,6 +309,8 @@ export interface BackendParticipant {
   facebookLink?: string | null;
   /** Registration fee, derived server-side from membership tier and team status. */
   fee?: number;
+  /** Agreed exception to the fee table, in TND; null when priced normally. */
+  feeOverride?: number | null;
   currency?: string;
   feeRole?: 'VISITOR' | 'CHALLENGER' | 'FABLAB';
   feeTier?: 'IEEE_RAS' | 'IEEE' | 'NON_IEEE';

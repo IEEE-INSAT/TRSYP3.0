@@ -169,7 +169,9 @@ export default function Dashboard() {
   // Priced off the same three facts the server uses, so it tracks a team
   // join or a RAS toggle immediately instead of waiting for a profile refetch.
   // A Fablab team wins over any other team: its members pay the Fablab fee.
-  const feeInfo = computeFee({ isIeee: user.isIeee, isRas: user.isRas, isChallenger, isFablab: teamFacts.isFablab });
+  // An agreed exception (feeOverride) replaces the computed amount.
+  const computedFee = computeFee({ isIeee: user.isIeee, isRas: user.isRas, isChallenger, isFablab: teamFacts.isFablab });
+  const feeInfo = user.feeOverride != null ? { ...computedFee, fee: user.feeOverride } : computedFee;
 
   // Teams are opt-in: plenty of participants attend TRSYP 3.0 without entering
   // either track. So this is an invitation to join, never a required step - it

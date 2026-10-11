@@ -79,6 +79,8 @@ export interface UserData {
   ieeeId: string;
   /** Priced as an IEEE RAS member - from IEEE's records. */
   isRas: boolean;
+  /** Agreed exception to the fee table, in TND; replaces the computed fee when set. */
+  feeOverride?: number | null;
   /** The last IEEE check; null until the first one completes. */
   ieeeVerification?: IeeeVerification | null;
   /** Facebook profile URL, empty string when not provided. */
@@ -188,6 +190,7 @@ function participantFields(p: BackendParticipant) {
     isIeee: p.participantType !== 'NonIEEE',
     ieeeId: p.ieeeId ? String(p.ieeeId) : '',
     isRas: p.isRas ?? false,
+    feeOverride: p.feeOverride ?? null,
     ieeeVerification: p.ieeeVerification ?? null,
     facebookLink: p.facebookLink ?? '',
     gender: p.gender as Gender,
