@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Body,
   Param,
   Query,
@@ -36,6 +37,8 @@ import {
   SubmitProofSchema,
   RejectProofDto,
   RejectProofSchema,
+  SetPaymentTypeDto,
+  SetPaymentTypeSchema,
   PaymentProofResponseDto,
   MyPaymentResponseDto,
   AdminPaymentProofResponseDto,
@@ -291,6 +294,27 @@ export class PaymentController {
     @Body(new ZodValidationPipe(RejectProofSchema)) dto: RejectProofDto,
   ): Promise<AdminPaymentProofResponseDto> {
     const proof = await this.paymentService.rejectProof(id, dto.reason);
+    return this.toAdminProofResponse(proof);
+  }
+
+  /**
+   * Set how an approved payment actually arrived (treasurer's confirmation).
+   */
+  @Patch('admin/proofs/:id/type')
+  @UseGuards(AdminGuard)
+  @ApiOperation({ summary: '[Admin] Set the payment type of an approved payment' })
+  @ApiParam({ name: 'id', description: 'Proof ID' })
+  @ApiResponse({ status: 200, description: 'Payment type set' })
+  @ApiResponse({ status: 400, description: 'Unknown payment type' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - admins only' })
+  @ApiResponse({ status: 404, description: 'Proof not found' })
+  @ApiResponse({ status: 409, description: 'Proof is not approved' })
+  async setPaymentType(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(new ZodValidationPipe(SetPaymentTypeSchema)) dto: SetPaymentTypeDto,
+  ): Promise<AdminPaymentProofResponseDto> {
+    const proof = await this.paymentService.setPaymentType(id, dto.paymentType);
     return this.toAdminProofResponse(proof);
   }
 

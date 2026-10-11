@@ -114,6 +114,14 @@ export class AdminPaymentProofResponseDto extends PaymentProofResponseDto {
   @ApiProperty({ description: 'Whether the participant is already marked paid' })
   @Expose()
   participantPaid!: boolean;
+
+  @ApiProperty({
+    description: 'How the money arrived, as the treasurer confirmed it. Null until confirmed.',
+    enum: ['BANK_TRANSFER', 'INTERNAL_FUND', 'CASH'],
+    nullable: true,
+  })
+  @Expose()
+  paymentType!: string | null;
 }
 
 /** Paged admin queue, mirroring the participant list response. */

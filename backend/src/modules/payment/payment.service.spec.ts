@@ -14,6 +14,7 @@ import {
   ParticipantType,
   PaymentMethod,
   PaymentProofStatus,
+  PaymentType,
   SB,
   TeamActivity,
 } from '@prisma/client';
@@ -60,6 +61,7 @@ describe('PaymentService', () => {
     amountSnapshot: 185,
     status: PaymentProofStatus.PENDING,
     rejectionReason: null,
+    paymentType: null,
     reviewedAt: null,
     createdAt: new Date(),
   };
@@ -345,6 +347,28 @@ describe('PaymentService', () => {
           reviewedAt: expect.any(Date),
         },
       });
+    });
+  });
+
+  describe('setPaymentType', () => {
+    it('records the type on an approved payment', async () => {
+      mockPrismaService.paymentProof.findUnique.mockResolvedValue({
+        ...mockProof,
+        status: PaymentProofStatus.APPROVED,
+        participant: { ...mockParticipant, user: { name: 'A', lastName: 'B', email: 'a@b.com' } },
+      });
+
+      await service.setPaymentType('proof-1', PaymentType.INTERNAL_FUND);
+
+      expect(mockPrismaService.paymentProof.update).toHaveBeenCalledWith({
+        where: { id: 'proof-1' },
+        data: { paymentType: PaymentType.INTERNAL_FUND },
+      });
+    });
+
+    it('refuses a proof that is not approved', async () => {
+      await expect(service.setPaymentType('proof-1', PaymentType.CASH)).rejects.toThrow(ConflictException);
+      expect(mockPrismaService.paymentProof.update).not.toHaveBeenCalled();
     });
   });
 

@@ -14,6 +14,7 @@ import {
   PaymentMethod,
   PaymentProof,
   PaymentProofStatus,
+  PaymentType,
   Prisma,
   TeamActivity,
 } from '@prisma/client';
@@ -283,6 +284,22 @@ export class PaymentService {
       proofId: id,
       status: PaymentProofStatus.APPROVED,
     });
+
+    return this.getProofOrThrow(id);
+  }
+
+  /**
+   * Record how an approved payment actually arrived. Only approved proofs hold
+   * money, so only they can be typed; it can be changed any number of times.
+   */
+  async setPaymentType(id: string, paymentType: PaymentType): Promise<ProofWithParticipant> {
+    const proof = await this.getProofOrThrow(id);
+
+    if (proof.status !== PaymentProofStatus.APPROVED) {
+      throw new ConflictException('Only an approved payment has a payment type');
+    }
+
+    await this.prisma.paymentProof.update({ where: { id }, data: { paymentType } });
 
     return this.getProofOrThrow(id);
   }

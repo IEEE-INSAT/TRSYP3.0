@@ -512,6 +512,11 @@ model PaymentProof {
   // team), so the reviewer needs the figure the participant actually saw.
   amountSnapshot Int @map("amount_snapshot")
 
+  // How the money actually arrived, as the treasurer confirms it. Separate from
+  // `method`, which is only what the participant chose when submitting. Null
+  // until the treasurer sets it ("To confirm" on the admin Payments page).
+  paymentType PaymentType? @map("payment_type")
+
   status          PaymentProofStatus @default(PENDING)
   rejectionReason String?            @map("rejection_reason")
   reviewedAt      DateTime?          @map("reviewed_at")
@@ -529,6 +534,12 @@ enum PaymentMethod {
   BANK_TRANSFER
   D17
   FLOUCI
+  CASH
+}
+
+enum PaymentType {
+  BANK_TRANSFER
+  INTERNAL_FUND
   CASH
 }
 
