@@ -1,7 +1,8 @@
 import { apiFetch } from './http';
 import type {
   ArucoCollectorStatusResponse,
-  ArucoMarker,
+  ArucoMarkerLookup,
+  ArucoScansResponse,
   ArucoStateResponse,
   ArucoSubmitResponse,
 } from './types';
@@ -10,8 +11,9 @@ import type {
  * Challenge (ArUco) service.
  *
  * The marker register lives on the backend so closing the challenge
- * (ARUCO_OPEN=false) hides it. Marker lookups are public; the collector
- * calls need the signed-in user's token, and attempts count per team.
+ * (ARUCO_OPEN=false) hides it. Everything but `state` needs the signed-in
+ * user's token: marker tries (distinct IDs) and collector attempts are
+ * counted per Competition team.
  */
 export const challengeService = {
   /** GET /challenge/aruco/state - whether the challenge is open. */
@@ -19,9 +21,14 @@ export const challengeService = {
     return apiFetch<ArucoStateResponse>('/challenge/aruco/state');
   },
 
-  /** GET /challenge/aruco/markers/:id - what scanning a marker reveals. */
-  async marker(id: number): Promise<ArucoMarker> {
-    return apiFetch<ArucoMarker>(`/challenge/aruco/markers/${id}`);
+  /** GET /challenge/aruco/scans - how many marker IDs the team has tried. */
+  async scans(token: string): Promise<ArucoScansResponse> {
+    return apiFetch<ArucoScansResponse>('/challenge/aruco/scans', { token });
+  },
+
+  /** GET /challenge/aruco/markers/:id - what scanning a marker reveals (a new ID uses a try). */
+  async marker(id: number, token: string): Promise<ArucoMarkerLookup> {
+    return apiFetch<ArucoMarkerLookup>(`/challenge/aruco/markers/${id}`, { token });
   },
 
   /** GET /challenge/aruco/collectors/:n/status - the team's attempts on a collector. */

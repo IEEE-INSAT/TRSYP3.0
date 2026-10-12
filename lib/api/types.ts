@@ -466,6 +466,15 @@ export interface ArucoStateResponse {
   open: boolean;
 }
 
+/** Response of GET /challenge/aruco/scans - the team's marker tries. */
+export interface ArucoScansResponse {
+  teamName: string;
+  /** Distinct marker IDs the team has tried. */
+  used: number;
+  /** Distinct marker IDs a team may try. */
+  limit: number;
+}
+
 /** Response of GET /challenge/aruco/markers/:id - what scanning a marker reveals. */
 export interface ArucoMarker {
   id: number;
@@ -475,8 +484,16 @@ export interface ArucoMarker {
   name: string;
   /** What a beacon or indicator gives. Empty while not set yet. */
   clue?: string;
+  /** How many beacons with this ID are on the field, for beacons only. */
+  quantity?: number;
   /** Collector number, for collectors only. */
   collector?: number;
+}
+
+/** A marker lookup also reports the team's tries after it. */
+export interface ArucoMarkerLookup extends ArucoMarker {
+  scansUsed: number;
+  scanLimit: number;
 }
 
 /** Response of GET /challenge/aruco/collectors/:n/status - the team's progress. */

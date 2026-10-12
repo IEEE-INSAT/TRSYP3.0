@@ -376,6 +376,18 @@ enum POSITION {
 }
 
 /// One row per account that has opened the ArUco collector (marker 4).
+/// A distinct marker ID a Competition team has tried on /aruco. The row count
+/// per team is capped by ARUCO_SCAN_LIMIT.
+model ArucoScan {
+  id        String   @id @default(uuid())
+  teamId    String   @map("team_id")
+  markerId  Int      @map("marker_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([teamId, markerId])
+  @@map("aruco_scans")
+}
+
 /// A Competition team's attempts on one ArUco collector (1 or 2).
 model ArucoCollectorProgress {
   id        String    @id @default(uuid())

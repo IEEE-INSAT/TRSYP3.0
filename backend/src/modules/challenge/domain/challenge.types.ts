@@ -4,7 +4,14 @@ export interface ArucoStateResult {
   open: boolean;
 }
 
-export type ArucoMarkerResult = ArucoMarker;
+/** How many distinct marker IDs the team has tried, out of its limit. */
+export interface ArucoScansResult {
+  teamName: string;
+  used: number;
+  limit: number;
+}
+
+export type ArucoMarkerResult = ArucoMarker & { scansUsed: number; scanLimit: number };
 
 export interface ArucoCollectorStatusResult {
   collector: number;

@@ -25,7 +25,8 @@ export type DashboardSectionId =
   | 'profile'
   | 'avatar'
   | 'rooming'
-  | 'payment';
+  | 'payment'
+  | 'aruco';
 
 export type DashboardSection = {
   id: DashboardSectionId;
@@ -38,6 +39,11 @@ export type DashboardSection = {
    * stay reachable or a user with no avatar would have nowhere to go.
    */
   gated: boolean;
+  /**
+   * Who the tab is for. `competitionTeam` lists it only for members of a
+   * Competition team (the navbar reads the team store). Omitted: everyone.
+   */
+  requires?: 'competitionTeam';
 };
 
 export const DASHBOARD_SECTIONS: DashboardSection[] = [
@@ -46,6 +52,7 @@ export const DASHBOARD_SECTIONS: DashboardSection[] = [
   { id: 'avatar', label: 'Avatar', href: '/dashboard/avatar', enabled: true, gated: false },
   { id: 'payment', label: 'Payment', href: '/dashboard/payment', enabled: PAYMENT_ENABLED, gated: true },
   { id: 'rooming', label: 'Rooming', href: '/dashboard/rooming', enabled: ROOMING_ENABLED, gated: true },
+  { id: 'aruco', label: 'ArUco', href: '/aruco', enabled: true, gated: true, requires: 'competitionTeam' },
 ];
 
 /** Where a user with no avatar is held until they create one. */

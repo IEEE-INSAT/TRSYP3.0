@@ -5,10 +5,11 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ArucoCollectorProgress, TeamActivity } from '@prisma/client';
+import { ArucoCollectorProgress, Prisma, TeamActivity } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import {
   CollectorNumber,
+  DEFAULT_SCAN_LIMIT,
   MAX_ATTEMPTS,
   answerEnvKey,
   getMarker,
@@ -18,6 +19,7 @@ import {
 import {
   ArucoCollectorStatusResult,
   ArucoMarkerResult,
+  ArucoScansResult,
   ArucoStateResult,
   ArucoSubmitResult,
 } from '../domain';
@@ -54,12 +56,66 @@ export class ChallengeService {
     return { open: this.isOpen() };
   }
 
-  /** What scanning a marker reveals. Hidden entirely while the challenge is closed. */
-  marker(id: number): ArucoMarkerResult {
+  /** ARUCO_SCAN_LIMIT, read per request; falls back to the default when unset or invalid. */
+  scanLimit(): number {
+    const n = Number(this.config.get('ARUCO_SCAN_LIMIT'));
+    return Number.isInteger(n) && n > 0 ? n : DEFAULT_SCAN_LIMIT;
+  }
+
+  /** How many distinct marker IDs the user's team has tried. */
+  async scans(userId: string): Promise<ArucoScansResult> {
     this.assertOpen();
+    const team = await this.competitionTeam(userId);
+    const used = await this.prisma.arucoScan.count({ where: { teamId: team.id } });
+    return { teamName: team.name, used, limit: this.scanLimit() };
+  }
+
+  /**
+   * What scanning a marker reveals. Hidden entirely while the challenge is
+   * closed. Each new ID a team tries - real or not - uses one of its
+   * ARUCO_SCAN_LIMIT tries; re-opening an ID it already tried is free.
+   */
+  async marker(userId: string, id: number): Promise<ArucoMarkerResult> {
+    this.assertOpen();
+    const team = await this.competitionTeam(userId);
+    const limit = this.scanLimit();
+    const key = { teamId_markerId: { teamId: team.id, markerId: id } };
+
+    const already = await this.prisma.arucoScan.findUnique({ where: key });
+    if (!already) {
+      const before = await this.prisma.arucoScan.count({ where: { teamId: team.id } });
+      if (before >= limit) this.throwScanLimit(limit);
+
+      let created = false;
+      try {
+        await this.prisma.arucoScan.create({ data: { teamId: team.id, markerId: id } });
+        created = true;
+      } catch (err) {
+        // A teammate tried the same ID at the same moment: it's recorded once.
+        if (!(err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002')) throw err;
+      }
+
+      // Two different new IDs racing for the last try: whoever overshoots gives it back.
+      const after = await this.prisma.arucoScan.count({ where: { teamId: team.id } });
+      if (created && after > limit) {
+        await this.prisma.arucoScan.deleteMany({ where: { teamId: team.id, markerId: id } });
+        this.throwScanLimit(limit);
+      }
+    }
+
+    const scansUsed = await this.prisma.arucoScan.count({ where: { teamId: team.id } });
     const marker = getMarker(id);
-    if (!marker) throw new NotFoundException(`No marker with ID ${id}`);
-    return marker;
+    if (!marker) {
+      throw new NotFoundException({
+        statusCode: 404,
+        error: 'Not Found',
+        code: 'NO_MARKER',
+        message: `No marker with ID ${id}`,
+        scansUsed,
+        scanLimit: limit,
+      });
+    }
+    return { ...marker, scansUsed, scanLimit: limit };
   }
 
   /** The team's progress on one collector. */
@@ -128,12 +184,23 @@ export class ChallengeService {
     }
   }
 
+  private throwScanLimit(limit: number): never {
+    throw new ForbiddenException({
+      statusCode: 403,
+      error: 'Forbidden',
+      code: 'SCAN_LIMIT_REACHED',
+      message: `Your team has used all ${limit} marker tries.`,
+      scansUsed: limit,
+      scanLimit: limit,
+    });
+  }
+
   private assertCollector(collector: number): CollectorNumber {
     if (!isCollectorNumber(collector)) throw new NotFoundException(`No collector ${collector}`);
     return collector;
   }
 
-  /** Collector attempts belong to the team: the user's Competition team. */
+  /** Scans and collector attempts belong to the team: the user's Competition team. */
   private async competitionTeam(userId: string): Promise<{ id: string; name: string }> {
     const membership = await this.prisma.teamMembership.findFirst({
       where: { activity: TeamActivity.COMPETITION, participant: { userId } },
@@ -145,7 +212,7 @@ export class ChallengeService {
         statusCode: 403,
         error: 'Forbidden',
         code: 'NO_COMPETITION_TEAM',
-        message: 'You need to be in a Competition team to use the collectors.',
+        message: 'You need to be in a Competition team to play the ArUco challenge.',
       });
     }
     return membership.team;

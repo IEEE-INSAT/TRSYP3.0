@@ -9861,8 +9861,37 @@ select.reg-input option {
   color: rgba(255, 255, 255, 0.5);
 }
 
-.aruco-scanbar .aruco-field-label {
+.aruco-scanbar-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 12px;
+}
+
+.aruco-tries {
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.aruco-tries-num {
+  color: var(--color-green);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.aruco-tries--low .aruco-tries-num {
+  color: var(--color-pink);
+}
+
+.aruco-result-cta {
+  margin-top: 22px;
 }
 
 .aruco-scanbar-row {
@@ -9997,19 +10026,21 @@ select.reg-input option {
 .aruco-source {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 6px 12px;
   margin-bottom: 18px;
   font-family: var(--font-heading);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.2em;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.88);
 }
 
 .aruco-source-dot {
-  width: 8px;
-  height: 8px;
+  flex: none;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
 }
 
@@ -10037,6 +10068,36 @@ select.reg-input option {
   font-weight: 800;
   line-height: 1;
   color: #fff;
+}
+
+.aruco-letter-row {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+.aruco-qty {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.aruco-qty-label {
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.aruco-qty-num {
+  font-family: var(--font-heading);
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-green);
 }
 
 .aruco-phrase {
@@ -10333,6 +10394,15 @@ button.aruco-slot--active:hover {
     width: 112px;
     height: 112px;
     font-size: 84px;
+  }
+
+  .aruco-source {
+    font-size: 13px;
+    letter-spacing: 0.1em;
+  }
+
+  .aruco-qty-num {
+    font-size: 36px;
   }
 
   .aruco-log {

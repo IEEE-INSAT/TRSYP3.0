@@ -11,29 +11,37 @@ export type ArucoGame = 'Garden' | 'Mine';
 export type CollectorNumber = 1 | 2;
 
 export type ArucoMarker =
-  | { id: number; kind: 'beacon'; game: ArucoGame; name: string; clue: string }
+  /** `quantity`: how many beacons carrying this ID are placed on the field. */
+  | { id: number; kind: 'beacon'; game: ArucoGame; name: string; clue: string; quantity: number }
   | { id: number; kind: 'indicator'; game: ArucoGame; name: string; clue: string }
   | { id: number; kind: 'collector'; game: ArucoGame; name: string; collector: CollectorNumber };
 
 /** Submissions allowed per team, per collector, before that collector locks. */
 export const MAX_ATTEMPTS = 3;
 
+/**
+ * Distinct marker IDs a team may try (ARUCO_SCAN_LIMIT overrides it), so a
+ * team can't walk through all 50 DICT_4X4_50 IDs. Re-opening an ID the team
+ * already tried is free.
+ */
+export const DEFAULT_SCAN_LIMIT = 20;
+
 const MARKERS: ArucoMarker[] = [
   // Red beacons - Garden (L and E are each placed twice on the field, same ID).
-  { id: 0, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'A' },
-  { id: 10, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'L' },
-  { id: 20, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'I' },
-  { id: 30, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'E' },
-  { id: 40, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'N' },
-  { id: 12, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'C' },
-  { id: 22, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'S' },
-  { id: 32, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'K' },
+  { id: 0, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'A', quantity: 1 },
+  { id: 10, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'L', quantity: 2 },
+  { id: 20, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'I', quantity: 1 },
+  { id: 30, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'E', quantity: 2 },
+  { id: 40, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'N', quantity: 1 },
+  { id: 12, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'C', quantity: 1 },
+  { id: 22, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'S', quantity: 1 },
+  { id: 32, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'K', quantity: 1 },
 
   // Red beacons - Mine. Clues not decided yet: fill `clue` in when they are.
-  { id: 28, kind: 'beacon', game: 'Mine', name: 'Red beacon 1', clue: '' },
-  { id: 2, kind: 'beacon', game: 'Mine', name: 'Red beacon 2', clue: '' },
-  { id: 3, kind: 'beacon', game: 'Mine', name: 'Red beacon 3', clue: '' },
-  { id: 43, kind: 'beacon', game: 'Mine', name: 'Red beacon 4', clue: '' },
+  { id: 28, kind: 'beacon', game: 'Mine', name: 'Red beacon 1', clue: '', quantity: 1 },
+  { id: 2, kind: 'beacon', game: 'Mine', name: 'Red beacon 2', clue: '', quantity: 1 },
+  { id: 3, kind: 'beacon', game: 'Mine', name: 'Red beacon 3', clue: '', quantity: 1 },
+  { id: 43, kind: 'beacon', game: 'Mine', name: 'Red beacon 4', clue: '', quantity: 1 },
 
   // Indicators - Garden.
   { id: 7, kind: 'indicator', game: 'Garden', name: 'Indicator 1', clue: 'two worlds don’t need to be one in order to move together' },

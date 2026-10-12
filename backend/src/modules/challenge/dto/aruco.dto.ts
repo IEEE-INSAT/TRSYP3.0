@@ -34,6 +34,20 @@ export class ArucoStateResponseDto {
   open!: boolean;
 }
 
+export class ArucoScansResponseDto {
+  @ApiProperty({ description: "The signed-in user's Competition team" })
+  @Expose()
+  teamName!: string;
+
+  @ApiProperty({ description: 'Distinct marker IDs the team has tried' })
+  @Expose()
+  used!: number;
+
+  @ApiProperty({ description: 'Distinct marker IDs a team may try (ARUCO_SCAN_LIMIT)' })
+  @Expose()
+  limit!: number;
+}
+
 export class ArucoMarkerResponseDto {
   @ApiProperty({ description: 'ArUco ID (DICT_4X4_50)' })
   @Expose()
@@ -55,9 +69,21 @@ export class ArucoMarkerResponseDto {
   @Expose()
   clue?: string;
 
+  @ApiPropertyOptional({ description: 'How many beacons with this ID are on the field, for beacons only' })
+  @Expose()
+  quantity?: number;
+
   @ApiPropertyOptional({ description: 'Collector number, for collectors only' })
   @Expose()
   collector?: number;
+
+  @ApiProperty({ description: 'Distinct marker IDs the team has tried, including this one' })
+  @Expose()
+  scansUsed!: number;
+
+  @ApiProperty({ description: 'Distinct marker IDs a team may try' })
+  @Expose()
+  scanLimit!: number;
 }
 
 export class ArucoCollectorStatusResponseDto {

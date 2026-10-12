@@ -17,6 +17,7 @@ import {
   SubmitArucoAnswerDto,
   SubmitArucoAnswerSchema,
   ArucoStateResponseDto,
+  ArucoScansResponseDto,
   ArucoMarkerResponseDto,
   ArucoCollectorStatusResponseDto,
   ArucoSubmitResponseDto,
@@ -27,9 +28,9 @@ import { CurrentUser } from '../../../common/decorators';
 
 /**
  * ArUco challenge controller (Garden and Mine games).
- * Everything but `state` is refused while ARUCO_OPEN is not "true". Marker
- * lookups are public; the collectors need a signed-in member of a
- * Competition team, and attempts are counted per team.
+ * Everything but `state` is refused while ARUCO_OPEN is not "true", and
+ * needs a signed-in member of a Competition team. Marker tries (distinct IDs,
+ * ARUCO_SCAN_LIMIT) and collector attempts are counted per team.
  */
 @ApiTags('Challenge')
 @Controller('challenge/aruco')
@@ -45,16 +46,33 @@ export class ChallengeController {
     });
   }
 
+  @Get('scans')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "How many marker IDs the user's team has tried" })
+  @ApiResponse({ status: 200, type: ArucoScansResponseDto })
+  @ApiResponse({ status: 401, description: 'Not signed in' })
+  @ApiResponse({ status: 403, description: 'Challenge closed, or not in a Competition team' })
+  async scans(@CurrentUser('sub') userId: string): Promise<ArucoScansResponseDto> {
+    const result = await this.challengeService.scans(userId);
+    return plainToInstance(ArucoScansResponseDto, result, { excludeExtraneousValues: true });
+  }
+
   @Get('markers/:id')
-  @Throttle({ default: { limit: 60, ttl: 60_000 } })
-  @ApiOperation({ summary: 'What scanning a marker reveals' })
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  @ApiOperation({ summary: 'What scanning a marker reveals (uses one of the team’s tries for a new ID)' })
   @ApiResponse({ status: 200, type: ArucoMarkerResponseDto })
-  @ApiResponse({ status: 403, description: 'Challenge closed' })
-  @ApiResponse({ status: 404, description: 'No marker with that ID' })
-  marker(@Param('id', ParseIntPipe) id: number): ArucoMarkerResponseDto {
-    return plainToInstance(ArucoMarkerResponseDto, this.challengeService.marker(id), {
-      excludeExtraneousValues: true,
-    });
+  @ApiResponse({ status: 401, description: 'Not signed in' })
+  @ApiResponse({ status: 403, description: 'Challenge closed, not in a Competition team, or tries used up' })
+  @ApiResponse({ status: 404, description: 'No marker with that ID (the try still counts)' })
+  async marker(
+    @CurrentUser('sub') userId: string,
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<ArucoMarkerResponseDto> {
+    const result = await this.challengeService.marker(userId, id);
+    return plainToInstance(ArucoMarkerResponseDto, result, { excludeExtraneousValues: true });
   }
 
   @Get('collectors/:collector/status')

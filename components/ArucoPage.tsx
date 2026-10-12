@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, FormEvent, ReactNode } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { challengeService, ApiError } from '@/lib/api';
-import type { ArucoCollectorStatusResponse, ArucoMarker } from '@/lib/api';
+import type { ArucoCollectorStatusResponse, ArucoMarker, ArucoScansResponse } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/auth-store';
 import { useHydrated } from '@/lib/store/use-hydrated';
 import AuthModal from './AuthModal';
@@ -90,9 +90,20 @@ function errorCode(err: unknown): string | undefined {
   return typeof code === 'string' ? code : undefined;
 }
 
+/** The team's tries carried in a marker-lookup error body, if any. */
+function errorScans(err: unknown): { used: number; limit: number } | undefined {
+  if (!(err instanceof ApiError) || !err.body || typeof err.body !== 'object') return undefined;
+  const { scansUsed, scanLimit } = err.body as { scansUsed?: unknown; scanLimit?: unknown };
+  return typeof scansUsed === 'number' && typeof scanLimit === 'number'
+    ? { used: scansUsed, limit: scanLimit }
+    : undefined;
+}
+
 /** Short label for a marker in the field log. */
 function logLabel(m: ArucoMarker): string {
-  if (m.kind !== 'collector' && m.clue && m.clue.length === 1) return `“${m.clue}”`;
+  if (m.kind !== 'collector' && m.clue && m.clue.length === 1) {
+    return m.quantity ? `“${m.clue}” ×${m.quantity}` : `“${m.clue}”`;
+  }
   return m.name;
 }
 
@@ -118,13 +129,16 @@ function MarkerGlyph({ id, className }: { id: number; className?: string }) {
 /** `seq` bumps on every detection so the scanner replays even for the same ID. */
 interface Scan {
   seq: number;
-  phase: 'idle' | 'loading' | 'detected' | 'missing' | 'error';
+  phase: 'idle' | 'loading' | 'detected' | 'missing' | 'limit' | 'error';
   input: string;
   marker?: ArucoMarker;
   message?: string;
 }
 
 type ScopeState = 'idle' | 'loading' | 'detected' | 'missing' | 'closed';
+
+/** What stands between the visitor and the scanner. */
+type Gate = 'connecting' | 'offline' | 'closed' | 'checking' | 'login' | 'noTeam' | 'accessError' | 'ready';
 
 export default function ArucoPage() {
   const reduce = useReducedMotion() ?? false;
@@ -145,6 +159,59 @@ export default function ArucoPage() {
     };
   }, []);
 
+  // Scanning is done by a team: a signed-in member of a Competition team,
+  // whose tries (distinct IDs) are capped. Keyed by token + retry so a
+  // sign-out, account switch or retry never shows a stale result.
+  const initialized = useAuthStore((st) => st.initialized);
+  const accessToken = useAuthStore((st) => st.accessToken);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [retry, setRetry] = useState(0);
+  const [access, setAccess] = useState<{
+    token: string;
+    retry: number;
+    scans?: ArucoScansResponse;
+    error?: string;
+    errorCode?: string;
+  } | null>(null);
+  const currentAccess = accessToken && access?.token === accessToken && access.retry === retry ? access : null;
+  const scans = currentAccess?.scans ?? null;
+
+  useEffect(() => {
+    if (!accessToken || open !== true) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const token = await useAuthStore.getState().getAccessToken();
+        if (!token) return;
+        const result = await challengeService.scans(token);
+        if (!cancelled) setAccess({ token: accessToken, retry, scans: result });
+      } catch (err) {
+        if (cancelled) return;
+        if (errorCode(err) === 'ARUCO_CLOSED') setOpen(false);
+        setAccess({ token: accessToken, retry, error: errorMessage(err), errorCode: errorCode(err) });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, open, retry]);
+
+  /** Keeps the tries counter in step with what a lookup reported. */
+  function updateScans(next: { used: number; limit: number }) {
+    setAccess((prev) => (prev?.scans ? { ...prev, scans: { ...prev.scans, ...next } } : prev));
+  }
+
+  let gate: Gate;
+  if (open === null) gate = stateError ? 'offline' : 'connecting';
+  else if (!open) gate = 'closed';
+  else if (!initialized) gate = 'checking';
+  else if (!accessToken) gate = 'login';
+  else if (!currentAccess) gate = 'checking';
+  else if (currentAccess.errorCode === 'NO_COMPETITION_TEAM') gate = 'noTeam';
+  else if (!scans) gate = 'accessError';
+  else gate = 'ready';
+  const ready = gate === 'ready';
+
   const [idInput, setIdInput] = useState('');
   const [scan, setScan] = useState<Scan>({ seq: 0, phase: 'idle', input: '' });
 
@@ -159,7 +226,7 @@ export default function ArucoPage() {
 
   async function detect(raw: string) {
     const input = raw.trim();
-    if (!input || open !== true) return;
+    if (!input || !ready) return;
     const seq = scan.seq + 1;
     const settle = (next: Omit<Scan, 'seq' | 'input'>) =>
       setScan((prev) => (prev.seq === seq ? { seq, input, ...next } : prev));
@@ -170,16 +237,26 @@ export default function ArucoPage() {
       return;
     }
     try {
-      const marker = await challengeService.marker(Number(input));
+      const token = await useAuthStore.getState().getAccessToken();
+      if (!token) return;
+      const { scansUsed, scanLimit, ...marker } = await challengeService.marker(Number(input), token);
+      updateScans({ used: scansUsed, limit: scanLimit });
       settle({ phase: 'detected', marker });
       setFoundNow((prev) => [...prev.filter((m) => m.id !== marker.id), marker]);
       writeLog([...found.filter((m) => m.id !== marker.id), marker]);
     } catch (err) {
+      const code = errorCode(err);
+      const tries = errorScans(err);
+      if (tries) updateScans(tries);
       if (err instanceof ApiError && err.status === 404) {
         settle({ phase: 'missing' });
-      } else if (err instanceof ApiError && err.status === 403) {
-        // Closed while the page was open.
+      } else if (code === 'SCAN_LIMIT_REACHED') {
+        settle({ phase: 'limit' });
+      } else if (code === 'ARUCO_CLOSED') {
         setOpen(false);
+        settle({ phase: 'idle' });
+      } else if (code === 'NO_COMPETITION_TEAM') {
+        setRetry((r) => r + 1);
         settle({ phase: 'idle' });
       } else {
         settle({ phase: 'error', message: errorMessage(err) });
@@ -198,18 +275,20 @@ export default function ArucoPage() {
   }
 
   const scopeState: ScopeState =
-    open === false
+    gate === 'closed'
       ? 'closed'
-      : scan.phase === 'detected'
-        ? 'detected'
-        : scan.phase === 'missing'
-          ? 'missing'
-          : scan.phase === 'loading'
-            ? 'loading'
-            : 'idle';
-  const marker = scan.phase === 'detected' ? scan.marker : undefined;
-  const ready = open === true;
-  const resultKey = open !== true ? `state-${String(open)}` : scan.phase === 'idle' ? 'idle' : `scan-${scan.seq}-${scan.phase}`;
+      : !ready
+        ? 'idle'
+        : scan.phase === 'detected'
+          ? 'detected'
+          : scan.phase === 'missing'
+            ? 'missing'
+            : scan.phase === 'loading'
+              ? 'loading'
+              : 'idle';
+  const marker = ready && scan.phase === 'detected' ? scan.marker : undefined;
+  const resultKey = !ready ? `gate-${gate}` : scan.phase === 'idle' ? 'idle' : `scan-${scan.seq}-${scan.phase}`;
+  const triesLeft = scans ? Math.max(0, scans.limit - scans.used) : null;
 
   return (
     <div className="challenge-pg aruco-pg">
@@ -235,9 +314,19 @@ export default function ArucoPage() {
 
           <div className="aruco-readout">
             <form className="aruco-scanbar" onSubmit={handleDetect}>
-              <label className="aruco-field-label" htmlFor="aruco-id">
-                Marker ID
-              </label>
+              <div className="aruco-scanbar-head">
+                <label className="aruco-field-label" htmlFor="aruco-id">
+                  Marker ID
+                </label>
+                {ready && scans && triesLeft !== null && (
+                  <span
+                    className={`aruco-tries${triesLeft <= 3 ? ' aruco-tries--low' : ''}`}
+                    title="Each new ID your team tries uses one try. Reopening one is free."
+                  >
+                    <span className="aruco-tries-num">{scans.used}</span>/{scans.limit} IDs tried
+                  </span>
+                )}
+              </div>
               <div className="aruco-scanbar-row">
                 <input
                   id="aruco-id"
@@ -272,19 +361,19 @@ export default function ArucoPage() {
                   transition={{
                     duration: reduce ? 0.15 : 0.4,
                     ease: EASE_OUT,
-                    delay: scan.phase === 'detected' && !reduce ? 0.25 : 0,
+                    delay: ready && scan.phase === 'detected' && !reduce ? 0.25 : 0,
                   }}
                 >
-                  {open === null && !stateError && <p className="aruco-result-text">Connecting to the scanner…</p>}
+                  {gate === 'connecting' && <p className="aruco-result-text">Connecting to the scanner…</p>}
 
-                  {open === null && stateError && (
+                  {gate === 'offline' && (
                     <>
                       <h2 className="aruco-result-title">Scanner offline</h2>
                       <p className="aruco-feedback">{stateError}</p>
                     </>
                   )}
 
-                  {open === false && (
+                  {gate === 'closed' && (
                     <>
                       <h2 className="aruco-result-title">The ArUco challenge is closed</h2>
                       <p className="aruco-result-text">
@@ -293,12 +382,38 @@ export default function ArucoPage() {
                     </>
                   )}
 
+                  {gate === 'checking' && <p className="aruco-result-text">Checking your team…</p>}
+
+                  {gate === 'login' && (
+                    <>
+                      <h2 className="aruco-result-title">Log in to scan</h2>
+                      <p className="aruco-result-text">
+                        Markers are read by Competition teams, and each team has a limited number of marker IDs to
+                        try. Log in to start scanning.
+                      </p>
+                      <button type="button" className="aruco-cta aruco-result-cta" onClick={() => setShowAuthModal(true)}>
+                        Log in
+                      </button>
+                    </>
+                  )}
+
+                  {gate === 'noTeam' && <NoTeamNotice />}
+
+                  {gate === 'accessError' && (
+                    <ErrorNotice
+                      title="Couldn’t load your team"
+                      message={currentAccess?.error}
+                      onRetry={() => setRetry((r) => r + 1)}
+                    />
+                  )}
+
                   {ready && scan.phase === 'idle' && (
                     <>
                       <h2 className="aruco-result-title">Find the markers</h2>
                       <p className="aruco-result-text">
                         Each ArUco marker on the field hides something. Enter a marker’s ID above to see what it
-                        gives you. The collectors are where your team types its words.
+                        gives you. Team {scans?.teamName} can try {scans?.limit} different IDs, so read them
+                        carefully. Reopening one you already tried is free.
                       </p>
                     </>
                   )}
@@ -308,8 +423,27 @@ export default function ArucoPage() {
                   {ready && scan.phase === 'missing' && (
                     <>
                       <h2 className="aruco-result-title">No marker with ID {scan.input}</h2>
-                      <p className="aruco-result-text">Check the ID your robot read and try again.</p>
+                      <p className="aruco-result-text">
+                        Check the ID your robot read. That try still counted
+                        {triesLeft !== null && ` - ${triesLeft} left`}.
+                      </p>
                     </>
+                  )}
+
+                  {ready && scan.phase === 'limit' && (
+                    <div className="aruco-notice aruco-notice--error">
+                      <span className="aruco-notice-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <rect x="5" y="11" width="14" height="10" rx="2" />
+                          <path d="M8 11V7a4 4 0 018 0v4" />
+                        </svg>
+                      </span>
+                      <h2 className="aruco-result-title">All {scans?.limit} tries used</h2>
+                      <p className="aruco-result-text">
+                        Your team can’t try new marker IDs any more. You can still reopen the markers your team
+                        already tried from the field log.
+                      </p>
+                    </div>
                   )}
 
                   {ready && scan.phase === 'error' && <p className="aruco-feedback">{scan.message}</p>}
@@ -323,6 +457,55 @@ export default function ArucoPage() {
 
         <FieldLog found={found} activeId={marker?.id ?? null} canOpen={ready} onOpen={revisit} />
       </section>
+
+      {showAuthModal && (
+        <AuthModal
+          initialMode="login"
+          onClose={() => setShowAuthModal(false)}
+          onSuccess={() => setShowAuthModal(false)}
+          pendingRoute="/aruco"
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Notices ─────────────────────────────────────────────────────────────────
+
+function NoTeamNotice() {
+  return (
+    <div className="aruco-notice">
+      <span className="aruco-notice-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 00-3-3.87" />
+          <path d="M16 3.13a4 4 0 010 7.75" />
+        </svg>
+      </span>
+      <h2 className="aruco-result-title">The ArUco challenge is for Competition teams</h2>
+      <p className="aruco-result-text">
+        Your account isn’t on a Competition team, so it can’t scan markers or submit words. If you’re competing and
+        seeing this, speak to an organizer.
+      </p>
+    </div>
+  );
+}
+
+function ErrorNotice({ title, message, onRetry }: { title: string; message?: string | null; onRetry: () => void }) {
+  return (
+    <div className="aruco-notice aruco-notice--error">
+      <span className="aruco-notice-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 8v5M12 16.5v.01" />
+        </svg>
+      </span>
+      <h2 className="aruco-result-title">{title}</h2>
+      {message && <p className="aruco-result-text">{message}</p>}
+      <button type="button" className="aruco-cta aruco-cta--ghost" onClick={onRetry}>
+        Try again
+      </button>
     </div>
   );
 }
@@ -356,7 +539,15 @@ function MarkerResult({ marker }: { marker: ArucoMarker }) {
     <>
       {source}
       {marker.clue.length === 1 ? (
-        <span className="aruco-letter">{marker.clue}</span>
+        <div className="aruco-letter-row">
+          <span className="aruco-letter">{marker.clue}</span>
+          {marker.quantity !== undefined && (
+            <span className="aruco-qty">
+              <span className="aruco-qty-label">Quantity</span>
+              <span className="aruco-qty-num">×{marker.quantity}</span>
+            </span>
+          )}
+        </div>
       ) : (
         <p className="aruco-phrase">“{marker.clue}”</p>
       )}
@@ -608,38 +799,10 @@ function Collector({ collector, name }: { collector: number; name: string }) {
       </>
     );
   } else if (current?.errorCode === 'NO_COMPETITION_TEAM') {
-    body = (
-      <div className="aruco-notice">
-        <span className="aruco-notice-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-            <circle cx="9" cy="7" r="4" />
-            <path d="M23 21v-2a4 4 0 00-3-3.87" />
-            <path d="M16 3.13a4 4 0 010 7.75" />
-          </svg>
-        </span>
-        <h2 className="aruco-result-title">Collectors are for Competition teams</h2>
-        <p className="aruco-result-text">
-          Your account isn’t on a Competition team, so it can’t submit here. If you’re competing and seeing this,
-          speak to an organizer.
-        </p>
-      </div>
-    );
+    body = <NoTeamNotice />;
   } else if (loadError || !status) {
     body = (
-      <div className="aruco-notice aruco-notice--error">
-        <span className="aruco-notice-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 8v5M12 16.5v.01" />
-          </svg>
-        </span>
-        <h2 className="aruco-result-title">Couldn’t open this collector</h2>
-        <p className="aruco-result-text">{loadError}</p>
-        <button type="button" className="aruco-cta aruco-cta--ghost" onClick={() => setAttempt((a) => a + 1)}>
-          Try again
-        </button>
-      </div>
+      <ErrorNotice title="Couldn’t open this collector" message={loadError} onRetry={() => setAttempt((a) => a + 1)} />
     );
   } else if (status.solved) {
     body = (

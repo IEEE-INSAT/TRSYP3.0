@@ -9,6 +9,8 @@ import { useAuth } from '@/lib/store/use-auth';
 import AuthModal from './AuthModal';
 import { useAuthStore } from '@/lib/store/auth-store';
 import { useRegistrationStore } from '@/lib/store/registration-store';
+import { useTeamStore } from '@/lib/store/team-store';
+import { useHydrated } from '@/lib/store/use-hydrated';
 import { REGISTRATION_OPEN, PARTICIPANT_REGISTRATION_OPEN, LOGIN_OPEN } from '@/lib/config';
 import { resolvePostAuth } from '@/lib/auth/post-auth';
 import UserAvatar from './UserAvatar';
@@ -71,6 +73,23 @@ export default function Navbar() {
   const sectionsLocked = !!account && !hasFullAvatar(account.avatar);
   const currentSection = activeSection(pathname);
 
+  // Sections can be limited to Competition team members (e.g. ArUco). The team
+  // store is persisted, so it's only read after hydration to keep the server
+  // and first client render identical.
+  const hydrated = useHydrated();
+  const hasCompetitionTeam = useTeamStore((s) => s.teams.COMPETITION !== null);
+  const teamsLoaded = useTeamStore((s) => s.loaded);
+  const fetchTeams = useTeamStore((s) => s.fetchTeams);
+  const visibleSections = DASHBOARD_SECTIONS.filter(
+    (section) => section.requires !== 'competitionTeam' || (hydrated && hasCompetitionTeam),
+  );
+
+  // Only the overview and payment pages load teams themselves; fetch once here
+  // so the tab list is right on every dashboard page.
+  useEffect(() => {
+    if (inDashboard && isRegistered && !teamsLoaded) void fetchTeams();
+  }, [inDashboard, isRegistered, teamsLoaded, fetchTeams]);
+
   // Dismiss the global auth error (e.g. after OAuth 409)
   const dismissAuthError = () => useAuthStore.setState({ error: null });
 
@@ -118,7 +137,7 @@ export default function Navbar() {
 
         <ul className="navbar-links">
           {inDashboard
-            ? DASHBOARD_SECTIONS.map((section) => {
+            ? visibleSections.map((section) => {
                 const unavailable =
                   !section.enabled || (sectionsLocked && section.gated);
                 return (
@@ -220,7 +239,7 @@ export default function Navbar() {
 
       <div className={`navbar-mobile-menu ${open ? 'open' : ''}`}>
         {inDashboard
-          ? DASHBOARD_SECTIONS.map((section) => {
+          ? visibleSections.map((section) => {
               const unavailable =
                 !section.enabled || (sectionsLocked && section.gated);
               return unavailable ? (

@@ -38,6 +38,8 @@ services:
         value: "false"
       - key: ARUCO_OPEN
         value: "false"
+      - key: ARUCO_SCAN_LIMIT
+        value: "20"
       - key: ARUCO_COLLECTOR_1_ANSWER
         sync: false
       - key: ARUCO_COLLECTOR_2_ANSWER

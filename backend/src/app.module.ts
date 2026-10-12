@@ -51,6 +51,8 @@ import { PaymentModule } from './modules/payment/payment.module';
                     .default('false'),
                 // The word each collector accepts (case-insensitive). A
                 // collector without one refuses submissions.
+                // Distinct marker IDs a team may try on /aruco.
+                ARUCO_SCAN_LIMIT: Joi.number().integer().min(1).default(20),
                 ARUCO_COLLECTOR_1_ANSWER: Joi.string().optional(),
                 ARUCO_COLLECTOR_2_ANSWER: Joi.string().optional(),
                 FABLAB_REGISTRATION_PHASE: Joi.string()
