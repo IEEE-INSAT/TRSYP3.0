@@ -172,6 +172,14 @@ export default function Dashboard() {
   // An agreed exception (feeOverride) replaces the computed amount.
   const computedFee = computeFee({ isIeee: user.isIeee, isRas: user.isRas, isChallenger, isFablab: teamFacts.isFablab });
   const feeInfo = user.feeOverride != null ? { ...computedFee, fee: user.feeOverride } : computedFee;
+  // Teams can still change after payment, and the fee follows them. Positive:
+  // they paid more than they now owe and get the difference back. Negative:
+  // the new fee is higher and the rest is collected at the hotel. Waits for the
+  // teams, which the fee is priced from, so it doesn't flash a wrong amount.
+  const feeRefund =
+    teamLoaded && user.status === 'approved' && user.paidAmount != null
+      ? user.paidAmount - feeInfo.fee
+      : 0;
 
   // Teams are opt-in: plenty of participants attend TRSYP 3.0 without entering
   // either track. So this is an invitation to join, never a required step - it
@@ -432,6 +440,13 @@ export default function Dashboard() {
               )}
               {user.status === 'waiting_for_verification' && user.paymentFileName && (
                 <span className="dash-reg-note">{user.paymentFileName}</span>
+              )}
+              {feeRefund !== 0 && (
+                <p className="dash-fee-diff">
+                  {feeRefund > 0
+                    ? `You paid ${formatFee({ ...feeInfo, fee: user.paidAmount! })} and your fee is now ${formatFee(feeInfo)} - we will return the ${formatFee({ ...feeInfo, fee: feeRefund })} difference.`
+                    : `Your team changed your fee to ${formatFee(feeInfo)} - please pay the remaining ${formatFee({ ...feeInfo, fee: -feeRefund })} at the hotel.`}
+                </p>
               )}
             </div>
           )}

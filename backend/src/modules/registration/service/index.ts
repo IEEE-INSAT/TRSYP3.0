@@ -980,8 +980,8 @@ export class RegistrationService {
    * @param userId  - JWT sub resolved to internal DB user ID
    * @param dto     - Team name, maximum size, and activity (default COMPETITION)
    * @throws NotFoundException   if no participant profile exists for this user
-   * @throws ForbiddenException  if the participant is banned, has already paid,
-   *                             or that activity's registration is not open
+   * @throws ForbiddenException  if the participant is banned or that activity's
+   *                             registration is not open
    * @throws ConflictException   if the participant already leads or belongs to a
    *                             team for the same activity
    */
@@ -995,7 +995,6 @@ export class RegistrationService {
           where: { userId },
           select: {
             id: true,
-            paid: true,
             banned: true,
             participantType: true,
             isRas: true,
@@ -1015,13 +1014,9 @@ export class RegistrationService {
           throw new ForbiddenException('Banned participants cannot create a team.');
         }
 
-        // Edge case: Team composition is locked once payment is confirmed,
-        // same as profile edits (see updateProfile).
-        if (participant.paid) {
-          throw new ForbiddenException(
-            'Your registration is paid and locked. Contact support to change your team.',
-          );
-        }
+        // Paid participants may still form or join teams: entering a track is
+        // optional and happens after registration, and only selected teams
+        // change the fee (see PRICED_MEMBERSHIPS).
 
         this.assertEligibleFor(activity, participant.participantType, participant.isRas);
 
@@ -1070,7 +1065,7 @@ export class RegistrationService {
    * @param userId - JWT sub resolved to internal DB user ID
    * @param dto - Optional new name and/or size, plus which activity's team
    * @throws NotFoundException if the user doesn't lead a team for that activity
-   * @throws ForbiddenException if the user is banned or paid
+   * @throws ForbiddenException if the user is banned
    * @throws BadRequestException if the new size is smaller than current member count
    */
   async updateTeam(userId: string, dto: UpdateTeamDto): Promise<TeamWithMembers> {
@@ -1082,7 +1077,6 @@ export class RegistrationService {
           where: { userId },
           select: {
             id: true,
-            paid: true,
             banned: true,
             ledTeams: {
               where: { activity },
@@ -1097,10 +1091,6 @@ export class RegistrationService {
 
         if (participant.banned) {
           throw new ForbiddenException('Banned participants cannot update a team.');
-        }
-
-        if (participant.paid) {
-          throw new ForbiddenException('Your registration is paid and locked.');
         }
 
         const ledTeam = participant.ledTeams[0];
@@ -1210,8 +1200,8 @@ export class RegistrationService {
    * @param userId  - JWT sub resolved to internal DB user ID
    * @param dto     - The join code
    * @throws NotFoundException   if no participant profile or team with that code exists
-   * @throws ForbiddenException  if the participant is banned, has already paid, the team is
-   *                             full, or that activity's registration is not open
+   * @throws ForbiddenException  if the participant is banned, the team is full, or that
+   *                             activity's registration is not open
    * @throws ConflictException   if the participant is already in a team for that activity
    */
   async joinTeam(userId: string, dto: JoinTeamDto): Promise<TeamWithMembers> {
@@ -1221,7 +1211,6 @@ export class RegistrationService {
           where: { userId },
           select: {
             id: true,
-            paid: true,
             banned: true,
             participantType: true,
             isRas: true,
@@ -1239,13 +1228,9 @@ export class RegistrationService {
           throw new ForbiddenException('Banned participants cannot join a team.');
         }
 
-        // Edge case: Team composition is locked once payment is confirmed,
-        // same as profile edits (see updateProfile).
-        if (participant.paid) {
-          throw new ForbiddenException(
-            'Your registration is paid and locked. Contact support to change your team.',
-          );
-        }
+        // Paid participants may still form or join teams: entering a track is
+        // optional and happens after registration, and only selected teams
+        // change the fee (see PRICED_MEMBERSHIPS).
 
         const target = await tx.team.findUnique({
           where: { code: dto.code.toUpperCase() },

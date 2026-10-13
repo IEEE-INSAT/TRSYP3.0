@@ -445,10 +445,10 @@ curl -i -X DELETE $API/registration/team      -H "$(auth $BANNED)"
 can currently still edit their phone number and **disband a team full of
 non-banned members**.
 
-Repeat the same four calls as a **paid** participant. `createTeam`/`joinTeam`
-refuse with "your registration is paid and locked", but `disbandTeam` and
-`leaveTeam` do not — so the lock the code advertises is not actually enforced on
-the exit paths.
+Repeat the same four calls as a **paid** participant. Policy: team composition is
+**not** locked by payment — entering a track is optional and happens after
+registration, and only *selected* teams change the fee. All four team calls
+(create, join, leave, disband) should succeed; only the profile edit is `403`.
 
 **Pass criterion:** decide the intended policy, then make all six paths agree.
 Document whichever way you choose.

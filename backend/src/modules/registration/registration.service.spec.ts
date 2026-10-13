@@ -890,17 +890,21 @@ describe('RegistrationService', () => {
       );
     });
 
-    it('should throw ForbiddenException if the participant has already paid', async () => {
+    it('should let a participant who has already paid create a team', async () => {
       mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
         const mockTx = {
           participant: { findUnique: jest.fn().mockResolvedValue(eligible({ paid: true })) },
+          team: {
+            findUnique: jest.fn().mockResolvedValue(null),
+            create: jest.fn().mockResolvedValue(teamRow({ id: 'team-1', size: 4 }, ['participant-1'])),
+          },
         };
         return cb(mockTx);
       });
 
-      await expect(service.createTeam('user-1', createDto as any)).rejects.toThrow(
-        ForbiddenException,
-      );
+      const result = await service.createTeam('user-1', createDto as any);
+
+      expect(result.id).toBe('team-1');
     });
 
     it('should throw ConflictException if the participant already leads a team for that activity', async () => {
@@ -1137,17 +1141,29 @@ describe('RegistrationService', () => {
       );
     });
 
-    it('should throw ForbiddenException if the participant has already paid', async () => {
+    it('should let a participant who has already paid join a team', async () => {
       mockPrismaService.$transaction.mockImplementation(async (cb: any) => {
         const mockTx = {
           participant: { findUnique: jest.fn().mockResolvedValue(eligible({ paid: true })) },
+          teamMembership: { findUnique: jest.fn().mockResolvedValue(null) },
+          team: {
+            findUnique: jest.fn().mockResolvedValue({
+              id: 'team-1',
+              size: 4,
+              activity: TeamActivity.COMPETITION,
+              memberships: [{ id: 'mem-1' }],
+            }),
+            update: jest
+              .fn()
+              .mockResolvedValue(teamRow({ id: 'team-1', size: 4 }, ['leader-participant', 'participant-1'])),
+          },
         };
         return cb(mockTx);
       });
 
-      await expect(service.joinTeam('user-1', joinDto as any)).rejects.toThrow(
-        ForbiddenException,
-      );
+      const result = await service.joinTeam('user-1', joinDto as any);
+
+      expect(result.members).toHaveLength(2);
     });
 
     it('should throw ConflictException if the participant is already in a team for that activity', async () => {

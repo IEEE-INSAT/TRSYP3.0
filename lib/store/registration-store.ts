@@ -102,6 +102,12 @@ export interface UserData {
   paymentMethod?: PaymentMethod;
   /** Why the last proof was turned down, when it was. Null otherwise. */
   paymentRejectionReason?: string | null;
+  /**
+   * The fee the approved proof was submitted against, in TND. Null until a
+   * proof is approved. Compared with the current fee to tell a paid
+   * participant whose team changed what is owed either way.
+   */
+  paidAmount?: number | null;
   participantId?: string;
   teamName?: string;
   memberCount?: number;
@@ -448,6 +454,7 @@ export const useRegistrationStore = create<RegistrationState>()(
               paymentMethod: proof?.method,
               paymentRejectionReason:
                 proof?.status === 'REJECTED' ? proof.rejectionReason : null,
+              paidAmount: proof?.status === 'APPROVED' ? proof.amountSnapshot : null,
             },
             isRegistered: true,
           });
