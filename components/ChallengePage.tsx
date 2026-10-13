@@ -480,7 +480,7 @@ export default function ChallengePage() {
             <div className="fablab-sponsors" aria-label="Presented by Adwya and Orange">
               <span className="fablab-sponsors-label">Presented by</span>
               <span className="fablab-sponsor-logo">
-                <Image src="/partners/adwya-logo.png" alt="Adwya" fill sizes="120px" style={{ objectFit: 'contain' }} />
+                <Image src="/partners/adwya-logo.webp" alt="Adwya" fill sizes="120px" style={{ objectFit: 'contain' }} />
               </span>
               <span className="fablab-sponsors-x" aria-hidden="true">×</span>
               <span className="fablab-sponsor-logo fablab-sponsor-logo--square">

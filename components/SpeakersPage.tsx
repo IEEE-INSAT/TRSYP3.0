@@ -18,7 +18,7 @@ type Speaker = {
 const SPEAKERS: Speaker[] = [
   {
     name: 'Adel Alimi',
-    photo: '/speakers/AdelAlimi.png',
+    photo: '/speakers/AdelAlimi.webp',
     title: 'Keynote · Panelist',
     affiliation: 'Professor at the National Engineering School of Sfax (ENIS), University of Sfax, Tunisia · Founder and Past-Director of REGIM Lab (LR11ES48), REsearch Groups in Intelligent Machines · Past Chair of the IEEE Africa Council · Chair of the Sfax Smart City Living Lab',
     topic: 'Human–Machine Interaction and Cognitive Robotics: Toward Intelligent and Collaborative Systems',
@@ -26,7 +26,7 @@ const SPEAKERS: Speaker[] = [
   },
   {
     name: 'Friederike Eyssel',
-    photo: '/speakers/FriederikeEyssel.png',
+    photo: '/speakers/FriederikeEyssel.webp',
     title: 'Distinguished Lecturer · Panelist',
     affiliation: 'Professor of Applied Social Psychology and Gender Research, Bielefeld University · Research bridging social psychology and social robotics: dehumanization and the attribution of humanlike traits to robots and technology · Pioneer in psychological approaches to anthropomorphism · IEEE-RAS Distinguished Lecturer Award (2022) · Karl-Peter Grotemeyer Prize for Excellence in Teaching (2021)',
     topic: 'Social Psychology and Social Robotics',
@@ -58,7 +58,7 @@ const SPEAKERS: Speaker[] = [
   },
   {
     name: 'Med Ali Farhat',
-    photo: '/speakers/MedAliFarhat.png',
+    photo: '/speakers/MedAliFarhat.webp',
     title: 'Trainer',
     affiliation: 'AI Engineer | 19× Awards & Hackathons Winner | Building Agentic & Multimodal Systems',
     topic: 'NVIDIA Jetson Nano: Edge AI (Workshop)',

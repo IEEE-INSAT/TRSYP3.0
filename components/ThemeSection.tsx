@@ -15,7 +15,7 @@ export default function ThemeSection() {
       <div className="theme-banner-wrap" style={{ position: 'relative' }}>
         <Image
           className="theme-banner-img theme-banner-desktop"
-          src="/b.png"
+          src="/b.webp"
           alt="Human and robot facing each other - Human-Robot Symbiosis"
           fill
           style={{ objectFit: 'cover', objectPosition: 'center' }}
@@ -23,7 +23,7 @@ export default function ThemeSection() {
         />
         <Image
           className="theme-banner-img theme-banner-mobile"
-          src="/b2.png"
+          src="/b2.webp"
           alt="Human and robot facing each other - Human-Robot Symbiosis"
           fill
           style={{ objectFit: 'cover', objectPosition: 'center' }}

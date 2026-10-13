@@ -125,7 +125,7 @@ export default function Navbar() {
 
         <Link className="navbar-logo" href="/">
           <Image
-            src="/trsyp-logo.png"
+            src="/trsyp-logo.webp"
             loading="eager"
             alt="TRSYP 3.0"
             width={240}

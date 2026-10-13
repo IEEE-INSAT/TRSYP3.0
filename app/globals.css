@@ -5463,6 +5463,28 @@ select.reg-input option {
   background: rgba(0, 232, 122, 0.6);
 }
 
+.prog-tl-subdetails {
+  list-style: none;
+  margin-top: 4px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.prog-tl-details .prog-tl-subdetails li {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.prog-tl-details .prog-tl-subdetails li::before {
+  width: 5px;
+  height: 1.5px;
+  border-radius: 0;
+  top: 0.75em;
+  background: rgba(0, 232, 122, 0.45);
+}
+
 .prog-tl-meta {
   display: flex;
   gap: 18px;

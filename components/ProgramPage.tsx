@@ -3,7 +3,19 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
 
-const PROGRAM = [
+type ProgramDetail = string | { text: string; sub: string[] };
+
+type ProgramItem = {
+  time: string;
+  icon: string;
+  title: string;
+  desc: string;
+  where: string;
+  who: string;
+  details?: ProgramDetail[];
+};
+
+const PROGRAM: { id: string; label: string; date: string; venue: string; items: ProgramItem[] }[] = [
   {
     id: 'd1',
     label: 'Day 1',
@@ -31,7 +43,15 @@ const PROGRAM = [
       { time: '10:30 – 11:30', icon: 'trophy', title: 'Hackathon Pitching', desc: 'Hackathon teams pitch their projects to the jury.', where: 'Le Royal', who: 'Hackathon participants' },
       { time: '13:30 – 14:00', icon: 'pin', title: 'Ceremony Check-in', desc: 'Doors open for the opening ceremony.', where: 'Ceremony Room', who: 'All attendees' },
       { time: '14:00 – 16:00', icon: 'mic', title: 'Opening Ceremony', desc: 'The official opening of TRSYP 3.0.', where: 'Ceremony Room', who: 'All attendees' },
-      { time: '16:00 – 17:00', icon: 'mic', title: 'Discussion Panel', desc: 'Beyond Intelligence: Redefining Human–Robot Symbiosis.', where: 'Ceremony Room', who: 'All participants' },
+      { time: '16:00 – 17:00', icon: 'mic', title: 'Discussion Panel', desc: 'Beyond Intelligence: Redefining Human–Robot Symbiosis.', where: 'Ceremony Room', who: 'All participants' ,details: [
+        'Moderator : Mohamed Amine ElKhadhi',
+        'Panelists :',
+        'Prof. Dr. Friederike Eyssel',
+        'Prof. Adel Alimi',
+        'Dr. Hichem Jarraya',
+        
+      ]
+      },
       { time: '17:00 – 17:30', icon: 'food', title: 'Coffee Break', desc: 'Coffee break to network between sessions.', where: 'Le Royal', who: 'All attendees' },
       { time: '17:30 – 18:30', icon: 'poster', title: 'Exhibition · Booths · Poster Session', desc: 'Explore partner booths, robotics projects and research posters.', where: 'Expo Area', who: 'Open · Drop-in' },
       { time: '19:00 – 21:00', icon: 'food', title: 'Dinner', desc: 'Dinner with fellow attendees.', where: 'Dining Hall', who: 'All attendees' },
@@ -63,9 +83,18 @@ const PROGRAM = [
         where: 'Workshop Rooms',
         who: 'Registered participants',
         details: [
-          'Pitching Workshop · Yosr Bayar · Césarion Room (mandatory for technical challenge participants)',
-          'IES Workshop · Sphinx Room',
-          'YP Tech Session · César Room',
+          'Pitching Workshop · Yosr Bayar · Salle Césarion (mandatory for technical challenge participants)',
+          {
+            text: 'YP Transition Lab · César Room  · Round Tables',
+            sub: [
+              'DISCOVER – From Campus to Career: What Industry Really Expects by Khalil Masmoudi.',
+              'BUILD – Beyond the Job Offer: Turning Technical Skills into Opportunities by Rafed Jabri.',
+              'CONNECT – Your Network Is Your Next Breakthrough: The Power of Mentorship by Mohamed Achraf Zribi.',
+              "LEAD – You Don't Need a Title to Lead: From Volunteer to Influencer by Adam Lassidi.",
+              'CONTRIBUTE – Engineer with Purpose: Building Technology That Matters by Ahmed Aouididi.',
+            ],
+          },
+          
         ],
       },
       { time: '10:15 – 11:15', icon: 'mic', title: 'Distinguished Lecturer Session', desc: 'Social psychology and social robotics, by IEEE Distinguished Lecturer Prof. Friederike Eyssel.', where: 'Ceremony Room', who: 'All attendees' },
@@ -80,7 +109,7 @@ const PROGRAM = [
         who: 'Registered participants',
         details: [
           'NVIDIA Jetson Nano: Edge AI Workshop · Mohamed Ali Farhat · Sphinx Room',
-          'YP Round Tables · César Room',
+          'If/Else or AI Agent? Picking the Right Tool for the job · Workshop · Khalil Masmoudi · César Room',
           'RAS Leaders · Césarion Room',
         ],
       },
@@ -92,12 +121,13 @@ const PROGRAM = [
         where: 'Ceremony Room',
         who: 'All attendees',
         details: [
-          'Sponsor thanks',
-          'Best Ambassador',
-          'Hackathon winners',
+          'Ceremony opening & acknowledgements',
+          'Best Ambassador award',
           'IEEE RAS Tunisia Student Branch Chapter of the Year Award',
+          'Technical Challenge winners announcement',
+          'competition winners announcement',
+          'Hackathon winners announcement',
           'Outstanding IEEE RAS Day Tunisia Award 2026',
-          'Technical Challenge winners & jury thanks',
           'Finalists announcement',
           'Vote and winner announcement',
         ],
@@ -204,9 +234,20 @@ export default function ProgramPage() {
                       <p className="prog-tl-desc">{item.desc}</p>
                       {item.details && (
                         <ul className="prog-tl-details">
-                          {item.details.map((d) => (
-                            <li key={d}>{d}</li>
-                          ))}
+                          {item.details.map((d) =>
+                            typeof d === 'string' ? (
+                              <li key={d}>{d}</li>
+                            ) : (
+                              <li key={d.text}>
+                                {d.text}
+                                <ul className="prog-tl-subdetails">
+                                  {d.sub.map((s) => (
+                                    <li key={s}>{s}</li>
+                                  ))}
+                                </ul>
+                              </li>
+                            ),
+                          )}
                         </ul>
                       )}
                       <div className="prog-tl-meta">

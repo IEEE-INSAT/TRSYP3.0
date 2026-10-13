@@ -7,10 +7,10 @@ import Image from 'next/image';
 const TUNISIA_PLACES = [
   { name: 'Sidi Bou Said', desc: 'Iconic blue & white clifftop village', img: '/tunisia/SidiBou.jpeg' },
   { name: 'Carthage Ruins', desc: 'Ancient UNESCO World Heritage site', img: '/tunisia/Carthage.webp' },
-  { name: 'Medina of Tunis', desc: 'Historic old city, vibrant souks', img: '/tunisia/medina-tunis-020525-1.jpg' },
+  { name: 'Medina of Tunis', desc: 'Historic old city, vibrant souks', img: '/tunisia/medina-tunis-020525-1.webp' },
   { name: 'Djerba Island', desc: 'Mediterranean island paradise', img: '/tunisia/Djerba.jpeg' },
-  { name: 'Sahara Desert', desc: 'Endless dunes, starlit nights', img: '/tunisia/Sahara.jpg' },
-  { name: 'El Jem Amphitheatre', desc: 'Roman colosseum, remarkably preserved', img: '/tunisia/Eljemm.jpg' },
+  { name: 'Sahara Desert', desc: 'Endless dunes, starlit nights', img: '/tunisia/Sahara.webp' },
+  { name: 'El Jem Amphitheatre', desc: 'Roman colosseum, remarkably preserved', img: '/tunisia/Eljemm.webp' },
   { name: 'Yasmine Hammamet', desc: 'Coastal resort town, golden beaches', img: '/tunisia/Hamamet.jpeg' },
   { name: 'Douz', desc: 'Gateway to the Sahara', img: '/tunisia/Douz.jpeg' },
 ];
