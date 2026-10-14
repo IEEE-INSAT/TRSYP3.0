@@ -83,6 +83,41 @@ const SPEAKERS: Speaker[] = [
 
 
   },
+  {
+    name: 'Khalil Masmoudi',
+    photo: '/speakers/Khalil_Masmoudi.jpeg',
+    title: 'Round Table Speaker',
+    affiliation: 'IEEE Young Professionals',
+    topic: 'DISCOVER – From Campus to Career: What Industry Really Expects',
+  },
+  {
+    name: 'Rafed Jabri',
+    photo: '/speakers/Rafed_Jabri.jpeg',
+    title: 'Round Table Speaker',
+    affiliation: 'IEEE Young Professionals',
+    topic: 'BUILD – Beyond the Job Offer: Turning Technical Skills into Opportunities',
+  },
+  {
+    name: 'Mohamed Achref Zribi',
+    photo: '/speakers/Mohamed_Achref_Zribi.jpeg',
+    title: 'Round Table Speaker',
+    affiliation: 'IEEE Young Professionals',
+    topic: 'CONNECT – Your Network Is Your Next Breakthrough: The Power of Mentorship',
+  },
+  {
+    name: 'Adam Laasidi',
+    photo: '/speakers/Adam_Lassidi.jpeg',
+    title: 'Round Table Speaker',
+    affiliation: 'IEEE Young Professionals',
+    topic: "LEAD – You Don't Need a Title to Lead: From Volunteer to Influencer",
+  },
+  {
+    name: 'Ahmed Oudidi',
+    photo: '/speakers/aouididi.png',
+    title: 'Round Table Speaker',
+    affiliation: 'IEEE Young Professionals',
+    topic: 'CONTRIBUTE – Engineer with Purpose: Building Technology That Matters',
+  },
 ];
 
 function SpeakerCard({ speaker, index }: { speaker: Speaker; index: number }) {
