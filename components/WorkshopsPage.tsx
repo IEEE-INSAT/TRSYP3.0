@@ -53,10 +53,10 @@ const WORKSHOPS: Workshop[] = [
     congress: { time: '09:00 – 10:00', where: 'César Room' },
   },
   {
-    title: 'NVIDIA Jetson Nano: Edge AI',
+    title: 'Building Agentic & Multimodal Systems',
     dates: ['2026-10-18'],
     by: 'Mohamed Ali Farhat',
-    congress: { time: '12:00 – 13:00', where: 'Salle Sphinx' },
+    congress: { time: '12:00 – 13:30', where: 'Salle Sphinx' },
   },
   {
     title: 'If/Else or AI Agent? Picking the Right Tool for the Job',

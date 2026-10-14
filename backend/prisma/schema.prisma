@@ -107,6 +107,7 @@ model Participant {
   internationalInfo InternationalInfo? @relation("ParticipantInternationalInfo")
   paymentProofs     PaymentProof[]
   ieeeVerification  IeeeVerification?
+  workshopBookings  WorkshopBooking[]
 
   @@map("participants")
 }
@@ -426,6 +427,48 @@ model Room {
   residents Participant[] @relation("RoomResidents")
 
   @@map("rooms")
+}
+
+// --- Workshop Module ---
+// Day-3 workshops, booked from the dashboard. The rows are seeded by their
+// migration; capacity is enforced in the service under a row lock on the
+// workshop, so concurrent bookings for the last seat queue behind each other.
+model Workshop {
+  id       String @id // stable slug, e.g. 'pitching'
+  title    String
+  speaker  String?
+  room     String
+  // Workshops in the same session run in parallel: one booking per session.
+  session  Int
+  // 'HH:MM', Tunis time, on the event's last day.
+  startTime String @map("start_time")
+  endTime   String @map("end_time")
+  capacity  Int
+  // Holds one seat per selected technical challenge team until one of its
+  // members books (the Pitching workshop).
+  reservesChallengeSeats Boolean @default(false) @map("reserves_challenge_seats")
+  sortOrder Int @default(0) @map("sort_order")
+
+  bookings WorkshopBooking[]
+
+  @@map("workshops")
+}
+
+/// `session` is denormalised from `Workshop.session` so "one workshop per
+/// session" is a unique index rather than application code.
+model WorkshopBooking {
+  id            String   @id @default(uuid())
+  participantId String   @map("participant_id")
+  workshopId    String   @map("workshop_id")
+  session       Int
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  participant Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  workshop    Workshop    @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+
+  @@unique([participantId, session])
+  @@index([workshopId])
+  @@map("workshop_bookings")
 }
 
 // --- Visa Module ---

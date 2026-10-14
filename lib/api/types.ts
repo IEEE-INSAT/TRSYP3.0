@@ -551,3 +551,37 @@ export interface MyPaymentResponse {
   submissionOpen: boolean;
   latestProof: BackendPaymentProof | null;
 }
+
+// ── Workshops ─────────────────────────────────────────────────────────────────
+
+/** Backend `WORKSHOP_BOOKING_PHASE`, reported by GET /workshops. */
+export type WorkshopBookingPhase = 'soon' | 'open' | 'closed';
+
+export interface Workshop {
+  id: string;
+  title: string;
+  speaker: string | null;
+  room: string;
+  /** Workshops in the same session run in parallel - one seat per session. */
+  session: number;
+  /** 'HH:MM', Tunis time. */
+  startTime: string;
+  endTime: string;
+  capacity: number;
+  /** Holds a seat for each technical challenge team (the Pitching workshop). */
+  reservesChallengeSeats: boolean;
+  booked: number;
+  /** Seats the caller could still take - held seats excluded. */
+  seatsLeft: number;
+  bookedByMe: boolean;
+}
+
+/** GET /workshops, and the response of every booking write. */
+export interface WorkshopOverview {
+  phase: WorkshopBookingPhase;
+  /** Paid and not banned. */
+  canBook: boolean;
+  workshops: Workshop[];
+  /** The caller's selected technical challenge team, null when not on one. */
+  challengeTeam: { id: string; name: string; reservedWorkshopBookers: string[] } | null;
+}

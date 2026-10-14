@@ -3,4 +3,5 @@ export { authService } from './auth.service';
 export { registrationService } from './registration.service';
 export { challengeService } from './challenge.service';
 export { roomingService } from './rooming.service';
+export { workshopService } from './workshop.service';
 export * from './types';

@@ -67,7 +67,7 @@ const PROGRAM: { id: string; label: string; date: string; venue: string; items: 
     items: [
       { time: '07:00 – 08:30', icon: 'food', title: 'Breakfast', desc: 'Start the day with breakfast and informal networking.', where: 'Dining Hall', who: 'All attendees' },
       {
-        time: '07:00 – 08:30',
+        time: '08:30 – 10:00',
         icon: 'trophy',
         title: 'Challenge Pitching · Session 1',
         desc: 'First round of challenge pitches.',
@@ -79,9 +79,9 @@ const PROGRAM: { id: string; label: string; date: string; venue: string; items: 
         time: '09:00 – 10:00',
         icon: 'tools',
         title: 'Workshops · Session 1',
-        desc: 'Parallel workshops - pick the one that fits you.',
+        desc: 'Parallel workshops. Book your seat from your dashboard.',
         where: 'Workshop Rooms',
-        who: 'Registered participants',
+        who: 'Participants with a booked seat',
         details: [
           'Pitching Workshop · Yosr Bayar · Salle Césarion (mandatory for technical challenge participants)',
           {
@@ -101,14 +101,14 @@ const PROGRAM: { id: string; label: string; date: string; venue: string; items: 
       { time: '11:15 – 12:00', icon: 'pin', title: 'Check-out & Lunch', desc: 'Hotel check-out followed by lunch.', where: 'Reception · Dining Hall', who: 'All attendees' },
       { time: '12:00 – 13:00', icon: 'trophy', title: 'Technical Challenge Pitching · Session 2', desc: 'Technical teams pitch, followed by a 5-minute live demo.', where: 'Ramsès Room', who: 'Technical challenge participants' },
       {
-        time: '12:00 – 13:00',
+        time: '12:00 – 13:30',
         icon: 'tools',
         title: 'Workshops · Session 2',
-        desc: 'Parallel workshops and round tables.',
+        desc: 'Parallel workshops. Book your seat from your dashboard.',
         where: 'Workshop Rooms',
-        who: 'Registered participants',
+        who: 'Participants with a booked seat',
         details: [
-          'NVIDIA Jetson Nano: Edge AI Workshop · Mohamed Ali Farhat · Sphinx Room',
+          'Building Agentic & Multimodal Systems · Workshop · Mohamed Ali Farhat · Sphinx Room · until 13:30',
           'If/Else or AI Agent? Picking the Right Tool for the job · Workshop · Khalil Masmoudi · César Room',
           'RAS Leaders · Césarion Room',
         ],

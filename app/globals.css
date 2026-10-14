@@ -11150,3 +11150,217 @@ a.spk-card-contact-row:hover .spk-card-contact-value {
     font-size: 11px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   DASHBOARD · WORKSHOPS
+   ═══════════════════════════════════════════════════════════════ */
+
+.ws-notice {
+  padding: 14px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.ws-notice a {
+  color: var(--color-green);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* The challenge team's held Pitching seat: pink until someone books, green after. */
+.ws-team {
+  padding: 16px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 29, 120, 0.35);
+  border-left-width: 3px;
+  background: rgba(255, 29, 120, 0.06);
+}
+
+.ws-team--ok {
+  border-color: rgba(0, 232, 122, 0.3);
+  background: rgba(0, 232, 122, 0.05);
+}
+
+.ws-team-name {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.ws-team p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.ws-session {
+  padding: 24px;
+}
+
+.ws-session-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-bottom: 18px;
+}
+
+.ws-session-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.ws-session-time {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 300;
+  color: var(--color-green);
+  font-variant-numeric: tabular-nums;
+}
+
+.ws-session-pick {
+  flex-basis: 100%;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.ws-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ws-item {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.015);
+  transition: border-color 0.25s ease, background 0.25s ease;
+}
+
+.ws-item--mine {
+  border-color: rgba(0, 232, 122, 0.45);
+  background: rgba(0, 232, 122, 0.05);
+  box-shadow: inset 3px 0 0 var(--color-green);
+}
+
+.ws-item-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.ws-item-title {
+  margin: 0 0 4px;
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #fff;
+}
+
+.ws-item-meta {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.ws-item-note {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #ff6aa6;
+}
+
+.ws-seats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.ws-seats-bar {
+  flex: 1;
+  max-width: 220px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.ws-seats-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-green);
+  transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ws-seats-text {
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.6);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ws-item--mine .ws-seats-text {
+  color: var(--color-green);
+}
+
+.ws-item-action {
+  flex-shrink: 0;
+}
+
+.ws-btn {
+  min-width: 128px;
+  padding: 11px 18px;
+}
+
+@media (max-width: 600px) {
+  .ws-session {
+    padding: 18px 14px;
+  }
+
+  .ws-session-title,
+  .ws-session-time {
+    font-size: 17px;
+  }
+
+  .ws-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    padding: 14px;
+  }
+
+  .ws-seats-bar {
+    max-width: none;
+  }
+
+  .ws-btn {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ws-seats-bar span {
+    transition: none;
+  }
+}

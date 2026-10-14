@@ -69,7 +69,7 @@ const SPEAKERS: Speaker[] = [
     photo: '/speakers/MedAliFarhat.webp',
     title: 'Trainer',
     affiliation: 'AI Engineer | 19× Awards & Hackathons Winner | Building Agentic & Multimodal Systems',
-    topic: 'NVIDIA Jetson Nano: Edge AI (Workshop)',
+    topic: 'Building Agentic & Multimodal Systems (Workshop)',
     email: 'mohamedali.farhat@hotmail.com',
     website: 'https://mohamedalifarhat.com/',
   },

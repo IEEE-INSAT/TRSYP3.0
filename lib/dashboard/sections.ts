@@ -20,8 +20,15 @@ export const PAYMENT_ENABLED = true;
  */
 export const ROOMING_ENABLED = true;
 
+/**
+ * Day-3 workshop booking (`/workshops/*`). Whether booking is live is the
+ * backend's `WORKSHOP_BOOKING_PHASE`, reported by `GET /workshops`.
+ */
+export const WORKSHOPS_ENABLED = true;
+
 export type DashboardSectionId =
   | 'overview'
+  | 'workshops'
   | 'profile'
   | 'avatar'
   | 'rooming'
@@ -52,6 +59,7 @@ export const DASHBOARD_SECTIONS: DashboardSection[] = [
   { id: 'avatar', label: 'Avatar', href: '/dashboard/avatar', enabled: true, gated: false },
   { id: 'payment', label: 'Payment', href: '/dashboard/payment', enabled: PAYMENT_ENABLED, gated: true },
   { id: 'rooming', label: 'Rooming', href: '/dashboard/rooming', enabled: ROOMING_ENABLED, gated: true },
+  { id: 'workshops', label: 'Workshops', href: '/dashboard/workshops', enabled: WORKSHOPS_ENABLED, gated: true },
   { id: 'aruco', label: 'ArUco', href: '/aruco', enabled: true, gated: true, requires: 'competitionTeam' },
 ];
 

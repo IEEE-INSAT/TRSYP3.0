@@ -13,6 +13,7 @@ import { RoomingModule } from './modules/rooming/rooming.module';
 import { RegistrationModule } from './modules/registration/registration.module';
 import { ChallengeModule } from './modules/challenge/challenge.module';
 import { PaymentModule } from './modules/payment/payment.module';
+import { WorkshopModule } from './modules/workshop/workshop.module';
 
 @Module({
     imports: [
@@ -66,6 +67,11 @@ import { PaymentModule } from './modules/payment/payment.module';
                 ROOMING_PHASE: Joi.string()
                     .valid('soon', 'open', 'closed')
                     .default('closed'),
+                // Booking/cancelling workshop seats. Read per request and
+                // reported by GET /workshops, so no frontend rebuild.
+                WORKSHOP_BOOKING_PHASE: Joi.string()
+                    .valid('soon', 'open', 'closed')
+                    .default('closed'),
                 // IEEE GetMemberStatus credentials, shared with the admin
                 // portal. Without them no membership checks run.
                 IEEE_API_BASE_URL: Joi.string().uri().optional(),
@@ -87,6 +93,7 @@ import { PaymentModule } from './modules/payment/payment.module';
         RegistrationModule,
         ChallengeModule,
         PaymentModule,
+        WorkshopModule,
     ],
     controllers: [AppController],
     providers: [
