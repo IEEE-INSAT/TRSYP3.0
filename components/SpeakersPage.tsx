@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'motion/react';
 import Image from 'next/image';
 
@@ -36,6 +36,14 @@ const SPEAKERS: Speaker[] = [
     name: 'Sahar Ammar',
     photo: '/speakers/SaharAmmar.jpg',
     title: 'Panelist',
+    affiliation: 'Research engineer , Head of the Advanced Radiofrequency and Electronic Equipment Platform at the Microelectronics and Nanotechnology Research Center_ Business Coach & Training Facilitator.',
+    topic: 'Panel · 17 October',
+  },
+  {
+    name: 'Hichem Jarreya',
+    photo: '/speakers/Hichem_Jarreya.jpg',
+    title: 'Panelist',
+    affiliation: 'Professor at the Faculty of Medicine of Tunis · Member of the European Association for Endoscopic Surgery (EAES)',
     topic: 'Panel · 17 October',
   },
   {
@@ -70,13 +78,55 @@ const SPEAKERS: Speaker[] = [
     photo: '/speakers/YosrBayar.jpg',
     title: 'Trainer',
     topic: 'Pitching Workshop',
+    linkedin: 'https://www.linkedin.com/in/yosrbayar/',
+    affiliation: 'CEO of VALORIZ Coaching & Training · Organizational Development Consultant · Certified Professional Coach',
+
+
   },
 ];
 
 function SpeakerCard({ speaker, index }: { speaker: Speaker; index: number }) {
   const [flipped, setFlipped] = useState(false);
+  const [bioOpen, setBioOpen] = useState(false);
+  const [truncated, setTruncated] = useState(false);
+  const affRef = useRef<HTMLParagraphElement>(null);
+  const moreRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const bioId = `spk-bio-${index}`;
 
   const unflip = useCallback(() => setFlipped(false), []);
+
+  // Only offer the full bio when the clamped text is actually cut off at the current width.
+  useEffect(() => {
+    const el = affRef.current;
+    if (!el) return;
+    const measure = () => setTruncated(el.scrollHeight > el.clientHeight + 1);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [speaker.affiliation]);
+
+  useEffect(() => {
+    if (!bioOpen) return;
+    closeRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeBio();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [bioOpen]);
+
+  function openBio(e: React.MouseEvent) {
+    e.stopPropagation();
+    setBioOpen(true);
+  }
+
+  function closeBio(e?: React.MouseEvent) {
+    e?.stopPropagation();
+    setBioOpen(false);
+    moreRef.current?.focus();
+  }
 
   useEffect(() => {
     if (!flipped) return;
@@ -90,7 +140,10 @@ function SpeakerCard({ speaker, index }: { speaker: Speaker; index: number }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-60px' }}
       transition={{ duration: 0.55, delay: index * 0.1, ease: [0.22, 1, 0.36, 1] }}
-      onClick={() => setFlipped((f) => !f)}
+      onClick={() => {
+        setBioOpen(false);
+        setFlipped((f) => !f);
+      }}
     >
       <div className="spk-card">
         {/* ─── FRONT ─── */}
@@ -114,7 +167,26 @@ function SpeakerCard({ speaker, index }: { speaker: Speaker; index: number }) {
           <div className="spk-card-body">
             <h3 className="spk-card-name">{speaker.name}</h3>
             {/* Always rendered: it reserves a fixed height so the separator lines up on every card. */}
-            <p className="spk-card-affiliation">{speaker.affiliation}</p>
+            <p ref={affRef} className="spk-card-affiliation">{speaker.affiliation}</p>
+            {/* Zero-height row: the arrow sits in the gap above the divider, so dividers still line up. */}
+            <div className="spk-card-more-row">
+              {truncated && (
+                <button
+                  ref={moreRef}
+                  type="button"
+                  className="spk-card-more"
+                  aria-expanded={bioOpen}
+                  aria-controls={bioId}
+                  aria-label={`Read full bio of ${speaker.name}`}
+                  title="Read full bio"
+                  onClick={openBio}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="10" height="10" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              )}
+            </div>
             <div className="spk-card-divider" />
             <div className="spk-card-topic">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
@@ -126,6 +198,40 @@ function SpeakerCard({ speaker, index }: { speaker: Speaker; index: number }) {
           </div>
 
           <span className="spk-card-flip-hint">TAP TO FLIP</span>
+
+          {/* Full bio, slides up over the front when the clamped text is cut off */}
+          {truncated && (
+            <div
+              id={bioId}
+              className={`spk-card-bio${bioOpen ? ' open' : ''}`}
+              role="region"
+              aria-label={`${speaker.name} bio`}
+              aria-hidden={!bioOpen}
+              inert={!bioOpen}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="spk-card-bio-head">
+                <span className="spk-card-bio-name">{speaker.name}</span>
+                <button
+                  ref={closeRef}
+                  type="button"
+                  className="spk-card-more spk-card-more--close"
+                  aria-label="Close bio"
+                  title="Close bio"
+                  onClick={closeBio}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </div>
+              <ul className="spk-card-bio-list">
+                {speaker.affiliation?.split(' · ').map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Circuit decoration */}
           <div className="spk-card-circuit" aria-hidden="true">
