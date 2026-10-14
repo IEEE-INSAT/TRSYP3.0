@@ -97,7 +97,7 @@ const PROGRAM: { id: string; label: string; date: string; venue: string; items: 
           
         ],
       },
-      { time: '10:15 – 11:15', icon: 'mic', title: 'Distinguished Lecturer Session', desc: 'How to do research with social robots, by IEEE Distinguished Lecturer Prof. Friederike Eyssel.', where: 'Ceremony Room', who: 'All attendees' },
+      { time: '10:15 – 11:15', icon: 'mic', title: 'Distinguished Lecturer Session', desc: 'How to do research with social robots, by IEEE Distinguished Lecturer Dr. Prof. Friederike Eyssel : Professor of Applied Social Psychology and Gender Research at Bielefeld University , whose research bridges social psychology and social robotics', where: 'Ceremony Room', who: 'All attendees' },
       { time: '11:15 – 12:00', icon: 'pin', title: 'Check-out & Lunch', desc: 'Hotel check-out followed by lunch.', where: 'Reception · Dining Hall', who: 'All attendees' },
       { time: '12:00 – 13:00', icon: 'trophy', title: 'Technical Challenge Pitching · Session 2', desc: 'Technical teams pitch, followed by a 5-minute live demo.', where: 'Ramsès Room', who: 'Technical challenge participants' },
       {
