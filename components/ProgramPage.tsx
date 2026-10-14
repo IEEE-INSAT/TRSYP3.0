@@ -43,7 +43,7 @@ const PROGRAM: { id: string; label: string; date: string; venue: string; items: 
       { time: '10:30 – 11:30', icon: 'trophy', title: 'Hackathon Pitching', desc: 'Hackathon teams pitch their projects to the jury.', where: 'Le Royal', who: 'Hackathon participants' },
       { time: '13:30 – 14:00', icon: 'pin', title: 'Ceremony Check-in', desc: 'Doors open for the opening ceremony.', where: 'Ceremony Room', who: 'All attendees' },
       { time: '14:00 – 16:00', icon: 'mic', title: 'Opening Ceremony', desc: 'The official opening of TRSYP 3.0.', where: 'Ceremony Room', who: 'All attendees' },
-      { time: '16:00 – 17:00', icon: 'mic', title: 'Discussion Panel', desc: 'Beyond Intelligence: Redefining Human–Robot Symbiosis.', where: 'Ceremony Room', who: 'All participants' ,details: [
+      { time: '16:00 – 17:00', icon: 'mic', title: 'Discussion Panel : Beyond Intelligence: Redefining Human–Robot Symbiosis', desc: 'Beyond Intelligence: Redefining Human–Robot Symbiosis.', where: 'Ceremony Room', who: 'All participants' ,details: [
         'Moderator : Mohamed Amine ElKhadhi',
         'Panelists :',
         'Prof. Dr. Friederike Eyssel',
@@ -97,7 +97,7 @@ const PROGRAM: { id: string; label: string; date: string; venue: string; items: 
           
         ],
       },
-      { time: '10:15 – 11:15', icon: 'mic', title: 'Distinguished Lecturer Session', desc: 'Social psychology and social robotics, by IEEE Distinguished Lecturer Prof. Friederike Eyssel.', where: 'Ceremony Room', who: 'All attendees' },
+      { time: '10:15 – 11:15', icon: 'mic', title: 'Distinguished Lecturer Session', desc: 'How to do research with social robots, by IEEE Distinguished Lecturer Prof. Friederike Eyssel.', where: 'Ceremony Room', who: 'All attendees' },
       { time: '11:15 – 12:00', icon: 'pin', title: 'Check-out & Lunch', desc: 'Hotel check-out followed by lunch.', where: 'Reception · Dining Hall', who: 'All attendees' },
       { time: '12:00 – 13:00', icon: 'trophy', title: 'Technical Challenge Pitching · Session 2', desc: 'Technical teams pitch, followed by a 5-minute live demo.', where: 'Ramsès Room', who: 'Technical challenge participants' },
       {

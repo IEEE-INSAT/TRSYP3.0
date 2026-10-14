@@ -46,10 +46,29 @@ const WORKSHOPS: Workshop[] = [
     congress: { time: '09:00 – 10:00', where: 'Salle Césarion' },
   },
   {
+    title: 'YP Transition Lab',
+    dates: ['2026-10-18'],
+    by: 'IEEE Young Professionals',
+    note: 'Round Tables',
+    congress: { time: '09:00 – 10:00', where: 'César Room' },
+  },
+  {
     title: 'NVIDIA Jetson Nano: Edge AI',
     dates: ['2026-10-18'],
     by: 'Mohamed Ali Farhat',
     congress: { time: '12:00 – 13:00', where: 'Salle Sphinx' },
+  },
+  {
+    title: 'If/Else or AI Agent? Picking the Right Tool for the Job',
+    dates: ['2026-10-18'],
+    by: 'Khalil Masmoudi',
+    congress: { time: '12:00 – 13:00', where: 'César Room' },
+  },
+  {
+    title: 'RAS Leaders',
+    dates: ['2026-10-18'],
+    by: 'IEEE RAS',
+    congress: { time: '12:00 – 13:00', where: 'Césarion Room' },
   },
 ];
 

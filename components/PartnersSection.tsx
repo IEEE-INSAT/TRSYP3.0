@@ -15,7 +15,8 @@ const HOSTS = [
 // atr-logo.webp, map-logo.webp and sarra-events-logo.webp (from the PDF) have their white
 // background removed and dark wordmarks turned white; mad-logo.webp is mad_.jpg with its
 // baked-in checkerboard background removed; alpha-motion-logo.webp is the wolf and wordmark
-// cut out of the rollup3.png banner
+// cut out of the rollup3.png banner; square-event-logo.webp is Squareevents.png with its black
+// background removed and cropped to the logo
 const PARTNERS = [
   { id: 1, src: "/partners/IEEEFoundation.png", label: "IEEE Foundation", scale: 0.8 },
   { id: 2, src: "/partners/IEEEYoungProfessionals.webp", label: "IEEE Young Professionals", scale: 0.85 },
@@ -29,6 +30,7 @@ const PARTNERS = [
   { id: 10, src: "/partners/mad-logo.webp", label: "MAD", scale: 0.65 },
   { id: 11, src: "/partners/alpha-motion-logo.webp", label: "Alpha Motion", scale: 0.85 },
   { id: 12, src: "/partners/ieee-foundation-gold-seal.webp", label: "IEEE Foundation Donor Supported Program", scale: 0.8 },
+  { id: 13, src: "/partners/square-event-logo.webp", label: "Square Event", scale: 0.75 },
 ];
 
 export default function PartnersSection() {
