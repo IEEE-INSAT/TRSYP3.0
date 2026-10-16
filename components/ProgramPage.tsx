@@ -111,6 +111,8 @@ const PROGRAM: { id: string; label: string; date: string; venue: string; items: 
           'Building Agentic & Multimodal Systems · Workshop · Mohamed Ali Farhat · Sphinx Room · until 13:30',
           'If/Else or AI Agent? Picking the Right Tool for the job · Workshop · Khalil Masmoudi · César Room',
           'RAS Leaders · Césarion Room',
+          'Breaking the Cage: How IIoT Gives Robots Senses, Reflexes, and a Human Connection · Luxor Room · Yassine Houij',
+
         ],
       },
       {
