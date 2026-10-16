@@ -75,6 +75,9 @@ import { WorkshopModule } from './modules/workshop/workshop.module';
                 // SB points lost by a pitching team with nobody in a workshop.
                 // Only reported (GET /workshops, /workshops/admin).
                 WORKSHOP_SB_PENALTY: Joi.number().integer().min(0).default(5),
+                // Comma-separated emails that may book without payment -
+                // for testing. Their seats are real.
+                WORKSHOP_TESTER_EMAILS: Joi.string().allow('').optional(),
                 // IEEE GetMemberStatus credentials, shared with the admin
                 // portal. Without them no membership checks run.
                 IEEE_API_BASE_URL: Joi.string().uri().optional(),

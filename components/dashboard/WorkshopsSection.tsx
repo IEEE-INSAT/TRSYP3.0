@@ -22,32 +22,23 @@ function bySession(workshops: Workshop[]): [number, Workshop[]][] {
 }
 
 /**
- * Where the caller's pitching team stands. `otherSessions` are the sessions it
- * doesn't pitch in, where its held workshop seat is.
+ * The rule for technical challenge teams, with where the caller's team
+ * stands: pink until a member has a workshop seat, green after.
  */
-function DutyNote({ duty, otherSessions }: { duty: TeamDuty; otherSessions: number[] }) {
-  const head = `${duty.teamName} pitches in session ${duty.pitchSession}`;
-  const points = Math.abs(duty.sbPenalty) || null;
+function TeamNote({ team }: { team: TeamDuty }) {
+  const points = Math.abs(team.sbPenalty) || null;
   return (
-    <div className={`ws-duty${duty.compliant ? ' ws-duty--ok' : ''}`}>
-      <p className="ws-duty-head">{head}</p>
+    <div className={`ws-duty${team.compliant ? ' ws-duty--ok' : ''}`}>
+      <p className="ws-duty-head">Note for technical challenge teams</p>
       <p>
-        At least one member of your team must also attend a workshop, in either session.
-        {duty.compliant
+        At least one member of {team.teamName} must attend one of the workshops below, in either session.
+        {team.compliant
           ? ' Your team is covered.'
           : ` Otherwise your SB loses ${points ? `${points} points` : 'points'}.`}
       </p>
       <dl className="ws-duty-status">
         <dt>In a workshop</dt>
-        <dd>
-          {duty.inWorkshop.length
-            ? duty.inWorkshop.join(', ')
-            : otherSessions.length
-              ? `Nobody yet. A seat is held for your team in session ${otherSessions.join(' and ')} until one of you books.`
-              : 'Nobody yet.'}
-        </dd>
-        <dt>Pitching</dt>
-        <dd>{duty.pitching.length ? duty.pitching.join(', ') : 'Nobody yet'}</dd>
+        <dd>{team.inWorkshop.length ? team.inWorkshop.join(', ') : 'Nobody from your team yet'}</dd>
       </dl>
     </div>
   );
@@ -55,9 +46,8 @@ function DutyNote({ duty, otherSessions }: { duty: TeamDuty; otherSessions: numb
 
 /**
  * Day-3 workshop booking. One seat per session, and bookings are final, so
- * booking asks for a confirmation first. Seat counts, the per-session rule and
- * the seats held for pitching teams all come from the server - this screen
- * only reflects them.
+ * booking asks for a confirmation first. Seat counts and the per-session rule
+ * come from the server - this screen only reflects them.
  */
 export default function WorkshopsSection() {
   const user = useRegistrationStore((s) => s.user);
@@ -166,14 +156,7 @@ export default function WorkshopsSection() {
               </div>
             ) : null}
 
-            {overview.team && (
-              <DutyNote
-                duty={overview.team}
-                otherSessions={[...new Set(overview.workshops.map((w) => w.session))].filter(
-                  (s) => s !== overview.team!.pitchSession,
-                )}
-              />
-            )}
+            {overview.team && <TeamNote team={overview.team} />}
 
             {bySession(overview.workshops).map(([session, workshops]) => {
               const mine = workshops.find((w) => w.bookedByMe);
@@ -200,13 +183,15 @@ export default function WorkshopsSection() {
                       const fill = w.capacity ? Math.min(100, (w.booked / w.capacity) * 100) : 100;
                       const busy = busyId === w.id;
                       return (
-                        <li key={w.id} className={`ws-item${w.bookedByMe ? ' ws-item--mine' : ''}`}>
+                        <li
+                          key={w.id}
+                          className={`ws-item${w.bookedByMe ? ' ws-item--mine' : ''}${confirmId === w.id ? ' ws-item--confirming' : ''}`}
+                        >
                           <div className="ws-item-main">
                             <h3 className="ws-item-title">{w.title}</h3>
                             <p className="ws-item-meta">
                               {[w.speaker, w.room, `${w.startTime}–${w.endTime}`].filter(Boolean).join(' · ')}
                             </p>
-                            {w.teamOnly && <p className="ws-item-audience">For the teams pitching in this session</p>}
                             {w.audience && <p className="ws-item-audience">{w.audience}</p>}
                             <div
                               className="ws-seats"
@@ -225,6 +210,12 @@ export default function WorkshopsSection() {
                                     : `${w.seatsLeft} ${w.seatsLeft === 1 ? 'seat' : 'seats'} left`}
                               </span>
                             </div>
+                            {confirmId === w.id && (
+                              <p id={`ws-confirm-${w.id}`} className="ws-confirm-note">
+                                This seat is final. You can&apos;t cancel it or switch to another workshop in session{' '}
+                                {w.session}.
+                              </p>
+                            )}
                             {actionErr?.id === w.id && (
                               <span className="reg-error" style={{ display: 'block', marginTop: '10px' }}>
                                 {actionErr.message}
@@ -236,8 +227,14 @@ export default function WorkshopsSection() {
                           {interactive && !mine && (
                             <div className="ws-item-action">
                               {confirmId === w.id ? (
-                                <div className="ws-confirm" role="group" aria-label={`Confirm booking ${w.title}`}>
-                                  <span className="ws-confirm-text">Final: you can&apos;t cancel or switch after this.</span>
+                                <div
+                                  className="ws-confirm-actions"
+                                  role="group"
+                                  aria-describedby={`ws-confirm-${w.id}`}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Escape' && !busy) setConfirmId(null);
+                                  }}
+                                >
                                   <button
                                     type="button"
                                     className="dash-noteam-btn dash-noteam-btn-primary ws-btn"
@@ -246,11 +243,13 @@ export default function WorkshopsSection() {
                                   >
                                     {busy ? 'Booking…' : 'Confirm seat'}
                                   </button>
+                                  {/* Focus lands on the safe choice. */}
                                   <button
                                     type="button"
-                                    className="dash-cancel-btn ws-btn"
+                                    className="ws-back"
                                     onClick={() => setConfirmId(null)}
                                     disabled={busy}
+                                    autoFocus
                                   >
                                     Back
                                   </button>

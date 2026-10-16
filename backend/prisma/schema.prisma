@@ -165,9 +165,8 @@ model Team {
   updatedAt DateTime     @updatedAt @map("updated_at")
 
   // Relations
-  leader         Participant      @relation("TeamLeader", fields: [leaderId], references: [id], onDelete: Cascade)
-  memberships    TeamMembership[]
-  workshopAccess WorkshopTeam[]
+  leader      Participant      @relation("TeamLeader", fields: [leaderId], references: [id], onDelete: Cascade)
+  memberships TeamMembership[]
 
   // One led team per activity - a leader can head a competition team *and* a
   // challenge team, but never two of the same kind.
@@ -451,24 +450,8 @@ model Workshop {
   sortOrder Int @default(0) @map("sort_order")
 
   bookings WorkshopBooking[]
-  // When non-empty this is a challenge pitching slot: only members of these
-  // teams see and book it. Each of those teams must also have at least one
-  // member in a workshop, in either session (see WorkshopService).
-  teams    WorkshopTeam[]
 
   @@map("workshops")
-}
-
-model WorkshopTeam {
-  workshopId String @map("workshop_id")
-  teamId     String @map("team_id")
-
-  workshop Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
-  team     Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
-
-  @@id([workshopId, teamId])
-  @@index([teamId])
-  @@map("workshop_teams")
 }
 
 /// Participants who may book workshops without a confirmed payment.

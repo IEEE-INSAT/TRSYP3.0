@@ -38,6 +38,8 @@ services:
         value: closed
       - key: WORKSHOP_SB_PENALTY
         value: "5"
+      - key: WORKSHOP_TESTER_EMAILS
+        sync: false
       - key: PAYMENT_PROOF_OPEN
         value: "false"
       - key: ARUCO_OPEN

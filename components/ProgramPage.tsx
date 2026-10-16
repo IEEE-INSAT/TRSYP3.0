@@ -70,7 +70,7 @@ const PROGRAM: { id: string; label: string; date: string; venue: string; items: 
         time: '08:30 – 10:00',
         icon: 'trophy',
         title: 'Challenge Pitching · Session 1',
-        desc: 'First round of challenge pitches. Each pitching team also sends at least one member to a workshop, in either session.',
+        desc: 'First round of challenge pitches. At least one member of each technical challenge team must attend a workshop (session 1 or 2), or their SB loses points.',
         where: 'Luxor Room · Ramsès Room',
         who: 'Challenge participants',
         details: ['Non-technical challenge pitching · Luxor Room', 'Technical challenge pitching · Ramsès Room'],
@@ -99,7 +99,7 @@ const PROGRAM: { id: string; label: string; date: string; venue: string; items: 
       },
       { time: '10:15 – 11:15', icon: 'mic', title: 'Distinguished Lecturer Session', desc: 'How to do research with social robots, by IEEE Distinguished Lecturer Dr. Prof. Friederike Eyssel : Professor of Applied Social Psychology and Gender Research at Bielefeld University , whose research bridges social psychology and social robotics', where: 'Ceremony Room', who: 'All attendees' },
       { time: '11:15 – 12:00', icon: 'pin', title: 'Check-out & Lunch', desc: 'Hotel check-out followed by lunch.', where: 'Reception · Dining Hall', who: 'All attendees' },
-      { time: '12:00 – 13:00', icon: 'trophy', title: 'Technical Challenge Pitching · Session 2', desc: 'Technical teams pitch, followed by a 5-minute live demo. Each pitching team also sends at least one member to a workshop, in either session.', where: 'Ramsès Room', who: 'Technical challenge participants' },
+      { time: '12:00 – 13:00', icon: 'trophy', title: 'Technical Challenge Pitching · Session 2', desc: 'Technical teams pitch, followed by a 5-minute live demo. At least one member of each technical challenge team must attend a workshop (session 1 or 2), or their SB loses points.', where: 'Ramsès Room', who: 'Technical challenge participants' },
       {
         time: '12:00 – 13:30',
         icon: 'tools',

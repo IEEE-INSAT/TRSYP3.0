@@ -11222,7 +11222,7 @@ a.spk-card-contact-row:hover .spk-card-contact-value {
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.07);
   background: rgba(255, 255, 255, 0.015);
-  transition: border-color 0.25s ease, background 0.25s ease;
+  transition: border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
 }
 
 .ws-item--mine {
@@ -11368,17 +11368,56 @@ a.spk-card-contact-row:hover .spk-card-contact-value {
   padding: 11px 18px;
 }
 
-.ws-confirm {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-width: 180px;
+/* Confirming: a white left bar marks the row being booked (your booked
+   seat gets the green one), and the action column asks once more. */
+.ws-item--confirming {
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow: inset 3px 0 0 rgba(255, 255, 255, 0.85);
 }
 
-.ws-confirm-text {
-  font-size: 12.5px;
-  line-height: 1.45;
-  color: #ff6aa6;
+.ws-confirm-note {
+  margin: 12px 0 0;
+  max-width: 46ch;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.ws-confirm-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.ws-back {
+  padding: 6px 4px;
+  border: 0;
+  background: none;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.25);
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: color 0.2s ease, text-decoration-color 0.2s ease;
+}
+
+.ws-back:hover {
+  color: #fff;
+  text-decoration-color: currentColor;
+}
+
+.ws-back:focus-visible {
+  outline: 2px solid var(--color-green);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.ws-back:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 @media (max-width: 600px) {
@@ -11404,10 +11443,6 @@ a.spk-card-contact-row:hover .spk-card-contact-value {
 
   .ws-btn {
     width: 100%;
-  }
-
-  .ws-confirm {
-    max-width: none;
   }
 }
 

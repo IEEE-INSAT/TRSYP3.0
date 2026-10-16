@@ -2,8 +2,8 @@ import { apiFetch } from './http';
 import type { WorkshopOverview } from './types';
 
 /**
- * Day-3 workshop booking. Seats, the one-per-session rule and the seats held
- * for pitching teams are all enforced by the server. Bookings are final.
+ * Day-3 workshop booking. Seats and the one-per-session rule are enforced by
+ * the server. Bookings are final.
  */
 export const workshopService = {
   /** GET /workshops */
