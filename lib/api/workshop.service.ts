@@ -3,8 +3,7 @@ import type { WorkshopOverview } from './types';
 
 /**
  * Day-3 workshop booking. Seats, the one-per-session rule and the seats held
- * for technical challenge teams are all enforced by the server; every write
- * answers with the refreshed overview.
+ * for pitching teams are all enforced by the server. Bookings are final.
  */
 export const workshopService = {
   /** GET /workshops */
@@ -12,13 +11,8 @@ export const workshopService = {
     return apiFetch<WorkshopOverview>('/workshops', { token });
   },
 
-  /** POST /workshops/:id/booking - also moves an existing seat in the same session. */
+  /** POST /workshops/:id/booking - final; answers with the refreshed overview. */
   book(workshopId: string, token: string): Promise<WorkshopOverview> {
     return apiFetch<WorkshopOverview>(`/workshops/${workshopId}/booking`, { method: 'POST', token });
-  },
-
-  /** DELETE /workshops/:id/booking */
-  cancel(workshopId: string, token: string): Promise<WorkshopOverview> {
-    return apiFetch<WorkshopOverview>(`/workshops/${workshopId}/booking`, { method: 'DELETE', token });
   },
 };

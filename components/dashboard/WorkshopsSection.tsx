@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { motion } from 'motion/react';
 import { useAuthStore, useRegistrationStore } from '@/lib/store';
 import { workshopService } from '@/lib/api/workshop.service';
-import type { Workshop, WorkshopOverview } from '@/lib/api/types';
+import type { TeamDuty, Workshop, WorkshopOverview } from '@/lib/api/types';
 
 const errorMessage = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
@@ -22,10 +22,42 @@ function bySession(workshops: Workshop[]): [number, Workshop[]][] {
 }
 
 /**
- * Day-3 workshop booking. One seat per session; booking another workshop in
- * the same session moves the seat. Seat counts, the per-session rule and the
- * Pitching seats held for technical challenge teams all come from the server
- * - this screen only reflects them.
+ * Where the caller's pitching team stands. `otherSessions` are the sessions it
+ * doesn't pitch in, where its held workshop seat is.
+ */
+function DutyNote({ duty, otherSessions }: { duty: TeamDuty; otherSessions: number[] }) {
+  const head = `${duty.teamName} pitches in session ${duty.pitchSession}`;
+  const points = Math.abs(duty.sbPenalty) || null;
+  return (
+    <div className={`ws-duty${duty.compliant ? ' ws-duty--ok' : ''}`}>
+      <p className="ws-duty-head">{head}</p>
+      <p>
+        At least one member of your team must also attend a workshop, in either session.
+        {duty.compliant
+          ? ' Your team is covered.'
+          : ` Otherwise your SB loses ${points ? `${points} points` : 'points'}.`}
+      </p>
+      <dl className="ws-duty-status">
+        <dt>In a workshop</dt>
+        <dd>
+          {duty.inWorkshop.length
+            ? duty.inWorkshop.join(', ')
+            : otherSessions.length
+              ? `Nobody yet. A seat is held for your team in session ${otherSessions.join(' and ')} until one of you books.`
+              : 'Nobody yet.'}
+        </dd>
+        <dt>Pitching</dt>
+        <dd>{duty.pitching.length ? duty.pitching.join(', ') : 'Nobody yet'}</dd>
+      </dl>
+    </div>
+  );
+}
+
+/**
+ * Day-3 workshop booking. One seat per session, and bookings are final, so
+ * booking asks for a confirmation first. Seat counts, the per-session rule and
+ * the seats held for pitching teams all come from the server - this screen
+ * only reflects them.
  */
 export default function WorkshopsSection() {
   const user = useRegistrationStore((s) => s.user);
@@ -35,7 +67,9 @@ export default function WorkshopsSection() {
   const [loadErr, setLoadErr] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
 
-  // The workshop a write is in flight for, and the error it came back with.
+  // The workshop awaiting confirmation, the one a booking is in flight for,
+  // and the error it came back with.
+  const [confirmId, setConfirmId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionErr, setActionErr] = useState<{ id: string; message: string } | null>(null);
 
@@ -58,16 +92,12 @@ export default function WorkshopsSection() {
     };
   }, [hasProfile, reloadKey]);
 
-  const act = async (workshopId: string, action: 'book' | 'cancel') => {
+  const book = async (workshopId: string) => {
     setActionErr(null);
     setBusyId(workshopId);
     try {
-      const token = await currentToken();
-      setOverview(
-        action === 'book'
-          ? await workshopService.book(workshopId, token)
-          : await workshopService.cancel(workshopId, token),
-      );
+      setOverview(await workshopService.book(workshopId, await currentToken()));
+      setConfirmId(null);
     } catch (error: unknown) {
       setActionErr({ id: workshopId, message: errorMessage(error, 'Something went wrong. Try again.') });
       // Seats move fast - show the counts the server has now.
@@ -84,8 +114,6 @@ export default function WorkshopsSection() {
   const notRegistered = !user && !hydrating;
   const open = overview?.phase === 'open';
   const interactive = open && !!overview?.canBook;
-  const reserved = overview?.workshops.find((w) => w.reservesChallengeSeats);
-  const team = overview?.challengeTeam;
 
   return (
     <section className="dash-page dash-section">
@@ -95,7 +123,7 @@ export default function WorkshopsSection() {
           <h1 className="dash-section-title">Workshops</h1>
           <p className="dash-section-blurb">
             Workshops in the same session run at the same time, so you get one seat per session.
-            Booking another workshop in a session moves your seat there.
+            Bookings are final: once you book, you can&apos;t cancel or switch.
           </p>
         </header>
 
@@ -138,22 +166,13 @@ export default function WorkshopsSection() {
               </div>
             ) : null}
 
-            {team && reserved && (
-              <div className={`ws-team${team.reservedWorkshopBookers.length ? ' ws-team--ok' : ''}`}>
-                <span className="ws-team-name">{team.name}</span>
-                {team.reservedWorkshopBookers.length ? (
-                  <p>
-                    {team.reservedWorkshopBookers.join(', ')}{' '}
-                    {team.reservedWorkshopBookers.length > 1 ? 'are' : 'is'} booked for the {reserved.title}. Your team
-                    is covered.
-                  </p>
-                ) : (
-                  <p>
-                    At least one member of your team must attend the {reserved.title}. Nobody from your team has
-                    booked yet, so a seat is held for you.
-                  </p>
+            {overview.team && (
+              <DutyNote
+                duty={overview.team}
+                otherSessions={[...new Set(overview.workshops.map((w) => w.session))].filter(
+                  (s) => s !== overview.team!.pitchSession,
                 )}
-              </div>
+              />
             )}
 
             {bySession(overview.workshops).map(([session, workshops]) => {
@@ -168,9 +187,12 @@ export default function WorkshopsSection() {
                 >
                   <div className="ws-session-head">
                     <h2 className="ws-session-title">Session {session}</h2>
-                    <span className="ws-session-time">{workshops[0].startTime}</span>
+                    <span className="ws-session-time">
+                      {workshops.map((w) => w.startTime).sort()[0]}
+                    </span>
                     <span className="ws-session-pick">{mine ? `Your seat: ${mine.title}` : 'No seat yet'}</span>
                   </div>
+
 
                   <ul className="ws-list">
                     {workshops.map((w) => {
@@ -184,9 +206,8 @@ export default function WorkshopsSection() {
                             <p className="ws-item-meta">
                               {[w.speaker, w.room, `${w.startTime}–${w.endTime}`].filter(Boolean).join(' · ')}
                             </p>
-                            {w.reservesChallengeSeats && (
-                              <p className="ws-item-note">Mandatory for technical challenge teams: at least one member each</p>
-                            )}
+                            {w.teamOnly && <p className="ws-item-audience">For the teams pitching in this session</p>}
+                            {w.audience && <p className="ws-item-audience">{w.audience}</p>}
                             <div
                               className="ws-seats"
                               role="meter"
@@ -211,25 +232,40 @@ export default function WorkshopsSection() {
                             )}
                           </div>
 
-                          {interactive && (
+                          {/* Bookings are final, so a session with a seat offers nothing else. */}
+                          {interactive && !mine && (
                             <div className="ws-item-action">
-                              {w.bookedByMe ? (
-                                <button
-                                  type="button"
-                                  className="dash-cancel-btn ws-btn"
-                                  onClick={() => act(w.id, 'cancel')}
-                                  disabled={!!busyId}
-                                >
-                                  {busy ? 'Cancelling…' : 'Cancel seat'}
-                                </button>
+                              {confirmId === w.id ? (
+                                <div className="ws-confirm" role="group" aria-label={`Confirm booking ${w.title}`}>
+                                  <span className="ws-confirm-text">Final: you can&apos;t cancel or switch after this.</span>
+                                  <button
+                                    type="button"
+                                    className="dash-noteam-btn dash-noteam-btn-primary ws-btn"
+                                    onClick={() => book(w.id)}
+                                    disabled={!!busyId}
+                                  >
+                                    {busy ? 'Booking…' : 'Confirm seat'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="dash-cancel-btn ws-btn"
+                                    onClick={() => setConfirmId(null)}
+                                    disabled={busy}
+                                  >
+                                    Back
+                                  </button>
+                                </div>
                               ) : (
                                 <button
                                   type="button"
                                   className="dash-noteam-btn dash-noteam-btn-primary ws-btn"
-                                  onClick={() => act(w.id, 'book')}
+                                  onClick={() => {
+                                    setActionErr(null);
+                                    setConfirmId(w.id);
+                                  }}
                                   disabled={!!busyId || full}
                                 >
-                                  {busy ? 'Booking…' : full ? 'Full' : mine ? 'Move here' : 'Book seat'}
+                                  {full ? 'Full' : 'Book seat'}
                                 </button>
                               )}
                             </div>

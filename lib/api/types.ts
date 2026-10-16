@@ -568,12 +568,35 @@ export interface Workshop {
   startTime: string;
   endTime: string;
   capacity: number;
-  /** Holds a seat for each technical challenge team (the Pitching workshop). */
-  reservesChallengeSeats: boolean;
+  /** Who it is meant for, shown as-is (e.g. "For RAS chairs"). Not enforced. */
+  audience: string | null;
   booked: number;
   /** Seats the caller could still take - held seats excluded. */
   seatsLeft: number;
   bookedByMe: boolean;
+  /** A challenge pitching slot: only its teams can see and book it. */
+  teamOnly: boolean;
+}
+
+/**
+ * The caller's pitching team. At least one member must attend a workshop -
+ * in either session - or the team's SB loses points.
+ */
+export interface TeamDuty {
+  teamId: string;
+  teamName: string;
+  code: string;
+  sbs: string[];
+  /** The session the team pitches in. */
+  pitchSession: number;
+  /** Members able to book: not banned, and paid or with a payment waiver. */
+  bookableMembers: number;
+  pitching: string[];
+  /** Members with a workshop seat, in either session. */
+  inWorkshop: string[];
+  compliant: boolean;
+  /** SB points lost if it stays this way: 0, or negative. */
+  sbPenalty: number;
 }
 
 /** GET /workshops, and the response of every booking write. */
@@ -581,7 +604,8 @@ export interface WorkshopOverview {
   phase: WorkshopBookingPhase;
   /** Paid and not banned. */
   canBook: boolean;
+  /** Pitching slots are left out unless the caller is on one of their teams. */
   workshops: Workshop[];
-  /** The caller's selected technical challenge team, null when not on one. */
-  challengeTeam: { id: string; name: string; reservedWorkshopBookers: string[] } | null;
+  /** The caller's pitching team, null when not on one. */
+  team: TeamDuty | null;
 }

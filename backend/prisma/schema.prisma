@@ -108,6 +108,7 @@ model Participant {
   paymentProofs     PaymentProof[]
   ieeeVerification  IeeeVerification?
   workshopBookings  WorkshopBooking[]
+  workshopPaymentWaiver WorkshopPaymentWaiver?
 
   @@map("participants")
 }
@@ -164,8 +165,9 @@ model Team {
   updatedAt DateTime     @updatedAt @map("updated_at")
 
   // Relations
-  leader      Participant      @relation("TeamLeader", fields: [leaderId], references: [id], onDelete: Cascade)
-  memberships TeamMembership[]
+  leader         Participant      @relation("TeamLeader", fields: [leaderId], references: [id], onDelete: Cascade)
+  memberships    TeamMembership[]
+  workshopAccess WorkshopTeam[]
 
   // One led team per activity - a leader can head a competition team *and* a
   // challenge team, but never two of the same kind.
@@ -444,18 +446,44 @@ model Workshop {
   startTime String @map("start_time")
   endTime   String @map("end_time")
   capacity  Int
-  // Holds one seat per selected technical challenge team until one of its
-  // members books (the Pitching workshop).
-  reservesChallengeSeats Boolean @default(false) @map("reserves_challenge_seats")
+  // Shown under the title, e.g. who it is meant for. Not enforced.
+  audience  String?
   sortOrder Int @default(0) @map("sort_order")
 
   bookings WorkshopBooking[]
+  // When non-empty this is a challenge pitching slot: only members of these
+  // teams see and book it. Each of those teams must also have at least one
+  // member in a workshop, in either session (see WorkshopService).
+  teams    WorkshopTeam[]
 
   @@map("workshops")
 }
 
+model WorkshopTeam {
+  workshopId String @map("workshop_id")
+  teamId     String @map("team_id")
+
+  workshop Workshop @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  team     Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@id([workshopId, teamId])
+  @@index([teamId])
+  @@map("workshop_teams")
+}
+
+/// Participants who may book workshops without a confirmed payment.
+model WorkshopPaymentWaiver {
+  participantId String   @id @map("participant_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  participant Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@map("workshop_payment_waivers")
+}
+
 /// `session` is denormalised from `Workshop.session` so "one workshop per
-/// session" is a unique index rather than application code.
+/// session" is a unique index rather than application code. Bookings are
+/// final: there is no cancelling or moving.
 model WorkshopBooking {
   id            String   @id @default(uuid())
   participantId String   @map("participant_id")

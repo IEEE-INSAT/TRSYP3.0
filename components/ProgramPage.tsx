@@ -24,11 +24,11 @@ const PROGRAM: { id: string; label: string; date: string; venue: string; items: 
     items: [
       { time: '11:00 – 12:00', icon: 'pin', title: 'Hackathon Check-in', desc: 'Registration and welcome for hackathon teams.', where: 'Le Royal', who: 'Hackathon participants' },
       { time: '13:00 – 13:30', icon: 'rocket', title: 'Hackathon Launch', desc: 'Introduction and official launch of the hackathon with our partners.', where: 'Le Royal', who: 'Hackathon participants' },
-      { time: '13:30 – 14:30', icon: 'tools', title: 'Workshop', desc: 'A hands-on workshop to kick off the hackathon.', where: 'Le Royal', who: 'Hackathon participants' },
-      { time: '14:30 – 15:00', icon: 'food', title: 'Coffee Break', desc: 'A short break before the first build session.', where: 'Le Royal', who: 'Hackathon participants' },
-      { time: '15:00 – 19:00', icon: 'tools', title: 'Hackathon · Session 1', desc: 'First build session of the hackathon.', where: 'Le Royal', who: 'Hackathon participants' },
+      { time: '13:30 – 14:30', icon: 'tools', title: 'Hackathon · Session 1', desc: 'First build session of the hackathon..', where: 'Le Royal', who: 'Hackathon participants' },
+      { time: '14:30 – 15:00', icon: 'food', title: 'Coffee Break', desc: 'A short break before the next session.', where: 'Le Royal', who: 'Hackathon participants' },
+      { time: '15:00 – 19:00', icon: 'tools', title: 'Hackathon · Session 2', desc: 'Second build session of the hackathon.', where: 'Le Royal', who: 'Hackathon participants' },
       { time: '19:00 – 20:30', icon: 'food', title: 'Dinner', desc: 'Dinner break for hackathon teams.', where: 'Dining Hall', who: 'Hackathon participants' },
-      { time: '20:30 – 23:00', icon: 'tools', title: 'Hackathon · Session 2', desc: 'Second build session of the hackathon.', where: 'Le Royal', who: 'Hackathon participants' },
+      { time: '20:30 – 23:00', icon: 'tools', title: 'Hackathon · Session 3', desc: 'third build session of the hackathon.', where: 'Le Royal', who: 'Hackathon participants' },
       { time: '23:00 – 01:00', icon: 'people', title: 'Networking Activities', desc: 'Wind down and connect with fellow participants.', where: 'Le Royal', who: 'Hackathon participants' },
     ],
   },
@@ -70,7 +70,7 @@ const PROGRAM: { id: string; label: string; date: string; venue: string; items: 
         time: '08:30 – 10:00',
         icon: 'trophy',
         title: 'Challenge Pitching · Session 1',
-        desc: 'First round of challenge pitches.',
+        desc: 'First round of challenge pitches. Each pitching team also sends at least one member to a workshop, in either session.',
         where: 'Luxor Room · Ramsès Room',
         who: 'Challenge participants',
         details: ['Non-technical challenge pitching · Luxor Room', 'Technical challenge pitching · Ramsès Room'],
@@ -83,7 +83,7 @@ const PROGRAM: { id: string; label: string; date: string; venue: string; items: 
         where: 'Workshop Rooms',
         who: 'Participants with a booked seat',
         details: [
-          'Pitching Workshop · Yosr Bayar · Salle Césarion (mandatory for technical challenge participants)',
+          'Pitching Workshop · Yosr Bayar · Salle Césarion',
           {
             text: 'YP Transition Lab · César Room  · Round Tables',
             sub: [
@@ -94,12 +94,12 @@ const PROGRAM: { id: string; label: string; date: string; venue: string; items: 
               'CONTRIBUTE – Engineer with Purpose: Building Technology That Matters by Ahmed Aouididi.',
             ],
           },
-          
+          'Breaking the Cage: How IIoT Gives Robots Senses, Reflexes, and a Human Connection · Workshop · Yassine Houij · Sphinx Room',
         ],
       },
       { time: '10:15 – 11:15', icon: 'mic', title: 'Distinguished Lecturer Session', desc: 'How to do research with social robots, by IEEE Distinguished Lecturer Dr. Prof. Friederike Eyssel : Professor of Applied Social Psychology and Gender Research at Bielefeld University , whose research bridges social psychology and social robotics', where: 'Ceremony Room', who: 'All attendees' },
       { time: '11:15 – 12:00', icon: 'pin', title: 'Check-out & Lunch', desc: 'Hotel check-out followed by lunch.', where: 'Reception · Dining Hall', who: 'All attendees' },
-      { time: '12:00 – 13:00', icon: 'trophy', title: 'Technical Challenge Pitching · Session 2', desc: 'Technical teams pitch, followed by a 5-minute live demo.', where: 'Ramsès Room', who: 'Technical challenge participants' },
+      { time: '12:00 – 13:00', icon: 'trophy', title: 'Technical Challenge Pitching · Session 2', desc: 'Technical teams pitch, followed by a 5-minute live demo. Each pitching team also sends at least one member to a workshop, in either session.', where: 'Ramsès Room', who: 'Technical challenge participants' },
       {
         time: '12:00 – 13:30',
         icon: 'tools',
@@ -110,9 +110,7 @@ const PROGRAM: { id: string; label: string; date: string; venue: string; items: 
         details: [
           'Building Agentic & Multimodal Systems · Workshop · Mohamed Ali Farhat · Sphinx Room · until 13:30',
           'If/Else or AI Agent? Picking the Right Tool for the job · Workshop · Khalil Masmoudi · César Room',
-          'RAS Leaders · Césarion Room',
-          'Breaking the Cage: How IIoT Gives Robots Senses, Reflexes, and a Human Connection · Luxor Room · Yassine Houij',
-
+          'RAS Leaders · Césarion Room (for RAS chairs)',
         ],
       },
       {

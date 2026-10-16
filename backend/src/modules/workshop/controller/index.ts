@@ -2,7 +2,6 @@ import {
   Controller,
   Get,
   Post,
-  Delete,
   Param,
   UseGuards,
   HttpCode,
@@ -36,30 +35,16 @@ export class WorkshopController {
 
   @Post(':workshopId/booking')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Book a seat; moves an existing booking in the same session' })
+  @ApiOperation({ summary: 'Book a seat. Final - no cancelling or moving' })
   @ApiResponse({ status: 200, description: 'Booked - refreshed overview' })
   @ApiResponse({ status: 403, description: 'Booking closed, not paid, banned, or no seat left' })
   @ApiResponse({ status: 404, description: 'Participant or workshop not found' })
-  @ApiResponse({ status: 409, description: 'Already booked on this workshop' })
+  @ApiResponse({ status: 409, description: 'Already has a seat in this session' })
   async book(
     @CurrentUser('sub') userId: string,
     @Param('workshopId', new ZodValidationPipe(WorkshopIdSchema)) workshopId: string,
   ): Promise<WorkshopOverview> {
     await this.workshopService.book(userId, workshopId);
-    return this.workshopService.getOverview(userId);
-  }
-
-  @Delete(':workshopId/booking')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Give a seat back' })
-  @ApiResponse({ status: 200, description: 'Cancelled - refreshed overview' })
-  @ApiResponse({ status: 403, description: 'Booking closed' })
-  @ApiResponse({ status: 404, description: 'No seat in this workshop' })
-  async cancel(
-    @CurrentUser('sub') userId: string,
-    @Param('workshopId', new ZodValidationPipe(WorkshopIdSchema)) workshopId: string,
-  ): Promise<WorkshopOverview> {
-    await this.workshopService.cancel(userId, workshopId);
     return this.workshopService.getOverview(userId);
   }
 
@@ -70,7 +55,7 @@ export class WorkshopController {
   @Get('admin')
   @UseGuards(RolesGuard)
   @Roles('admin')
-  @ApiOperation({ summary: '[Admin] Attendance lists and challenge teams missing from Pitching' })
+  @ApiOperation({ summary: '[Admin] Attendance lists, and each pitching team\'s workshop attendance and SB penalty' })
   @ApiResponse({ status: 200, description: 'Rosters' })
   @ApiResponse({ status: 403, description: 'Forbidden - admin only' })
   getAdminOverview(): Promise<WorkshopAdminOverview> {

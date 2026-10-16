@@ -11171,36 +11171,6 @@ a.spk-card-contact-row:hover .spk-card-contact-value {
   text-underline-offset: 3px;
 }
 
-/* The challenge team's held Pitching seat: pink until someone books, green after. */
-.ws-team {
-  padding: 16px 18px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 29, 120, 0.35);
-  border-left-width: 3px;
-  background: rgba(255, 29, 120, 0.06);
-}
-
-.ws-team--ok {
-  border-color: rgba(0, 232, 122, 0.3);
-  background: rgba(0, 232, 122, 0.05);
-}
-
-.ws-team-name {
-  display: block;
-  font-family: var(--font-heading);
-  font-size: 15px;
-  font-weight: 700;
-  color: #fff;
-  margin-bottom: 4px;
-}
-
-.ws-team p {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.6;
-  color: rgba(255, 255, 255, 0.7);
-}
-
 .ws-session {
   padding: 24px;
 }
@@ -11289,6 +11259,71 @@ a.spk-card-contact-row:hover .spk-card-contact-value {
   color: #ff6aa6;
 }
 
+.ws-item-audience {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* The caller's pitching team: pink until a member is in a workshop (or the
+   team is exempt), green after. */
+.ws-duty {
+  padding: 16px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 29, 120, 0.3);
+  border-left: 3px solid var(--color-pink);
+  background: rgba(255, 29, 120, 0.05);
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.ws-duty--ok {
+  border-color: rgba(0, 232, 122, 0.25);
+  border-left-color: var(--color-green);
+  background: rgba(0, 232, 122, 0.04);
+}
+
+.ws-duty p {
+  margin: 0;
+}
+
+.ws-duty .ws-duty-head {
+  margin-bottom: 4px;
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.ws-duty-status {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 14px;
+  margin: 10px 0 0;
+}
+
+.ws-duty-status dt {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.ws-duty-status dd {
+  margin: 0;
+  color: #fff;
+}
+
+@media (max-width: 600px) {
+  .ws-duty-status {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .ws-duty-status dd + dt {
+    margin-top: 6px;
+  }
+}
+
 .ws-seats {
   display: flex;
   align-items: center;
@@ -11333,6 +11368,19 @@ a.spk-card-contact-row:hover .spk-card-contact-value {
   padding: 11px 18px;
 }
 
+.ws-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 180px;
+}
+
+.ws-confirm-text {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #ff6aa6;
+}
+
 @media (max-width: 600px) {
   .ws-session {
     padding: 18px 14px;
@@ -11356,6 +11404,10 @@ a.spk-card-contact-row:hover .spk-card-contact-value {
 
   .ws-btn {
     width: 100%;
+  }
+
+  .ws-confirm {
+    max-width: none;
   }
 }
 

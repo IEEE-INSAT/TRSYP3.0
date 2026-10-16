@@ -25,6 +25,7 @@ services:
       ARUCO_COLLECTOR_2_ANSWER: ${ARUCO_COLLECTOR_2_ANSWER:-}
       ROOMING_PHASE: ${ROOMING_PHASE:-closed}
       WORKSHOP_BOOKING_PHASE: ${WORKSHOP_BOOKING_PHASE:-closed}
+      WORKSHOP_SB_PENALTY: ${WORKSHOP_SB_PENALTY:-5}
     ports:
       - "3000:10000"
     restart: unless-stopped

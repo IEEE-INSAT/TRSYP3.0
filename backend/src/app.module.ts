@@ -72,6 +72,9 @@ import { WorkshopModule } from './modules/workshop/workshop.module';
                 WORKSHOP_BOOKING_PHASE: Joi.string()
                     .valid('soon', 'open', 'closed')
                     .default('closed'),
+                // SB points lost by a pitching team with nobody in a workshop.
+                // Only reported (GET /workshops, /workshops/admin).
+                WORKSHOP_SB_PENALTY: Joi.number().integer().min(0).default(5),
                 // IEEE GetMemberStatus credentials, shared with the admin
                 // portal. Without them no membership checks run.
                 IEEE_API_BASE_URL: Joi.string().uri().optional(),

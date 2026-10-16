@@ -42,7 +42,6 @@ const WORKSHOPS: Workshop[] = [
     title: 'Pitching Workshop',
     dates: ['2026-10-18'],
     by: 'Yosr Bayar',
-    mandatoryFor: 'Technical Challenge participants',
     congress: { time: '09:00 – 10:00', where: 'Salle Césarion' },
   },
   {
@@ -51,6 +50,12 @@ const WORKSHOPS: Workshop[] = [
     by: 'IEEE Young Professionals',
     note: 'Round Tables',
     congress: { time: '09:00 – 10:00', where: 'César Room' },
+  },
+  {
+    title: 'Breaking the Cage: How IIoT Gives Robots Senses, Reflexes, and a Human Connection',
+    dates: ['2026-10-18'],
+    by: 'Yassine Houij',
+    congress: { time: '09:00 – 10:00', where: 'Salle Sphinx' },
   },
   {
     title: 'Building Agentic & Multimodal Systems',
@@ -68,6 +73,7 @@ const WORKSHOPS: Workshop[] = [
     title: 'RAS Leaders',
     dates: ['2026-10-18'],
     by: 'IEEE RAS',
+    note: 'For RAS chairs',
     congress: { time: '12:00 – 13:00', where: 'Césarion Room' },
   },
 ];
