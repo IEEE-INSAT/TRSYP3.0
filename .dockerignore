@@ -11,4 +11,3 @@ old_trs
 .env.*
 backend/.env
 backend/.env.*
-ethics-test
