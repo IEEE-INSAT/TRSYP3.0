@@ -18,7 +18,7 @@ export const SubmitArucoAnswerSchema = z.object({
 export type SubmitArucoAnswerInput = z.infer<typeof SubmitArucoAnswerSchema>;
 
 export class SubmitArucoAnswerDto {
-  @ApiProperty({ description: 'The word the team assembled from the ArUco clues', example: 'word' })
+  @ApiProperty({ description: 'The word the team assembled from the clues (case and spaces ignored)', example: 'word' })
   @IsString()
   @Length(1, 200)
   answer!: string;
@@ -29,7 +29,7 @@ export class SubmitArucoAnswerDto {
 // ============================================================================
 
 export class ArucoStateResponseDto {
-  @ApiProperty({ description: 'Whether the ArUco challenge is open (ARUCO_OPEN)' })
+  @ApiProperty({ description: 'Whether a round is live (started from the admin portal)' })
   @Expose()
   open!: boolean;
 }
@@ -40,29 +40,21 @@ export class ArucoMarkerDto {
   @Expose()
   id!: number;
 
-  @ApiProperty({ enum: ['beacon', 'indicator', 'collector'] })
+  @ApiProperty({ enum: ['letter', 'hint', 'collector'] })
   @Expose()
-  kind!: 'beacon' | 'indicator' | 'collector';
+  kind!: 'letter' | 'hint' | 'collector';
 
-  @ApiProperty({ enum: ['Garden', 'Mine'] })
-  @Expose()
-  game!: 'Garden' | 'Mine';
-
-  @ApiProperty({ description: 'Beacon designation, e.g. "Red beacon" or "Indicator 2"' })
+  @ApiProperty({ description: '"Red beacon", "Blue beacon" or "Collector"' })
   @Expose()
   name!: string;
 
-  @ApiPropertyOptional({ description: 'What a beacon or indicator gives (empty when not set yet)' })
+  @ApiPropertyOptional({ description: 'The letter, or the hint text; absent for a collector' })
   @Expose()
-  clue?: string;
+  content?: string;
 
-  @ApiPropertyOptional({ description: 'How many beacons with this ID are on the field, for beacons only' })
+  @ApiPropertyOptional({ description: 'Hints only: which of the four (1-4)' })
   @Expose()
-  quantity?: number;
-
-  @ApiPropertyOptional({ description: 'Collector number, for collectors only' })
-  @Expose()
-  collector?: number;
+  hint?: number;
 }
 
 export class ArucoScansResponseDto {
@@ -70,17 +62,17 @@ export class ArucoScansResponseDto {
   @Expose()
   teamName!: string;
 
-  @ApiProperty({ description: 'Distinct marker IDs the team has tried' })
+  @ApiProperty({ description: 'Distinct marker IDs the team has tried this round' })
   @Expose()
   used!: number;
 
-  @ApiProperty({ description: 'Distinct marker IDs a team may try (ARUCO_SCAN_LIMIT)' })
+  @ApiProperty({ description: 'Distinct marker IDs a team may try per round (ARUCO_SCAN_LIMIT)' })
   @Expose()
   limit!: number;
 
   @ApiProperty({
     type: [ArucoMarkerDto],
-    description: "The team's field log: the real markers among the IDs it tried, oldest first",
+    description: "The team's field log: the real markers among the IDs it tried, as they showed, oldest first",
   })
   @Expose()
   @Type(() => ArucoMarkerDto)
@@ -92,35 +84,31 @@ export class ArucoMarkerResponseDto extends ArucoMarkerDto {
   @Expose()
   scansUsed!: number;
 
-  @ApiProperty({ description: 'Distinct marker IDs a team may try' })
+  @ApiProperty({ description: 'Distinct marker IDs a team may try per round' })
   @Expose()
   scanLimit!: number;
 }
 
-export class ArucoCollectorStatusResponseDto {
-  @ApiProperty({ description: 'Collector number (1 or 2)' })
-  @Expose()
-  collector!: number;
-
+export class ArucoWordStatusResponseDto {
   @ApiProperty({ description: "The signed-in user's Competition team" })
   @Expose()
   teamName!: string;
 
-  @ApiProperty({ description: "Whether the team has found this collector's word" })
+  @ApiProperty({ description: "Whether the team has found this round's word" })
   @Expose()
   solved!: boolean;
 
-  @ApiProperty({ description: 'Attempts the team has used on this collector' })
+  @ApiProperty({ description: 'Attempts the team has used this round' })
   @Expose()
   attempts!: number;
 
-  @ApiProperty({ description: 'Attempts left before this collector locks (0 once solved or lost)' })
+  @ApiProperty({ description: 'Attempts left (0 once solved or lost)' })
   @Expose()
   attemptsLeft!: number;
 }
 
-export class ArucoSubmitResponseDto extends ArucoCollectorStatusResponseDto {
-  @ApiProperty({ description: 'Whether the just-submitted answer was correct' })
+export class ArucoWordSubmitResponseDto extends ArucoWordStatusResponseDto {
+  @ApiProperty({ description: 'Whether the just-submitted word was correct' })
   @Expose()
   correct!: boolean;
 }

@@ -3,7 +3,7 @@
 import { useState, useEffect, FormEvent, ReactNode } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { challengeService, ApiError } from '@/lib/api';
-import type { ArucoCollectorStatusResponse, ArucoMarker, ArucoScansResponse } from '@/lib/api';
+import type { ArucoMarker, ArucoScansResponse, ArucoWordStatusResponse } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/auth-store';
 import AuthModal from './AuthModal';
 
@@ -106,9 +106,8 @@ function errorScans(err: unknown): { used: number; limit: number } | undefined {
 
 /** Short label for a marker in the field log. */
 function logLabel(m: ArucoMarker): string {
-  if (m.kind !== 'collector' && m.clue && m.clue.length === 1) {
-    return m.quantity ? `“${m.clue}” ×${m.quantity}` : `“${m.clue}”`;
-  }
+  if (m.kind === 'letter' && m.content) return `“${m.content}”`;
+  if (m.kind === 'hint' && m.hint) return `Hint ${m.hint}`;
   return m.name;
 }
 
@@ -143,12 +142,21 @@ interface Scan {
 type ScopeState = 'idle' | 'loading' | 'detected' | 'missing' | 'closed';
 
 /** What stands between the visitor and the scanner. */
-type Gate = 'connecting' | 'offline' | 'closed' | 'checking' | 'login' | 'noTeam' | 'accessError' | 'ready';
+type Gate =
+  | 'connecting'
+  | 'offline'
+  | 'closed'
+  | 'checking'
+  | 'login'
+  | 'noTeam'
+  | 'notPlaying'
+  | 'accessError'
+  | 'ready';
 
 export default function ArucoPage() {
   const reduce = useReducedMotion() ?? false;
 
-  // ARUCO_OPEN on the backend; null until the server answers.
+  // Whether the admin portal has a round live; null until the server answers.
   const [open, setOpen] = useState<boolean | null>(null);
   const [stateError, setStateError] = useState<string | null>(null);
 
@@ -200,6 +208,33 @@ export default function ArucoPage() {
     };
   }, [accessToken, open, retry]);
 
+  // Every 20s, pull the team's log again: teammates' scans show up, and a new
+  // round started from the admin portal clears what an open page still shows.
+  const loadedScans = !!scans;
+  useEffect(() => {
+    if (!accessToken || !loadedScans) return;
+    const timer = setInterval(async () => {
+      try {
+        const token = await useAuthStore.getState().getAccessToken();
+        if (!token) return;
+        const result = await challengeService.scans(token);
+        setAccess((prev) => (prev?.token === accessToken && prev.retry === retry ? { ...prev, scans: result } : prev));
+      } catch (err) {
+        const code = errorCode(err);
+        if (code === 'ARUCO_CLOSED') setOpen(false);
+        if (code === 'ARUCO_CLOSED' || code === 'NOT_PLAYING' || code === 'NO_COMPETITION_TEAM') {
+          setAccess((prev) =>
+            prev?.token === accessToken && prev.retry === retry
+              ? { token: accessToken, retry, error: errorMessage(err), errorCode: code }
+              : prev,
+          );
+        }
+        // Anything else (a dropped connection) keeps what's on screen until the next pull.
+      }
+    }, 20_000);
+    return () => clearInterval(timer);
+  }, [accessToken, retry, loadedScans]);
+
   /**
    * Keeps the tries counter, and the field log when a marker was found, in
    * step with what a lookup reported. A marker already in the log keeps its
@@ -225,6 +260,7 @@ export default function ArucoPage() {
   else if (!accessToken) gate = 'login';
   else if (!currentAccess) gate = 'checking';
   else if (currentAccess.errorCode === 'NO_COMPETITION_TEAM') gate = 'noTeam';
+  else if (currentAccess.errorCode === 'NOT_PLAYING') gate = 'notPlaying';
   else if (!scans) gate = 'accessError';
   else gate = 'ready';
   const ready = gate === 'ready';
@@ -265,7 +301,7 @@ export default function ArucoPage() {
       } else if (code === 'ARUCO_CLOSED') {
         setOpen(false);
         settle({ phase: 'idle' });
-      } else if (code === 'NO_COMPETITION_TEAM') {
+      } else if (code === 'NO_COMPETITION_TEAM' || code === 'NOT_PLAYING') {
         setRetry((r) => r + 1);
         settle({ phase: 'idle' });
       } else {
@@ -409,6 +445,8 @@ export default function ArucoPage() {
 
                   {gate === 'noTeam' && <NoTeamNotice />}
 
+                  {gate === 'notPlaying' && <NotPlayingNotice />}
+
                   {gate === 'accessError' && (
                     <ErrorNotice
                       title="Couldn’t load your team"
@@ -502,6 +540,23 @@ function NoTeamNotice() {
   );
 }
 
+function NotPlayingNotice() {
+  return (
+    <div className="aruco-notice">
+      <span className="aruco-notice-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M4.9 4.9l14.2 14.2" />
+        </svg>
+      </span>
+      <h2 className="aruco-result-title">Your team isn’t playing this game</h2>
+      <p className="aruco-result-text">
+        The organizers started this game for other teams. Your team can scan again once a game starts for it.
+      </p>
+    </div>
+  );
+}
+
 function ErrorNotice({ title, message, onRetry }: { title: string; message?: string | null; onRetry: () => void }) {
   return (
     <div className="aruco-notice aruco-notice--error">
@@ -523,43 +578,23 @@ function ErrorNotice({ title, message, onRetry }: { title: string; message?: str
 // ── Result for a detected marker ────────────────────────────────────────────
 
 function MarkerResult({ marker }: { marker: ArucoMarker }) {
-  if (marker.kind === 'collector' && marker.collector) {
-    return <Collector collector={marker.collector} name={marker.name} />;
-  }
+  if (marker.kind === 'collector') return <WordBox />;
 
-  const tone = marker.kind === 'beacon' ? 'red' : 'neutral';
-  const source = (
-    <p className="aruco-source">
-      <span className={`aruco-source-dot aruco-source-dot--${tone}`} />
-      {marker.name} · {marker.game}
-    </p>
-  );
-
-  if (!marker.clue) {
-    return (
-      <>
-        {source}
-        <h2 className="aruco-result-title">Nothing here yet</h2>
-        <p className="aruco-result-text">This marker doesn’t give anything yet.</p>
-      </>
-    );
-  }
-
+  const isLetter = marker.kind === 'letter';
   return (
     <>
-      {source}
-      {marker.clue.length === 1 ? (
+      <p className="aruco-source">
+        <span className={`aruco-source-dot aruco-source-dot--${isLetter ? 'red' : 'blue'}`} />
+        {marker.name}
+        {marker.hint !== undefined && ` · Hint ${marker.hint}`}
+      </p>
+      {isLetter ? (
         <div className="aruco-letter-row">
-          <span className="aruco-letter">{marker.clue}</span>
-          {marker.quantity !== undefined && (
-            <span className="aruco-qty">
-              <span className="aruco-qty-label">Quantity</span>
-              <span className="aruco-qty-num">×{marker.quantity}</span>
-            </span>
-          )}
+          <span className="aruco-letter">{marker.content}</span>
         </div>
       ) : (
-        <p className="aruco-phrase">“{marker.clue}”</p>
+        // A hint's own text carries its quotes when it is a quotation.
+        <p className="aruco-phrase">{marker.content}</p>
       )}
     </>
   );
@@ -716,13 +751,14 @@ function FieldLog({
   );
 }
 
-// ── Collector ───────────────────────────────────────────────────────────────
+// ── Word ────────────────────────────────────────────────────────────────────
 
 /**
- * A collector's answer form. Needs a signed-in member of a Competition team;
- * each team gets 3 attempts per collector.
+ * The word form markers 6 and 47 open: the live round's word, whichever of
+ * the two was scanned. Needs a signed-in member of a team playing the round;
+ * each team gets MAX_ATTEMPTS attempts per round.
  */
-function Collector({ collector, name }: { collector: number; name: string }) {
+function WordBox() {
   const initialized = useAuthStore((s) => s.initialized);
   const accessToken = useAuthStore((s) => s.accessToken);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -733,7 +769,7 @@ function Collector({ collector, name }: { collector: number; name: string }) {
   const [loaded, setLoaded] = useState<{
     token: string;
     attempt: number;
-    status?: ArucoCollectorStatusResponse;
+    status?: ArucoWordStatusResponse;
     error?: string;
     errorCode?: string;
   } | null>(null);
@@ -754,7 +790,7 @@ function Collector({ collector, name }: { collector: number; name: string }) {
       try {
         const token = await useAuthStore.getState().getAccessToken();
         if (!token) return;
-        const result = await challengeService.collectorStatus(collector, token);
+        const result = await challengeService.wordStatus(token);
         if (!cancelled) setLoaded({ token: accessToken, attempt, status: result });
       } catch (err) {
         if (!cancelled) {
@@ -765,7 +801,7 @@ function Collector({ collector, name }: { collector: number; name: string }) {
     return () => {
       cancelled = true;
     };
-  }, [accessToken, collector, attempt]);
+  }, [accessToken, attempt]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -777,7 +813,7 @@ function Collector({ collector, name }: { collector: number; name: string }) {
     try {
       const token = await useAuthStore.getState().getAccessToken();
       if (!token) return;
-      const result = await challengeService.submit(collector, trimmed, token);
+      const result = await challengeService.submitWord(trimmed, token);
       if (accessToken) setLoaded({ token: accessToken, attempt, status: result });
       if (!result.correct && result.attemptsLeft > 0) {
         setFeedback(`Incorrect, you have ${attemptsText(result.attemptsLeft)}.`);
@@ -800,8 +836,7 @@ function Collector({ collector, name }: { collector: number; name: string }) {
       <>
         <h2 className="aruco-result-title">Log in to submit</h2>
         <p className="aruco-result-text">
-          Put your clues together, then log in to enter your team’s word. Each team gets {MAX_ATTEMPTS} attempts
-          on this collector.
+          Put your clues together, then log in to enter your team’s word. Each team gets {MAX_ATTEMPTS} attempts.
         </p>
         <button type="button" className="aruco-cta" onClick={() => setShowAuthModal(true)}>
           Log in
@@ -810,9 +845,11 @@ function Collector({ collector, name }: { collector: number; name: string }) {
     );
   } else if (current?.errorCode === 'NO_COMPETITION_TEAM') {
     body = <NoTeamNotice />;
+  } else if (current?.errorCode === 'NOT_PLAYING') {
+    body = <NotPlayingNotice />;
   } else if (loadError || !status) {
     body = (
-      <ErrorNotice title="Couldn’t open this collector" message={loadError} onRetry={() => setAttempt((a) => a + 1)} />
+      <ErrorNotice title="Couldn’t open the word box" message={loadError} onRetry={() => setAttempt((a) => a + 1)} />
     );
   } else if (status.solved) {
     body = (
@@ -876,7 +913,7 @@ function Collector({ collector, name }: { collector: number; name: string }) {
     <>
       <p className="aruco-source">
         <span className="aruco-source-dot aruco-source-dot--green" />
-        {name}
+        Collector
         {status && <span className="aruco-source-team">· Team {status.teamName}</span>}
       </p>
       {body}

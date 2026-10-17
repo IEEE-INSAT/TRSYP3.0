@@ -10078,6 +10078,7 @@ select.reg-input option {
 .aruco-source-dot--red { background: var(--color-pink); }
 .aruco-source-dot--neutral { background: rgba(255, 255, 255, 0.7); }
 .aruco-source-dot--green { background: var(--color-green); }
+.aruco-source-dot--blue { background: #4d9fff; }
 
 .aruco-source-team {
   color: rgba(255, 255, 255, 0.4);

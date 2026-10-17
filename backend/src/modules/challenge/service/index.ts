@@ -1,38 +1,26 @@
-import {
-  Injectable,
-  ForbiddenException,
-  NotFoundException,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ArucoCollectorProgress, Prisma, TeamActivity } from '@prisma/client';
+import { ArucoWordProgress, Prisma, TeamActivity } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { DEFAULT_SCAN_LIMIT, MAX_ATTEMPTS, matchesAnswer, toMarker } from '../aruco.data';
 import {
-  CollectorNumber,
-  DEFAULT_SCAN_LIMIT,
-  MAX_ATTEMPTS,
-  answerEnvKey,
-  isCollectorNumber,
-  matchesAnswer,
-  toMarker,
-} from '../aruco.data';
-import {
-  ArucoCollectorStatusResult,
   ArucoMarkerResult,
   ArucoScansResult,
   ArucoStateResult,
-  ArucoSubmitResult,
+  ArucoWordStatusResult,
+  ArucoWordSubmitResult,
 } from '../domain';
 
-function toStatus(
-  collector: CollectorNumber,
+type Round = { id: string; game: number };
+type Team = { id: string; name: string };
+
+function toWordStatus(
   teamName: string,
-  progress: Pick<ArucoCollectorProgress, 'solved' | 'attempts'> | null,
-): ArucoCollectorStatusResult {
+  progress: Pick<ArucoWordProgress, 'solved' | 'attempts'> | null,
+): ArucoWordStatusResult {
   const solved = progress?.solved ?? false;
   const attempts = progress?.attempts ?? 0;
   return {
-    collector,
     teamName,
     solved,
     attempts,
@@ -47,13 +35,9 @@ export class ChallengeService {
     private readonly config: ConfigService,
   ) {}
 
-  /** ARUCO_OPEN, read per request so opening/closing needs no rebuild. */
-  isOpen(): boolean {
-    return this.config.get<string>('ARUCO_OPEN') === 'true';
-  }
-
-  state(): ArucoStateResult {
-    return { open: this.isOpen() };
+  /** Open while the admin portal has a round live. */
+  async state(): Promise<ArucoStateResult> {
+    return { open: (await this.findLiveRound()) !== null };
   }
 
   /** ARUCO_SCAN_LIMIT, read per request; falls back to the default when unset or invalid. */
@@ -62,46 +46,51 @@ export class ChallengeService {
     return Number.isInteger(n) && n > 0 ? n : DEFAULT_SCAN_LIMIT;
   }
 
-  /** How many distinct marker IDs the user's team has tried. */
+  /** The team's tries in the live round and its field log, as each marker showed. */
   async scans(userId: string): Promise<ArucoScansResult> {
-    this.assertOpen();
-    const team = await this.competitionTeam(userId);
+    const round = await this.liveRound();
+    const team = await this.playingTeam(userId, round);
     const tried = await this.prisma.arucoScan.findMany({
-      where: { teamId: team.id },
+      where: { roundId: round.id, teamId: team.id },
       orderBy: { createdAt: 'asc' },
-      select: { markerId: true },
     });
-
-    // The team's field log: its real markers, as the register describes them
-    // now, so every teammate sees the same log and an admin reset empties it.
-    const rows = await this.prisma.arucoMarker.findMany({
-      where: { markerId: { in: tried.map((t) => t.markerId) } },
-    });
-    const byId = new Map(rows.map((row) => [row.markerId, toMarker(row)]));
-    const found = tried.flatMap((t) => byId.get(t.markerId) ?? []);
-
+    const found = tried.flatMap((scan) => toMarker(scan) ?? []);
     return { teamName: team.name, used: tried.length, limit: this.scanLimit(), found };
   }
 
   /**
-   * What scanning a marker reveals. Hidden entirely while the challenge is
-   * closed. Each new ID a team tries - real or not - uses one of its
-   * ARUCO_SCAN_LIMIT tries; re-opening an ID it already tried is free.
+   * What scanning a marker reveals in the live round's game. Each new ID a
+   * team tries - real or not - uses one of its ARUCO_SCAN_LIMIT tries;
+   * reopening one it already tried is free. Every lookup is logged.
    */
   async marker(userId: string, id: number): Promise<ArucoMarkerResult> {
-    this.assertOpen();
-    const team = await this.competitionTeam(userId);
+    const round = await this.liveRound();
+    const team = await this.playingTeam(userId, round);
     const limit = this.scanLimit();
-    const key = { teamId_markerId: { teamId: team.id, markerId: id } };
+    const row = await this.prisma.arucoMarker.findUnique({
+      where: { game_markerId: { game: round.game, markerId: id } },
+    });
+    const marker = row ? toMarker(row) : null;
+    const scope = { roundId: round.id, teamId: team.id };
+    const logScan = (outcome: string) =>
+      this.log(round, team, userId, { action: 'scan', markerId: id, outcome, content: row?.content ?? '' });
 
-    const already = await this.prisma.arucoScan.findUnique({ where: key });
+    const already = await this.prisma.arucoScan.findUnique({
+      where: { roundId_teamId_markerId: { ...scope, markerId: id } },
+    });
     if (!already) {
-      const before = await this.prisma.arucoScan.count({ where: { teamId: team.id } });
-      if (before >= limit) this.throwScanLimit(limit);
+      const before = await this.prisma.arucoScan.count({ where: scope });
+      if (before >= limit) {
+        await logScan('limit');
+        this.throwScanLimit(limit);
+      }
 
       let created = false;
       try {
-        await this.prisma.arucoScan.create({ data: { teamId: team.id, markerId: id } });
+        // A snapshot of what it showed, so the field log never changes under the team.
+        await this.prisma.arucoScan.create({
+          data: { ...scope, markerId: id, kind: row?.kind ?? null, content: row?.content ?? '', hintNumber: row?.hintNumber ?? null },
+        });
         created = true;
       } catch (err) {
         // A teammate tried the same ID at the same moment: it's recorded once.
@@ -109,17 +98,16 @@ export class ChallengeService {
       }
 
       // Two different new IDs racing for the last try: whoever overshoots gives it back.
-      const after = await this.prisma.arucoScan.count({ where: { teamId: team.id } });
+      const after = await this.prisma.arucoScan.count({ where: scope });
       if (created && after > limit) {
-        await this.prisma.arucoScan.deleteMany({ where: { teamId: team.id, markerId: id } });
+        await this.prisma.arucoScan.deleteMany({ where: { ...scope, markerId: id } });
+        await logScan('limit');
         this.throwScanLimit(limit);
       }
     }
 
-    const scansUsed = await this.prisma.arucoScan.count({ where: { teamId: team.id } });
-    // Read per scan: organizers reassign IDs from the admin portal mid-event.
-    const row = await this.prisma.arucoMarker.findUnique({ where: { markerId: id } });
-    const marker = row ? toMarker(row) : null;
+    await logScan(marker?.kind ?? 'none');
+    const scansUsed = await this.prisma.arucoScan.count({ where: scope });
     if (!marker) {
       throw new NotFoundException({
         statusCode: 404,
@@ -133,63 +121,73 @@ export class ChallengeService {
     return { ...marker, scansUsed, scanLimit: limit };
   }
 
-  /** The team's progress on one collector. */
-  async collectorStatus(userId: string, collector: number): Promise<ArucoCollectorStatusResult> {
-    this.assertOpen();
-    const n = this.assertCollector(collector);
-    const team = await this.competitionTeam(userId);
-    const progress = await this.prisma.arucoCollectorProgress.findUnique({
-      where: { teamId_collector: { teamId: team.id, collector: n } },
+  /** The team's word attempts in the live round. */
+  async wordStatus(userId: string): Promise<ArucoWordStatusResult> {
+    const round = await this.liveRound();
+    const team = await this.playingTeam(userId, round);
+    const progress = await this.prisma.arucoWordProgress.findUnique({
+      where: { roundId_teamId: { roundId: round.id, teamId: team.id } },
     });
-    return toStatus(n, team.name, progress);
+    return toWordStatus(team.name, progress);
   }
 
   /**
-   * Checks the word and records the attempt against the team. Once solved,
-   * or once all attempts are spent, further submissions are not counted -
-   * the current state is returned with `correct` reflecting only whether
-   * it's solved.
+   * Checks the word against the live round's game and records the attempt
+   * against the team. Once solved, or once all attempts are spent, further
+   * submissions are not counted - the current state is returned with
+   * `correct` reflecting only whether it's solved. Every word typed is logged.
    */
-  async submit(userId: string, collector: number, answer: string): Promise<ArucoSubmitResult> {
-    this.assertOpen();
-    const n = this.assertCollector(collector);
-    const expected = this.config.get<string>(answerEnvKey(n))?.trim();
-    if (!expected) {
-      throw new ServiceUnavailableException({
-        statusCode: 503,
-        error: 'Service Unavailable',
-        code: 'COLLECTOR_NOT_SET',
-        message: 'This collector is not set up yet. Ask the organizers.',
-      });
-    }
-    const team = await this.competitionTeam(userId);
-    const key = { teamId_collector: { teamId: team.id, collector: n } };
+  async submitWord(userId: string, answer: string): Promise<ArucoWordSubmitResult> {
+    const round = await this.liveRound();
+    const team = await this.playingTeam(userId, round);
+    const game = await this.prisma.arucoGame.findUniqueOrThrow({ where: { number: round.game } });
+    const key = { roundId_teamId: { roundId: round.id, teamId: team.id } };
 
-    await this.prisma.arucoCollectorProgress.upsert({
+    await this.prisma.arucoWordProgress.upsert({
       where: key,
-      create: { teamId: team.id, collector: n },
+      create: { roundId: round.id, teamId: team.id },
       update: {},
     });
 
-    const correct = matchesAnswer(answer, expected);
+    const correct = matchesAnswer(answer, game.word);
 
     // The attempt cap lives in the WHERE clause so two teammates submitting
     // at once can't both slip in under it.
-    const { count } = await this.prisma.arucoCollectorProgress.updateMany({
-      where: { teamId: team.id, collector: n, solved: false, attempts: { lt: MAX_ATTEMPTS } },
+    const { count } = await this.prisma.arucoWordProgress.updateMany({
+      where: { roundId: round.id, teamId: team.id, solved: false, attempts: { lt: MAX_ATTEMPTS } },
       data: {
         attempts: { increment: 1 },
         ...(correct ? { solved: true, solvedAt: new Date() } : {}),
       },
     });
 
-    const progress = await this.prisma.arucoCollectorProgress.findUnique({ where: key });
-    const status = toStatus(n, team.name, progress);
+    await this.log(round, team, userId, {
+      action: 'word',
+      outcome: count === 0 ? 'locked' : correct ? 'correct' : 'wrong',
+      content: answer.trim(),
+    });
+
+    const progress = await this.prisma.arucoWordProgress.findUnique({ where: key });
+    const status = toWordStatus(team.name, progress);
     return { ...status, correct: count > 0 ? correct : status.solved };
   }
 
-  private assertOpen() {
-    if (!this.isOpen()) {
+  private log(
+    round: Round,
+    team: Team,
+    userId: string,
+    event: { action: string; outcome: string; content: string; markerId?: number },
+  ) {
+    return this.prisma.arucoEvent.create({ data: { roundId: round.id, teamId: team.id, userId, ...event } });
+  }
+
+  private findLiveRound(): Promise<Round | null> {
+    return this.prisma.arucoRound.findFirst({ where: { endedAt: null }, select: { id: true, game: true } });
+  }
+
+  private async liveRound(): Promise<Round> {
+    const round = await this.findLiveRound();
+    if (!round) {
       throw new ForbiddenException({
         statusCode: 403,
         error: 'Forbidden',
@@ -197,6 +195,7 @@ export class ChallengeService {
         message: 'The ArUco challenge is closed.',
       });
     }
+    return round;
   }
 
   private throwScanLimit(limit: number): never {
@@ -210,13 +209,11 @@ export class ChallengeService {
     });
   }
 
-  private assertCollector(collector: number): CollectorNumber {
-    if (!isCollectorNumber(collector)) throw new NotFoundException(`No collector ${collector}`);
-    return collector;
-  }
-
-  /** Scans and collector attempts belong to the team: the user's Competition team. */
-  private async competitionTeam(userId: string): Promise<{ id: string; name: string }> {
+  /**
+   * Scans and word attempts belong to the team: the user's Competition team,
+   * which must be one the live round was started for.
+   */
+  private async playingTeam(userId: string, round: Round): Promise<Team> {
     const membership = await this.prisma.teamMembership.findFirst({
       where: { activity: TeamActivity.COMPETITION, participant: { userId } },
       select: { team: { select: { id: true, name: true } } },
@@ -228,6 +225,17 @@ export class ChallengeService {
         error: 'Forbidden',
         code: 'NO_COMPETITION_TEAM',
         message: 'You need to be in a Competition team to play the ArUco challenge.',
+      });
+    }
+    const playing = await this.prisma.arucoRoundTeam.findUnique({
+      where: { roundId_teamId: { roundId: round.id, teamId: membership.team.id } },
+    });
+    if (!playing) {
+      throw new ForbiddenException({
+        statusCode: 403,
+        error: 'Forbidden',
+        code: 'NOT_PLAYING',
+        message: 'Your team isn’t playing this game.',
       });
     }
     return membership.team;

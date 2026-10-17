@@ -1,27 +1,27 @@
 import { apiFetch } from './http';
 import type {
-  ArucoCollectorStatusResponse,
   ArucoMarkerLookup,
   ArucoScansResponse,
   ArucoStateResponse,
-  ArucoSubmitResponse,
+  ArucoWordStatusResponse,
+  ArucoWordSubmitResponse,
 } from './types';
 
 /**
  * Challenge (ArUco) service.
  *
- * The marker register lives on the backend so closing the challenge
- * (ARUCO_OPEN=false) hides it. Everything but `state` needs the signed-in
- * user's token: marker tries (distinct IDs) and collector attempts are
- * counted per Competition team.
+ * The games live on the backend, so nothing leaks before the admin portal
+ * starts a round. Everything but `state` needs the signed-in user's token:
+ * marker tries (distinct IDs) and word attempts are counted per Competition
+ * team, per round.
  */
 export const challengeService = {
-  /** GET /challenge/aruco/state - whether the challenge is open. */
+  /** GET /challenge/aruco/state - whether a round is live. */
   async state(): Promise<ArucoStateResponse> {
     return apiFetch<ArucoStateResponse>('/challenge/aruco/state');
   },
 
-  /** GET /challenge/aruco/scans - how many marker IDs the team has tried. */
+  /** GET /challenge/aruco/scans - the team's tries and field log this round. */
   async scans(token: string): Promise<ArucoScansResponse> {
     return apiFetch<ArucoScansResponse>('/challenge/aruco/scans', { token });
   },
@@ -31,16 +31,14 @@ export const challengeService = {
     return apiFetch<ArucoMarkerLookup>(`/challenge/aruco/markers/${id}`, { token });
   },
 
-  /** GET /challenge/aruco/collectors/:n/status - the team's attempts on a collector. */
-  async collectorStatus(collector: number, token: string): Promise<ArucoCollectorStatusResponse> {
-    return apiFetch<ArucoCollectorStatusResponse>(`/challenge/aruco/collectors/${collector}/status`, {
-      token,
-    });
+  /** GET /challenge/aruco/word - the team's word attempts this round. */
+  async wordStatus(token: string): Promise<ArucoWordStatusResponse> {
+    return apiFetch<ArucoWordStatusResponse>('/challenge/aruco/word', { token });
   },
 
-  /** POST /challenge/aruco/collectors/:n/submit - submit the team's word. */
-  async submit(collector: number, answer: string, token: string): Promise<ArucoSubmitResponse> {
-    return apiFetch<ArucoSubmitResponse>(`/challenge/aruco/collectors/${collector}/submit`, {
+  /** POST /challenge/aruco/word - submit the team's word. */
+  async submitWord(answer: string, token: string): Promise<ArucoWordSubmitResponse> {
+    return apiFetch<ArucoWordSubmitResponse>('/challenge/aruco/word', {
       method: 'POST',
       body: { answer },
       token,

@@ -1,81 +1,68 @@
 import * as crypto from 'crypto';
 
 /**
- * The ArUco challenge (Garden and Mine games). All markers are OpenCV
- * DICT_4X4_50; each ID belongs to one beacon only. What each ID gives lives in
- * the aruco_markers table, edited from the admin portal, not in the frontend
- * bundle, so closing the challenge (ARUCO_OPEN=false) really hides it.
+ * The ArUco challenge: three Garden games (Human, Machine, Alliance) on the
+ * same printed OpenCV DICT_4X4_50 markers. What each ID gives in each game,
+ * and each game's word, live in the database (aruco_games, aruco_markers),
+ * never in the frontend bundle, so nothing leaks before a round starts.
  */
 
-export type ArucoGame = 'Garden' | 'Mine';
-export type CollectorNumber = 1 | 2;
+export type ArucoMarkerKind = 'letter' | 'hint' | 'collector';
 
-export type ArucoMarker =
-  /** `quantity`: how many beacons carrying this ID are placed on the field. */
-  | { id: number; kind: 'beacon'; game: ArucoGame; name: string; clue: string; quantity: number }
-  | { id: number; kind: 'indicator'; game: ArucoGame; name: string; clue: string }
-  | { id: number; kind: 'collector'; game: ArucoGame; name: string; collector: CollectorNumber };
+/** What scanning a marker reveals. */
+export interface ArucoMarker {
+  id: number;
+  kind: ArucoMarkerKind;
+  /** "Red beacon", "Blue beacon" or "Collector". */
+  name: string;
+  /** The letter, or the hint's text. Absent for a collector. */
+  content?: string;
+  /** Hints only: which of the four (1-4). */
+  hint?: number;
+}
 
-/** Submissions allowed per team, per collector, before that collector locks. */
+/** Word attempts a team gets per round. */
 export const MAX_ATTEMPTS = 3;
 
 /**
- * Distinct marker IDs a team may try (ARUCO_SCAN_LIMIT overrides it), so a
- * team can't walk through all 50 DICT_4X4_50 IDs. Re-opening an ID the team
- * already tried is free.
+ * Distinct marker IDs a team may try per round (ARUCO_SCAN_LIMIT overrides
+ * it), so a team can't walk through all 50 IDs. Reopening one is free.
  */
 export const DEFAULT_SCAN_LIMIT = 20;
 
-/** The columns of an aruco_markers row that decide what the marker gives. */
-export interface ArucoMarkerRow {
+const NAMES: Record<ArucoMarkerKind, string> = {
+  letter: 'Red beacon',
+  hint: 'Blue beacon',
+  collector: 'Collector',
+};
+
+export function isMarkerKind(kind: string | null): kind is ArucoMarkerKind {
+  return kind === 'letter' || kind === 'hint' || kind === 'collector';
+}
+
+/** Shapes a marker row (or a scan's snapshot of one) as what scanning reveals. */
+export function toMarker(row: {
   markerId: number;
-  kind: string;
-  game: string;
-  name: string;
-  clue: string;
-  quantity: number | null;
-  collector: number | null;
+  kind: string | null;
+  content: string;
+  hintNumber: number | null;
+}): ArucoMarker | null {
+  if (!isMarkerKind(row.kind)) return null;
+  const marker: ArucoMarker = { id: row.markerId, kind: row.kind, name: NAMES[row.kind] };
+  if (row.kind !== 'collector') marker.content = row.content;
+  if (row.kind === 'hint' && row.hintNumber !== null) marker.hint = row.hintNumber;
+  return marker;
 }
 
 /**
- * Shapes an aruco_markers row as what scanning reveals. The table's CHECK
- * constraints keep rows well formed; anything else reads as "no marker".
- */
-export function toMarker(row: ArucoMarkerRow): ArucoMarker | null {
-  if (row.game !== 'Garden' && row.game !== 'Mine') return null;
-  const base = { id: row.markerId, game: row.game as ArucoGame, name: row.name };
-  switch (row.kind) {
-    case 'beacon':
-      return { ...base, kind: 'beacon', clue: row.clue, quantity: row.quantity ?? 1 };
-    case 'indicator':
-      return { ...base, kind: 'indicator', clue: row.clue };
-    case 'collector':
-      return row.collector !== null && isCollectorNumber(row.collector)
-        ? { ...base, kind: 'collector', collector: row.collector }
-        : null;
-    default:
-      return null;
-  }
-}
-
-export function isCollectorNumber(n: number): n is CollectorNumber {
-  return n === 1 || n === 2;
-}
-
-/** Env var holding a collector's word, e.g. ARUCO_COLLECTOR_1_ANSWER. */
-export function answerEnvKey(collector: CollectorNumber): string {
-  return `ARUCO_COLLECTOR_${collector}_ANSWER`;
-}
-
-/**
- * Normalizes an answer before comparing so case and surrounding whitespace
- * don't cause a correct answer to be rejected.
+ * Normalizes a word before comparing, so case and spaces ("alliance",
+ * " Alliance ", "ALL IANCE") don't make a right answer wrong.
  */
 export function normalizeAnswer(raw: string): string {
-  return raw.trim().toLowerCase();
+  return raw.replace(/\s+/g, '').toLowerCase();
 }
 
-/** Constant-time comparison of a candidate against the configured word. */
+/** Constant-time comparison of a candidate against the game's word. */
 export function matchesAnswer(candidate: string, expected: string): boolean {
   const digest = (s: string) => crypto.createHash('sha256').update(normalizeAnswer(s)).digest();
   return crypto.timingSafeEqual(digest(candidate), digest(expected));

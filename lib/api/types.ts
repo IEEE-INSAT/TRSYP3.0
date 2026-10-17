@@ -461,35 +461,33 @@ export interface MyRoom {
 
 // ── Challenge (ArUco markers) ─────────────────────────────────────────────────
 
-/** Response of GET /challenge/aruco/state (the backend's ARUCO_OPEN). */
+/** Response of GET /challenge/aruco/state - whether a round is live. */
 export interface ArucoStateResponse {
   open: boolean;
 }
 
-/** Response of GET /challenge/aruco/scans - the team's marker tries. */
+/** Response of GET /challenge/aruco/scans - the team's tries this round. */
 export interface ArucoScansResponse {
   teamName: string;
-  /** Distinct marker IDs the team has tried. */
+  /** Distinct marker IDs the team has tried this round. */
   used: number;
-  /** Distinct marker IDs a team may try. */
+  /** Distinct marker IDs a team may try per round. */
   limit: number;
-  /** The team's field log: the real markers among the IDs it tried, oldest first. */
+  /** The team's field log: the real markers among the IDs it tried, as they showed, oldest first. */
   found: ArucoMarker[];
 }
 
 /** Response of GET /challenge/aruco/markers/:id - what scanning a marker reveals. */
 export interface ArucoMarker {
   id: number;
-  kind: 'beacon' | 'indicator' | 'collector';
-  game: 'Garden' | 'Mine';
-  /** Designation, e.g. "Red beacon", "Indicator 2", "Collector 1". */
+  /** letter: a red beacon; hint: a blue beacon; collector: asks for the word. */
+  kind: 'letter' | 'hint' | 'collector';
+  /** "Red beacon", "Blue beacon" or "Collector". */
   name: string;
-  /** What a beacon or indicator gives. Empty while not set yet. */
-  clue?: string;
-  /** How many beacons with this ID are on the field, for beacons only. */
-  quantity?: number;
-  /** Collector number, for collectors only. */
-  collector?: number;
+  /** The letter, or the hint's text. Absent for a collector. */
+  content?: string;
+  /** Hints only: which of the four (1-4). */
+  hint?: number;
 }
 
 /** A marker lookup also reports the team's tries after it. */
@@ -498,23 +496,22 @@ export interface ArucoMarkerLookup extends ArucoMarker {
   scanLimit: number;
 }
 
-/** Response of GET /challenge/aruco/collectors/:n/status - the team's progress. */
-export interface ArucoCollectorStatusResponse {
-  collector: number;
+/** Response of GET /challenge/aruco/word - the team's word attempts this round. */
+export interface ArucoWordStatusResponse {
   teamName: string;
   solved: boolean;
   attempts: number;
-  /** Attempts left before this collector locks (0 once solved or lost). */
+  /** Attempts left (0 once solved or lost). */
   attemptsLeft: number;
 }
 
-/** Body of POST /challenge/aruco/collectors/:n/submit. */
+/** Body of POST /challenge/aruco/word. */
 export interface ArucoSubmitPayload {
   answer: string;
 }
 
-/** Response of POST /challenge/aruco/collectors/:n/submit. */
-export interface ArucoSubmitResponse extends ArucoCollectorStatusResponse {
+/** Response of POST /challenge/aruco/word. */
+export interface ArucoWordSubmitResponse extends ArucoWordStatusResponse {
   correct: boolean;
 }
 

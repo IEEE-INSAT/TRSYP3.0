@@ -46,14 +46,8 @@ services:
         sync: false
       - key: PAYMENT_PROOF_OPEN
         value: "false"
-      - key: ARUCO_OPEN
-        value: "false"
       - key: ARUCO_SCAN_LIMIT
         value: "20"
-      - key: ARUCO_COLLECTOR_1_ANSWER
-        sync: false
-      - key: ARUCO_COLLECTOR_2_ANSWER
-        sync: false
       - key: NEXT_PUBLIC_API_URL
         value: /api
       - key: NEXT_PUBLIC_SUPABASE_URL

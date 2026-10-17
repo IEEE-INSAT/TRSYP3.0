@@ -47,17 +47,9 @@ import { EthicsModule } from './modules/ethics/ethics.module';
                 PAYMENT_PROOF_OPEN: Joi.string()
                     .valid('true', 'false')
                     .default('false'),
-                // The ArUco challenge switch. Read per request and reported
-                // by GET /challenge/aruco/state, so no frontend rebuild.
-                ARUCO_OPEN: Joi.string()
-                    .valid('true', 'false')
-                    .default('false'),
-                // The word each collector accepts (case-insensitive). A
-                // collector without one refuses submissions.
-                // Distinct marker IDs a team may try on /aruco.
+                // Distinct marker IDs a team may try per ArUco round. The
+                // challenge itself opens and closes from the admin portal.
                 ARUCO_SCAN_LIMIT: Joi.number().integer().min(1).default(20),
-                ARUCO_COLLECTOR_1_ANSWER: Joi.string().optional(),
-                ARUCO_COLLECTOR_2_ANSWER: Joi.string().optional(),
                 FABLAB_REGISTRATION_PHASE: Joi.string()
                     .valid('soon', 'open', 'closed')
                     .default('closed'),

@@ -19,18 +19,19 @@ import {
   ArucoStateResponseDto,
   ArucoScansResponseDto,
   ArucoMarkerResponseDto,
-  ArucoCollectorStatusResponseDto,
-  ArucoSubmitResponseDto,
+  ArucoWordStatusResponseDto,
+  ArucoWordSubmitResponseDto,
 } from '../dto';
 import { ZodValidationPipe } from '../../../common/pipes';
 import { JwtAuthGuard } from '../../../common/guards';
 import { CurrentUser } from '../../../common/decorators';
 
 /**
- * ArUco challenge controller (Garden and Mine games).
- * Everything but `state` is refused while ARUCO_OPEN is not "true", and
- * needs a signed-in member of a Competition team. Marker tries (distinct IDs,
- * ARUCO_SCAN_LIMIT) and collector attempts are counted per team.
+ * ArUco challenge controller (the Garden games).
+ * Everything but `state` is refused while no round is live, and needs a
+ * signed-in member of a Competition team the live round was started for.
+ * Marker tries (distinct IDs, ARUCO_SCAN_LIMIT) and word attempts are counted
+ * per team per round.
  */
 @ApiTags('Challenge')
 @Controller('challenge/aruco')
@@ -38,10 +39,10 @@ export class ChallengeController {
   constructor(private readonly challengeService: ChallengeService) {}
 
   @Get('state')
-  @ApiOperation({ summary: 'Whether the ArUco challenge is open' })
+  @ApiOperation({ summary: 'Whether a round is live' })
   @ApiResponse({ status: 200, type: ArucoStateResponseDto })
-  state(): ArucoStateResponseDto {
-    return plainToInstance(ArucoStateResponseDto, this.challengeService.state(), {
+  async state(): Promise<ArucoStateResponseDto> {
+    return plainToInstance(ArucoStateResponseDto, await this.challengeService.state(), {
       excludeExtraneousValues: true,
     });
   }
@@ -49,10 +50,10 @@ export class ChallengeController {
   @Get('scans')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "How many marker IDs the user's team has tried" })
+  @ApiOperation({ summary: "The user's team tries and field log in the live round" })
   @ApiResponse({ status: 200, type: ArucoScansResponseDto })
   @ApiResponse({ status: 401, description: 'Not signed in' })
-  @ApiResponse({ status: 403, description: 'Challenge closed, or not in a Competition team' })
+  @ApiResponse({ status: 403, description: 'No live round, not in a Competition team, or team not playing it' })
   async scans(@CurrentUser('sub') userId: string): Promise<ArucoScansResponseDto> {
     const result = await this.challengeService.scans(userId);
     return plainToInstance(ArucoScansResponseDto, result, { excludeExtraneousValues: true });
@@ -65,7 +66,7 @@ export class ChallengeController {
   @ApiOperation({ summary: 'What scanning a marker reveals (uses one of the team’s tries for a new ID)' })
   @ApiResponse({ status: 200, type: ArucoMarkerResponseDto })
   @ApiResponse({ status: 401, description: 'Not signed in' })
-  @ApiResponse({ status: 403, description: 'Challenge closed, not in a Competition team, or tries used up' })
+  @ApiResponse({ status: 403, description: 'No live round, team not playing it, or tries used up' })
   @ApiResponse({ status: 404, description: 'No marker with that ID (the try still counts)' })
   async marker(
     @CurrentUser('sub') userId: string,
@@ -75,37 +76,32 @@ export class ChallengeController {
     return plainToInstance(ArucoMarkerResponseDto, result, { excludeExtraneousValues: true });
   }
 
-  @Get('collectors/:collector/status')
+  @Get('word')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: "The signed-in user's team progress on a collector" })
-  @ApiResponse({ status: 200, type: ArucoCollectorStatusResponseDto })
+  @ApiOperation({ summary: "The signed-in user's team word attempts in the live round" })
+  @ApiResponse({ status: 200, type: ArucoWordStatusResponseDto })
   @ApiResponse({ status: 401, description: 'Not signed in' })
-  @ApiResponse({ status: 403, description: 'Challenge closed, or not in a Competition team' })
-  async collectorStatus(
-    @CurrentUser('sub') userId: string,
-    @Param('collector', ParseIntPipe) collector: number,
-  ): Promise<ArucoCollectorStatusResponseDto> {
-    const result = await this.challengeService.collectorStatus(userId, collector);
-    return plainToInstance(ArucoCollectorStatusResponseDto, result, { excludeExtraneousValues: true });
+  @ApiResponse({ status: 403, description: 'No live round, not in a Competition team, or team not playing it' })
+  async wordStatus(@CurrentUser('sub') userId: string): Promise<ArucoWordStatusResponseDto> {
+    const result = await this.challengeService.wordStatus(userId);
+    return plainToInstance(ArucoWordStatusResponseDto, result, { excludeExtraneousValues: true });
   }
 
-  @Post('collectors/:collector/submit')
+  @Post('word')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
-  @ApiOperation({ summary: "Submit the team's word for a collector" })
-  @ApiResponse({ status: 200, type: ArucoSubmitResponseDto })
+  @ApiOperation({ summary: "Submit the team's word for the live round (markers 6 and 47)" })
+  @ApiResponse({ status: 200, type: ArucoWordSubmitResponseDto })
   @ApiResponse({ status: 401, description: 'Not signed in' })
-  @ApiResponse({ status: 403, description: 'Challenge closed, or not in a Competition team' })
-  @ApiResponse({ status: 503, description: 'Collector word not configured' })
-  async submit(
+  @ApiResponse({ status: 403, description: 'No live round, not in a Competition team, or team not playing it' })
+  async submitWord(
     @CurrentUser('sub') userId: string,
-    @Param('collector', ParseIntPipe) collector: number,
     @Body(new ZodValidationPipe(SubmitArucoAnswerSchema)) dto: SubmitArucoAnswerDto,
-  ): Promise<ArucoSubmitResponseDto> {
-    const result = await this.challengeService.submit(userId, collector, dto.answer);
-    return plainToInstance(ArucoSubmitResponseDto, result, { excludeExtraneousValues: true });
+  ): Promise<ArucoWordSubmitResponseDto> {
+    const result = await this.challengeService.submitWord(userId, dto.answer);
+    return plainToInstance(ArucoWordSubmitResponseDto, result, { excludeExtraneousValues: true });
   }
 }
