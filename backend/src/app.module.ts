@@ -14,6 +14,7 @@ import { RegistrationModule } from './modules/registration/registration.module';
 import { ChallengeModule } from './modules/challenge/challenge.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { WorkshopModule } from './modules/workshop/workshop.module';
+import { SmashRoomModule } from './modules/smash-room/smash-room.module';
 
 @Module({
     imports: [
@@ -78,6 +79,11 @@ import { WorkshopModule } from './modules/workshop/workshop.module';
                 // Comma-separated emails that may book without payment -
                 // for testing. Their seats are real.
                 WORKSHOP_TESTER_EMAILS: Joi.string().allow('').optional(),
+                // Smash Room form. Read per request and reported by
+                // GET /smash-room, so no frontend rebuild.
+                SMASH_ROOM_PHASE: Joi.string()
+                    .valid('soon', 'open', 'closed')
+                    .default('closed'),
                 // IEEE GetMemberStatus credentials, shared with the admin
                 // portal. Without them no membership checks run.
                 IEEE_API_BASE_URL: Joi.string().uri().optional(),
@@ -100,6 +106,7 @@ import { WorkshopModule } from './modules/workshop/workshop.module';
         ChallengeModule,
         PaymentModule,
         WorkshopModule,
+        SmashRoomModule,
     ],
     controllers: [AppController],
     providers: [

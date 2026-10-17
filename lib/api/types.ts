@@ -603,3 +603,50 @@ export interface WorkshopOverview {
   /** The caller's technical challenge team, null when not on one. */
   team: TeamDuty | null;
 }
+
+// ── Smash Room ────────────────────────────────────────────────────────────────
+
+/** Backend `SMASH_ROOM_PHASE`, reported by GET /smash-room. */
+export type SmashRoomPhase = 'soon' | 'open' | 'closed';
+
+export type SmashPassType = 'DUO' | 'TRIO' | 'SQUAD';
+
+/** A submitted form. Exactly one of `sb` and `university` is set. */
+export interface SmashRoomEntry {
+  id: string;
+  firstName: string;
+  lastName: string;
+  sb: SB | null;
+  university: string | null;
+  riddleAnswer: string;
+  passType: SmashPassType;
+  createdAt: string;
+}
+
+/** GET /smash-room */
+export interface SmashRoomOverview {
+  phase: SmashRoomPhase;
+  /** Not banned, and paid or with a payment waiver. */
+  canSubmit: boolean;
+  /** Null until the caller submits. */
+  entry: SmashRoomEntry | null;
+  /** What the profile already says, to start the form from. */
+  prefill: {
+    firstName: string;
+    lastName: string;
+    isIeee: boolean;
+    sb: SB | null;
+    /** Non-members: their international affiliation, else their school. */
+    university: string | null;
+  };
+}
+
+/** POST /smash-room body. */
+export interface SubmitSmashRoomPayload {
+  firstName: string;
+  lastName: string;
+  sb: SB | null;
+  university: string | null;
+  riddleAnswer: string;
+  passType: SmashPassType;
+}

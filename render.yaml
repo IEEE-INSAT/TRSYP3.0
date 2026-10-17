@@ -40,6 +40,8 @@ services:
         value: "5"
       - key: WORKSHOP_TESTER_EMAILS
         sync: false
+      - key: SMASH_ROOM_PHASE
+        value: closed
       - key: PAYMENT_PROOF_OPEN
         value: "false"
       - key: ARUCO_OPEN

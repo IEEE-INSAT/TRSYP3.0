@@ -26,6 +26,7 @@ services:
       ROOMING_PHASE: ${ROOMING_PHASE:-closed}
       WORKSHOP_BOOKING_PHASE: ${WORKSHOP_BOOKING_PHASE:-closed}
       WORKSHOP_SB_PENALTY: ${WORKSHOP_SB_PENALTY:-5}
+      SMASH_ROOM_PHASE: ${SMASH_ROOM_PHASE:-closed}
     ports:
       - "3000:10000"
     restart: unless-stopped

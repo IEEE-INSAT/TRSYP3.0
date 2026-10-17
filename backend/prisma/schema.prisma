@@ -109,6 +109,7 @@ model Participant {
   ieeeVerification  IeeeVerification?
   workshopBookings  WorkshopBooking[]
   workshopPaymentWaiver WorkshopPaymentWaiver?
+  smashRoomEntry    SmashRoomEntry?
 
   @@map("participants")
 }
@@ -480,6 +481,32 @@ model WorkshopBooking {
   @@unique([participantId, session])
   @@index([workshopId])
   @@map("workshop_bookings")
+}
+
+// --- Smash Room Module ---
+// One submission per participant, final. The riddle answer is stored as typed
+// and judged by the organisers. Exactly one of `sb` (IEEE members) and
+// `university` (everyone else) is set.
+model SmashRoomEntry {
+  id            String        @id @default(uuid())
+  participantId String        @unique @map("participant_id")
+  firstName     String        @map("first_name")
+  lastName      String        @map("last_name")
+  sb            SB?
+  university    String?
+  riddleAnswer  String        @map("riddle_answer")
+  passType      SmashPassType @map("pass_type")
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  participant Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@map("smash_room_entries")
+}
+
+enum SmashPassType {
+  DUO
+  TRIO
+  SQUAD
 }
 
 // --- Visa Module ---
