@@ -10108,28 +10108,38 @@ select.reg-input option {
   gap: 22px;
 }
 
-.aruco-qty {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.aruco-qty-label {
+/* A Mine marker's verdict: green when the path is safe, pink when it isn't. */
+.aruco-path {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 26px;
+  border-radius: 20px;
+  border: 1px solid;
   font-family: var(--font-heading);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.aruco-qty-num {
-  font-family: var(--font-heading);
-  font-size: 44px;
+  font-size: clamp(30px, 4vw, 44px);
   font-weight: 800;
+  letter-spacing: 0.04em;
   line-height: 1;
-  font-variant-numeric: tabular-nums;
+  text-transform: uppercase;
+}
+
+.aruco-path svg {
+  width: 0.9em;
+  height: 0.9em;
+  flex-shrink: 0;
+}
+
+.aruco-path--safe {
   color: var(--color-green);
+  border-color: rgba(0, 232, 122, 0.4);
+  background: rgba(0, 232, 122, 0.08);
+}
+
+.aruco-path--unsafe {
+  color: var(--color-pink);
+  border-color: rgba(255, 29, 120, 0.45);
+  background: rgba(255, 29, 120, 0.08);
 }
 
 .aruco-phrase {
@@ -10431,10 +10441,6 @@ button.aruco-slot--active:hover {
   .aruco-source {
     font-size: 13px;
     letter-spacing: 0.1em;
-  }
-
-  .aruco-qty-num {
-    font-size: 36px;
   }
 
   .aruco-log {

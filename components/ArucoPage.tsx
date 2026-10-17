@@ -108,6 +108,7 @@ function errorScans(err: unknown): { used: number; limit: number } | undefined {
 function logLabel(m: ArucoMarker): string {
   if (m.kind === 'letter' && m.content) return `“${m.content}”`;
   if (m.kind === 'hint' && m.hint) return `Hint ${m.hint}`;
+  if (m.kind === 'path') return m.content === 'safe' ? 'Safe path' : 'Unsafe path';
   return m.name;
 }
 
@@ -579,6 +580,7 @@ function ErrorNotice({ title, message, onRetry }: { title: string; message?: str
 
 function MarkerResult({ marker }: { marker: ArucoMarker }) {
   if (marker.kind === 'collector') return <WordBox />;
+  if (marker.kind === 'path') return <PathResult safe={marker.content === 'safe'} />;
 
   const isLetter = marker.kind === 'letter';
   return (
@@ -596,6 +598,24 @@ function MarkerResult({ marker }: { marker: ArucoMarker }) {
         // A hint's own text carries its quotes when it is a quotation.
         <p className="aruco-phrase">{marker.content}</p>
       )}
+    </>
+  );
+}
+
+/** A Mine marker: whether its path is safe. */
+function PathResult({ safe }: { safe: boolean }) {
+  return (
+    <>
+      <p className="aruco-source">
+        <span className={`aruco-source-dot aruco-source-dot--${safe ? 'green' : 'red'}`} />
+        Mine marker
+      </p>
+      <p className={`aruco-path aruco-path--${safe ? 'safe' : 'unsafe'}`}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          {safe ? <path d="M5 12.5l4.5 4.5L19 7.5" /> : <path d="M6 6l12 12M18 6L6 18" />}
+        </svg>
+        {safe ? 'Safe path' : 'Unsafe path'}
+      </p>
     </>
   );
 }

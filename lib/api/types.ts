@@ -480,11 +480,11 @@ export interface ArucoScansResponse {
 /** Response of GET /challenge/aruco/markers/:id - what scanning a marker reveals. */
 export interface ArucoMarker {
   id: number;
-  /** letter: a red beacon; hint: a blue beacon; collector: asks for the word. */
-  kind: 'letter' | 'hint' | 'collector';
-  /** "Red beacon", "Blue beacon" or "Collector". */
+  /** letter: a red beacon; hint: a blue beacon; collector: asks for the word; path: a Mine marker. */
+  kind: 'letter' | 'hint' | 'collector' | 'path';
+  /** "Red beacon", "Blue beacon", "Collector" or "Mine marker". */
   name: string;
-  /** The letter, or the hint's text. Absent for a collector. */
+  /** The letter, the hint's text, or safe | unsafe for a path. Absent for a collector. */
   content?: string;
   /** Hints only: which of the four (1-4). */
   hint?: number;

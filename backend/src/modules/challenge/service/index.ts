@@ -11,7 +11,8 @@ import {
   ArucoWordSubmitResult,
 } from '../domain';
 
-type Round = { id: string; game: number };
+/** The live round, with what its game sets: its tries per team, and whether it has a word. */
+type Round = { id: string; game: number; scanLimit: number | null; hasWord: boolean };
 type Team = { id: string; name: string };
 
 function toWordStatus(
@@ -40,8 +41,12 @@ export class ChallengeService {
     return { open: (await this.findLiveRound()) !== null };
   }
 
-  /** ARUCO_SCAN_LIMIT, read per request; falls back to the default when unset or invalid. */
-  scanLimit(): number {
+  /**
+   * Tries per team in a round: the game's own limit (Mine games: 6), else
+   * ARUCO_SCAN_LIMIT, read per request, else the default.
+   */
+  scanLimit(round?: Round): number {
+    if (round?.scanLimit) return round.scanLimit;
     const n = Number(this.config.get('ARUCO_SCAN_LIMIT'));
     return Number.isInteger(n) && n > 0 ? n : DEFAULT_SCAN_LIMIT;
   }
@@ -55,18 +60,18 @@ export class ChallengeService {
       orderBy: { createdAt: 'asc' },
     });
     const found = tried.flatMap((scan) => toMarker(scan) ?? []);
-    return { teamName: team.name, used: tried.length, limit: this.scanLimit(), found };
+    return { teamName: team.name, used: tried.length, limit: this.scanLimit(round), found };
   }
 
   /**
    * What scanning a marker reveals in the live round's game. Each new ID a
-   * team tries - real or not - uses one of its ARUCO_SCAN_LIMIT tries;
+   * team tries - real or not - uses one of its tries (see scanLimit);
    * reopening one it already tried is free. Every lookup is logged.
    */
   async marker(userId: string, id: number): Promise<ArucoMarkerResult> {
     const round = await this.liveRound();
     const team = await this.playingTeam(userId, round);
-    const limit = this.scanLimit();
+    const limit = this.scanLimit(round);
     const row = await this.prisma.arucoMarker.findUnique({
       where: { game_markerId: { game: round.game, markerId: id } },
     });
@@ -124,6 +129,7 @@ export class ChallengeService {
   /** The team's word attempts in the live round. */
   async wordStatus(userId: string): Promise<ArucoWordStatusResult> {
     const round = await this.liveRound();
+    this.assertHasWord(round);
     const team = await this.playingTeam(userId, round);
     const progress = await this.prisma.arucoWordProgress.findUnique({
       where: { roundId_teamId: { roundId: round.id, teamId: team.id } },
@@ -139,6 +145,7 @@ export class ChallengeService {
    */
   async submitWord(userId: string, answer: string): Promise<ArucoWordSubmitResult> {
     const round = await this.liveRound();
+    this.assertHasWord(round);
     const team = await this.playingTeam(userId, round);
     const game = await this.prisma.arucoGame.findUniqueOrThrow({ where: { number: round.game } });
     const key = { roundId_teamId: { roundId: round.id, teamId: team.id } };
@@ -149,7 +156,7 @@ export class ChallengeService {
       update: {},
     });
 
-    const correct = matchesAnswer(answer, game.word);
+    const correct = matchesAnswer(answer, game.word ?? '');
 
     // The attempt cap lives in the WHERE clause so two teammates submitting
     // at once can't both slip in under it.
@@ -181,8 +188,25 @@ export class ChallengeService {
     return this.prisma.arucoEvent.create({ data: { roundId: round.id, teamId: team.id, userId, ...event } });
   }
 
-  private findLiveRound(): Promise<Round | null> {
-    return this.prisma.arucoRound.findFirst({ where: { endedAt: null }, select: { id: true, game: true } });
+  private async findLiveRound(): Promise<Round | null> {
+    const round = await this.prisma.arucoRound.findFirst({
+      where: { endedAt: null },
+      select: { id: true, game: true, arucoGame: { select: { scanLimit: true, word: true } } },
+    });
+    if (!round) return null;
+    return { id: round.id, game: round.game, scanLimit: round.arucoGame.scanLimit, hasWord: !!round.arucoGame.word };
+  }
+
+  /** Mine games have no word to submit. */
+  private assertHasWord(round: Round) {
+    if (!round.hasWord) {
+      throw new ForbiddenException({
+        statusCode: 403,
+        error: 'Forbidden',
+        code: 'NO_WORD',
+        message: 'This game has no word to submit.',
+      });
+    }
   }
 
   private async liveRound(): Promise<Round> {

@@ -40,15 +40,15 @@ export class ArucoMarkerDto {
   @Expose()
   id!: number;
 
-  @ApiProperty({ enum: ['letter', 'hint', 'collector'] })
+  @ApiProperty({ enum: ['letter', 'hint', 'collector', 'path'] })
   @Expose()
-  kind!: 'letter' | 'hint' | 'collector';
+  kind!: 'letter' | 'hint' | 'collector' | 'path';
 
-  @ApiProperty({ description: '"Red beacon", "Blue beacon" or "Collector"' })
+  @ApiProperty({ description: '"Red beacon", "Blue beacon", "Collector" or "Mine marker"' })
   @Expose()
   name!: string;
 
-  @ApiPropertyOptional({ description: 'The letter, or the hint text; absent for a collector' })
+  @ApiPropertyOptional({ description: 'The letter, the hint text, or safe | unsafe for a path; absent for a collector' })
   @Expose()
   content?: string;
 
@@ -66,7 +66,7 @@ export class ArucoScansResponseDto {
   @Expose()
   used!: number;
 
-  @ApiProperty({ description: 'Distinct marker IDs a team may try per round (ARUCO_SCAN_LIMIT)' })
+  @ApiProperty({ description: "Distinct marker IDs a team may try per round (the game's own limit, else ARUCO_SCAN_LIMIT)" })
   @Expose()
   limit!: number;
 

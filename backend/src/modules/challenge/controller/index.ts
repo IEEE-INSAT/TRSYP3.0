@@ -31,8 +31,8 @@ import { playerTracker } from '../player-tracker';
  * ArUco challenge controller (the Garden games).
  * Everything but `state` is refused while no round is live, and needs a
  * signed-in member of a Competition team the live round was started for.
- * Marker tries (distinct IDs, ARUCO_SCAN_LIMIT) and word attempts are counted
- * per team per round.
+ * Marker tries (distinct IDs; 6 in a Mine game, else ARUCO_SCAN_LIMIT) and
+ * word attempts (Garden games only) are counted per team per round.
  *
  * Rate limits count per signed-in player (playerTracker), since the teams
  * share the venue's Wi-Fi: 60 requests a minute each, the field log's 20s
