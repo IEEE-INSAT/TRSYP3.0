@@ -15,6 +15,7 @@ import { ChallengeModule } from './modules/challenge/challenge.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { WorkshopModule } from './modules/workshop/workshop.module';
 import { SmashRoomModule } from './modules/smash-room/smash-room.module';
+import { EthicsModule } from './modules/ethics/ethics.module';
 
 @Module({
     imports: [
@@ -84,6 +85,9 @@ import { SmashRoomModule } from './modules/smash-room/smash-room.module';
                 SMASH_ROOM_PHASE: Joi.string()
                     .valid('soon', 'open', 'closed')
                     .default('closed'),
+                // Key the moderators type on /ethics-control to pace the
+                // Ethical Decision Test. Without it the control page refuses.
+                ETHICS_MODERATOR_KEY: Joi.string().allow('').optional(),
                 // IEEE GetMemberStatus credentials, shared with the admin
                 // portal. Without them no membership checks run.
                 IEEE_API_BASE_URL: Joi.string().uri().optional(),
@@ -107,6 +111,7 @@ import { SmashRoomModule } from './modules/smash-room/smash-room.module';
         PaymentModule,
         WorkshopModule,
         SmashRoomModule,
+        EthicsModule,
     ],
     controllers: [AppController],
     providers: [

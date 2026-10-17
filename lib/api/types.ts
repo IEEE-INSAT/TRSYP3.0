@@ -650,3 +650,15 @@ export interface SubmitSmashRoomPayload {
   riddleAnswer: string;
   passType: SmashPassType;
 }
+
+// ── Ethical Decision Test ─────────────────────────────────────────────────────
+
+/**
+ * GET /ethics/state - set by the moderators. `step` 0 is waiting to start,
+ * 1..n is scenario n, anything past the last scenario is finished.
+ */
+export interface EthicsState {
+  step: number;
+  votingOpen: boolean;
+  updatedAt: string;
+}

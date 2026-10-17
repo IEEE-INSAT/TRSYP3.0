@@ -5,4 +5,5 @@ export { challengeService } from './challenge.service';
 export { roomingService } from './rooming.service';
 export { workshopService } from './workshop.service';
 export { smashRoomService } from './smash-room.service';
+export { ethicsService } from './ethics.service';
 export * from './types';

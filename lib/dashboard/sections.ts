@@ -32,10 +32,14 @@ export const WORKSHOPS_ENABLED = true;
  */
 export const SMASH_ROOM_ENABLED = true;
 
+/** Ethical Decision Test: scenarios voted on in the browser, nothing saved. */
+export const ETHICS_TEST_ENABLED = true;
+
 export type DashboardSectionId =
   | 'overview'
   | 'workshops'
   | 'smash-room'
+  | 'ethics-test'
   | 'profile'
   | 'avatar'
   | 'rooming'
@@ -68,6 +72,7 @@ export const DASHBOARD_SECTIONS: DashboardSection[] = [
   { id: 'rooming', label: 'Rooming', href: '/dashboard/rooming', enabled: ROOMING_ENABLED, gated: true },
   { id: 'workshops', label: 'Workshops', href: '/dashboard/workshops', enabled: WORKSHOPS_ENABLED, gated: true },
   { id: 'smash-room', label: 'Smash Room', href: '/dashboard/smash-room', enabled: SMASH_ROOM_ENABLED, gated: true },
+  { id: 'ethics-test', label: 'Ethical Decision Test', href: '/dashboard/ethical-decision-test', enabled: ETHICS_TEST_ENABLED, gated: true },
   { id: 'aruco', label: 'ArUco', href: '/aruco', enabled: true, gated: true, requires: 'competitionTeam' },
 ];
 

@@ -42,6 +42,8 @@ services:
         sync: false
       - key: SMASH_ROOM_PHASE
         value: closed
+      - key: ETHICS_MODERATOR_KEY
+        sync: false
       - key: PAYMENT_PROOF_OPEN
         value: "false"
       - key: ARUCO_OPEN

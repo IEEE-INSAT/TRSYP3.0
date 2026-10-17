@@ -509,6 +509,20 @@ enum SmashPassType {
   SQUAD
 }
 
+// --- Ethics Module ---
+// The live Ethical Decision Test, paced by the moderators. One row (id 1):
+// which step every participant's screen shows - 0 waiting to start, 1..n a
+// scenario, past the last one finished - and whether voting is open on it.
+// Votes are not stored anywhere.
+model EthicsSession {
+  id         Int      @id @default(1)
+  step       Int      @default(0)
+  votingOpen Boolean  @default(true) @map("voting_open")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("ethics_session")
+}
+
 // --- Visa Module ---
 // Define visa-related models here
 
