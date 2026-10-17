@@ -26,3 +26,6 @@ coverage/
 # Local pnpm setup
 pnpm-lock.yaml
 pnpm-workspace.yaml
+
+# oh-my-claudecode plugin state (local only)
+.omc/
