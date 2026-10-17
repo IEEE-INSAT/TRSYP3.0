@@ -11,6 +11,7 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     "backend/**",
     "old_trs/**",
+    "ethics-test/**",
   ]),
 ]);
 
