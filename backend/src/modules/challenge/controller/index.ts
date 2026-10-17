@@ -25,6 +25,7 @@ import {
 import { ZodValidationPipe } from '../../../common/pipes';
 import { JwtAuthGuard } from '../../../common/guards';
 import { CurrentUser } from '../../../common/decorators';
+import { playerTracker } from '../player-tracker';
 
 /**
  * ArUco challenge controller (the Garden games).
@@ -32,9 +33,14 @@ import { CurrentUser } from '../../../common/decorators';
  * signed-in member of a Competition team the live round was started for.
  * Marker tries (distinct IDs, ARUCO_SCAN_LIMIT) and word attempts are counted
  * per team per round.
+ *
+ * Rate limits count per signed-in player (playerTracker), since the teams
+ * share the venue's Wi-Fi: 60 requests a minute each, the field log's 20s
+ * refresh included, with tighter limits on scans and words below.
  */
 @ApiTags('Challenge')
 @Controller('challenge/aruco')
+@Throttle({ default: { limit: 60, ttl: 60_000, getTracker: playerTracker } })
 export class ChallengeController {
   constructor(private readonly challengeService: ChallengeService) {}
 
@@ -62,7 +68,7 @@ export class ChallengeController {
   @Get('markers/:id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  @Throttle({ default: { limit: 30, ttl: 60_000, getTracker: playerTracker } })
   @ApiOperation({ summary: 'What scanning a marker reveals (uses one of the team’s tries for a new ID)' })
   @ApiResponse({ status: 200, type: ArucoMarkerResponseDto })
   @ApiResponse({ status: 401, description: 'Not signed in' })
@@ -92,7 +98,7 @@ export class ChallengeController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle({ default: { limit: 10, ttl: 60_000, getTracker: playerTracker } })
   @ApiOperation({ summary: "Submit the team's word for the live round (markers 6 and 47)" })
   @ApiResponse({ status: 200, type: ArucoWordSubmitResponseDto })
   @ApiResponse({ status: 401, description: 'Not signed in' })
