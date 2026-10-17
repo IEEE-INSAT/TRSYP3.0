@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useEffect, useMemo, FormEvent, ReactNode } from 'react';
+import { useState, useEffect, FormEvent, ReactNode } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { challengeService, ApiError } from '@/lib/api';
 import type { ArucoCollectorStatusResponse, ArucoMarker, ArucoScansResponse } from '@/lib/api';
 import { useAuthStore } from '@/lib/store/auth-store';
-import { useHydrated } from '@/lib/store/use-hydrated';
 import AuthModal from './AuthModal';
 
 // ── Markers ─────────────────────────────────────────────────────────────────
@@ -74,34 +73,6 @@ const MARKER_BITS: Record<number, string[]> = {
 
 const MAX_ATTEMPTS = 3;
 const EASE_OUT = [0.16, 1, 0.3, 1] as const;
-
-// ── Field log (per-device convenience, never authoritative) ─────────────────
-
-/** Bumped when team progress is wiped, so devices drop their old logs too. */
-const LOG_KEY = 'trsyp_aruco_log_v3';
-
-function isMarker(value: unknown): value is ArucoMarker {
-  if (!value || typeof value !== 'object') return false;
-  const m = value as Record<string, unknown>;
-  return typeof m.id === 'number' && m.id in MARKER_BITS && typeof m.kind === 'string' && typeof m.name === 'string';
-}
-
-function readLog(): ArucoMarker[] {
-  try {
-    const parsed: unknown = JSON.parse(window.localStorage.getItem(LOG_KEY) ?? '[]');
-    return Array.isArray(parsed) ? parsed.filter(isMarker) : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeLog(markers: ArucoMarker[]) {
-  try {
-    window.localStorage.setItem(LOG_KEY, JSON.stringify(markers));
-  } catch {
-    // Storage blocked (private mode etc.) - the log just won't persist.
-  }
-}
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -176,7 +147,6 @@ type Gate = 'connecting' | 'offline' | 'closed' | 'checking' | 'login' | 'noTeam
 
 export default function ArucoPage() {
   const reduce = useReducedMotion() ?? false;
-  const hydrated = useHydrated();
 
   // ARUCO_OPEN on the backend; null until the server answers.
   const [open, setOpen] = useState<boolean | null>(null);
@@ -230,9 +200,22 @@ export default function ArucoPage() {
     };
   }, [accessToken, open, retry]);
 
-  /** Keeps the tries counter in step with what a lookup reported. */
-  function updateScans(next: { used: number; limit: number }) {
-    setAccess((prev) => (prev?.scans ? { ...prev, scans: { ...prev.scans, ...next } } : prev));
+  /**
+   * Keeps the tries counter, and the field log when a marker was found, in
+   * step with what a lookup reported. A marker already in the log keeps its
+   * place, as it does in the server's order.
+   */
+  function updateScans(next: { used: number; limit: number }, marker?: ArucoMarker) {
+    setAccess((prev) => {
+      if (!prev?.scans) return prev;
+      const { found } = prev.scans;
+      const nextFound = !marker
+        ? found
+        : found.some((m) => m.id === marker.id)
+          ? found.map((m) => (m.id === marker.id ? marker : m))
+          : [...found, marker];
+      return { ...prev, scans: { ...prev.scans, ...next, found: nextFound } };
+    });
   }
 
   let gate: Gate;
@@ -249,14 +232,9 @@ export default function ArucoPage() {
   const [idInput, setIdInput] = useState('');
   const [scan, setScan] = useState<Scan>({ seq: 0, phase: 'idle', input: '' });
 
-  // Stored log + anything found this visit (storage is read once hydrated, so
-  // server and first client render agree). Later scans replace earlier ones.
-  const [foundNow, setFoundNow] = useState<ArucoMarker[]>([]);
-  const found = useMemo(() => {
-    const byId = new Map<number, ArucoMarker>();
-    for (const m of [...(hydrated ? readLog() : []), ...foundNow]) byId.set(m.id, m);
-    return [...byId.values()];
-  }, [hydrated, foundNow]);
+  // The team's log comes from the server, so every teammate sees the same one
+  // and an organizer's reset empties it everywhere.
+  const found = scans?.found ?? [];
 
   async function detect(raw: string) {
     const input = raw.trim();
@@ -274,10 +252,8 @@ export default function ArucoPage() {
       const token = await useAuthStore.getState().getAccessToken();
       if (!token) return;
       const { scansUsed, scanLimit, ...marker } = await challengeService.marker(Number(input), token);
-      updateScans({ used: scansUsed, limit: scanLimit });
+      updateScans({ used: scansUsed, limit: scanLimit }, marker);
       settle({ phase: 'detected', marker });
-      setFoundNow((prev) => [...prev.filter((m) => m.id !== marker.id), marker]);
-      writeLog([...found.filter((m) => m.id !== marker.id), marker]);
     } catch (err) {
       const code = errorCode(err);
       const tries = errorScans(err);
@@ -712,11 +688,11 @@ function FieldLog({
       <div className="aruco-log-head">
         <h2 className="aruco-log-title">Field log</h2>
         <p className="aruco-log-count">
-          {found.length} marker{found.length === 1 ? '' : 's'} scanned on this device
+          {found.length} marker{found.length === 1 ? '' : 's'} found by your team
         </p>
       </div>
       {found.length === 0 ? (
-        <p className="aruco-log-empty">Markers you scan show up here so you can reopen them.</p>
+        <p className="aruco-log-empty">Markers your team finds show up here so any of you can reopen them.</p>
       ) : (
         <ol className="aruco-log-grid">
           {found.map((m) => (

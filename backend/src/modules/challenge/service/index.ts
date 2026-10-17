@@ -66,8 +66,21 @@ export class ChallengeService {
   async scans(userId: string): Promise<ArucoScansResult> {
     this.assertOpen();
     const team = await this.competitionTeam(userId);
-    const used = await this.prisma.arucoScan.count({ where: { teamId: team.id } });
-    return { teamName: team.name, used, limit: this.scanLimit() };
+    const tried = await this.prisma.arucoScan.findMany({
+      where: { teamId: team.id },
+      orderBy: { createdAt: 'asc' },
+      select: { markerId: true },
+    });
+
+    // The team's field log: its real markers, as the register describes them
+    // now, so every teammate sees the same log and an admin reset empties it.
+    const rows = await this.prisma.arucoMarker.findMany({
+      where: { markerId: { in: tried.map((t) => t.markerId) } },
+    });
+    const byId = new Map(rows.map((row) => [row.markerId, toMarker(row)]));
+    const found = tried.flatMap((t) => byId.get(t.markerId) ?? []);
+
+    return { teamName: team.name, used: tried.length, limit: this.scanLimit(), found };
   }
 
   /**

@@ -473,6 +473,8 @@ export interface ArucoScansResponse {
   used: number;
   /** Distinct marker IDs a team may try. */
   limit: number;
+  /** The team's field log: the real markers among the IDs it tried, oldest first. */
+  found: ArucoMarker[];
 }
 
 /** Response of GET /challenge/aruco/markers/:id - what scanning a marker reveals. */

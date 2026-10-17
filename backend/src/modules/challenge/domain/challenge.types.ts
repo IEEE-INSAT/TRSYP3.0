@@ -9,6 +9,8 @@ export interface ArucoScansResult {
   teamName: string;
   used: number;
   limit: number;
+  /** The real markers among those IDs, oldest try first. */
+  found: ArucoMarker[];
 }
 
 export type ArucoMarkerResult = ArucoMarker & { scansUsed: number; scanLimit: number };
