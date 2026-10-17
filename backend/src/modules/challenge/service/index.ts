@@ -12,9 +12,9 @@ import {
   DEFAULT_SCAN_LIMIT,
   MAX_ATTEMPTS,
   answerEnvKey,
-  getMarker,
   isCollectorNumber,
   matchesAnswer,
+  toMarker,
 } from '../aruco.data';
 import {
   ArucoCollectorStatusResult,
@@ -104,7 +104,9 @@ export class ChallengeService {
     }
 
     const scansUsed = await this.prisma.arucoScan.count({ where: { teamId: team.id } });
-    const marker = getMarker(id);
+    // Read per scan: organizers reassign IDs from the admin portal mid-event.
+    const row = await this.prisma.arucoMarker.findUnique({ where: { markerId: id } });
+    const marker = row ? toMarker(row) : null;
     if (!marker) {
       throw new NotFoundException({
         statusCode: 404,

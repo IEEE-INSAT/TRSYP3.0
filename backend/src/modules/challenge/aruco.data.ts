@@ -1,10 +1,10 @@
 import * as crypto from 'crypto';
 
 /**
- * The ArUco beacon register (Garden and Mine games, 11 October 2026).
- * All markers are OpenCV DICT_4X4_50; each ID belongs to one beacon only.
- * The clues live here, not in the frontend bundle, so closing the challenge
- * (ARUCO_OPEN=false) really hides them.
+ * The ArUco challenge (Garden and Mine games). All markers are OpenCV
+ * DICT_4X4_50; each ID belongs to one beacon only. What each ID gives lives in
+ * the aruco_markers table, edited from the admin portal, not in the frontend
+ * bundle, so closing the challenge (ARUCO_OPEN=false) really hides it.
  */
 
 export type ArucoGame = 'Garden' | 'Mine';
@@ -26,38 +26,36 @@ export const MAX_ATTEMPTS = 3;
  */
 export const DEFAULT_SCAN_LIMIT = 20;
 
-const MARKERS: ArucoMarker[] = [
-  // Red beacons - Garden (L and E are each placed twice on the field, same ID).
-  { id: 0, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'A', quantity: 1 },
-  { id: 10, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'L', quantity: 2 },
-  { id: 20, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'I', quantity: 1 },
-  { id: 30, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'E', quantity: 2 },
-  { id: 40, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'N', quantity: 1 },
-  { id: 12, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'C', quantity: 1 },
-  { id: 22, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'S', quantity: 1 },
-  { id: 32, kind: 'beacon', game: 'Garden', name: 'Red beacon', clue: 'K', quantity: 1 },
+/** The columns of an aruco_markers row that decide what the marker gives. */
+export interface ArucoMarkerRow {
+  markerId: number;
+  kind: string;
+  game: string;
+  name: string;
+  clue: string;
+  quantity: number | null;
+  collector: number | null;
+}
 
-  // Red beacons - Mine. Clues not decided yet: fill `clue` in when they are.
-  { id: 28, kind: 'beacon', game: 'Mine', name: 'Red beacon 1', clue: '', quantity: 1 },
-  { id: 2, kind: 'beacon', game: 'Mine', name: 'Red beacon 2', clue: '', quantity: 1 },
-  { id: 3, kind: 'beacon', game: 'Mine', name: 'Red beacon 3', clue: '', quantity: 1 },
-  { id: 43, kind: 'beacon', game: 'Mine', name: 'Red beacon 4', clue: '', quantity: 1 },
-
-  // Indicators - Garden.
-  { id: 7, kind: 'indicator', game: 'Garden', name: 'Indicator 1', clue: 'two worlds don’t need to be one in order to move together' },
-  { id: 17, kind: 'indicator', game: 'Garden', name: 'Indicator 2', clue: 'some connections are stronger if one hand holds the other' },
-  { id: 27, kind: 'indicator', game: 'Garden', name: 'Indicator 3', clue: 'One extra letter on the left' },
-  { id: 37, kind: 'indicator', game: 'Garden', name: 'Indicator 4', clue: 'At least 3 correct letters on the right' },
-
-  // Collectors - Garden. Their words come from ARUCO_COLLECTOR_<n>_ANSWER.
-  { id: 47, kind: 'collector', game: 'Garden', name: 'Collector 1', collector: 1 },
-  { id: 6, kind: 'collector', game: 'Garden', name: 'Collector 2', collector: 2 },
-];
-
-const BY_ID = new Map(MARKERS.map((m) => [m.id, m]));
-
-export function getMarker(id: number): ArucoMarker | null {
-  return BY_ID.get(id) ?? null;
+/**
+ * Shapes an aruco_markers row as what scanning reveals. The table's CHECK
+ * constraints keep rows well formed; anything else reads as "no marker".
+ */
+export function toMarker(row: ArucoMarkerRow): ArucoMarker | null {
+  if (row.game !== 'Garden' && row.game !== 'Mine') return null;
+  const base = { id: row.markerId, game: row.game as ArucoGame, name: row.name };
+  switch (row.kind) {
+    case 'beacon':
+      return { ...base, kind: 'beacon', clue: row.clue, quantity: row.quantity ?? 1 };
+    case 'indicator':
+      return { ...base, kind: 'indicator', clue: row.clue };
+    case 'collector':
+      return row.collector !== null && isCollectorNumber(row.collector)
+        ? { ...base, kind: 'collector', collector: row.collector }
+        : null;
+    default:
+      return null;
+  }
 }
 
 export function isCollectorNumber(n: number): n is CollectorNumber {
